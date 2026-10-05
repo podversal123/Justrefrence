@@ -56,3 +56,6 @@ skills-lock.json
 /*.docx
 /*.jpeg
 /*.png
+
+.vercel
+.env*
