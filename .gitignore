@@ -1,0 +1,58 @@
+# dependencies
+/node_modules
+
+# next.js
+/.next/
+/out/
+next-env.d.ts
+
+# production
+/build
+
+# environment and credentials (never commit real values; .env.example is the template)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.local.md
+vercel-token*.txt
+
+# generated code
+/src/generated/prisma
+/prisma/generated
+
+# testing and reports
+/coverage
+/test-results
+/playwright-report
+/blob-report
+/playwright/.cache
+.playwright-mcp/
+
+# build info and logs
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+Thumbs.db
+
+# vercel
+.vercel
+
+# editor and AI-assistant tooling (local only)
+.vscode/
+.idea/
+.claude/
+.agents/
+.windsurf/
+CLAUDE.md
+AGENTS.md
+skills-lock.json
+
+# client documents, reference screenshots and design assets (kept locally, not part of the codebase)
+/*.pdf
+/*.docx
+/*.jpeg
+/*.png

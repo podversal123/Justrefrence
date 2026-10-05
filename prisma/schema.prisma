@@ -1,0 +1,1719 @@
+// Just Reference — Prisma schema
+//
+// Phase 1: identity, RBAC, audit logging. Phase 2 adds: admin profile fields,
+// vendor profiles (admin-managed lifecycle), and dynamic (non-seed-only)
+// roles — see docs/adr/0010-vendor-profile-and-dynamic-roles.md for how this
+// deviates from and will reconcile with the full docs/database-tables.md
+// design (vendor_profiles there hangs off member_profiles, which doesn't
+// exist yet — Phase 4/6 concern). Catalog, orders, wallet, commission,
+// referral, payment, e-pin, coupon, TDS, bidding, messaging and content
+// tables are all designed in docs/database-tables.md but intentionally not
+// modeled here yet; they land in Phases 3-9.
+//
+// Column-level source of truth: docs/database-tables.md §1 (Identity & access)
+// and §13 (audit_logs). Conventions: docs/database-tables.md "Global conventions".
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// Authentication identity — id mirrors Supabase `auth.users.id`.
+/// See docs/database-tables.md §1 `users`.
+model User {
+  id                  String     @id @db.Uuid
+  email               String     @unique
+  phone               String?    @unique
+  fullName            String?    @map("full_name")
+  status              UserStatus @default(PENDING_VERIFICATION)
+  emailVerifiedAt     DateTime?  @map("email_verified_at")
+  phoneVerifiedAt     DateTime?  @map("phone_verified_at")
+  /// Account-lock protection (Phase 4) — consecutive failed login attempts
+  /// across BOTH email/password and mobile-OTP login, see
+  /// src/server/domain/identity/account-lock.ts.
+  failedLoginAttempts Int        @default(0) @map("failed_login_attempts")
+  lockedUntil         DateTime?  @map("locked_until")
+  createdAt           DateTime   @default(now()) @map("created_at")
+  updatedAt           DateTime   @updatedAt @map("updated_at")
+
+  rolesGranted               UserRole[]                @relation("GrantedBy")
+  rolesRevoked               UserRole[]                @relation("RevokedBy")
+  userRoles                  UserRole[]                @relation("UserRoles")
+  auditLogsAsActor           AuditLog[]
+  createdByAdmin             User?                     @relation("CreatedBy", fields: [createdBy], references: [id])
+  createdBy                  String?                   @map("created_by") @db.Uuid
+  usersCreated               User[]                    @relation("CreatedBy")
+  vendorProfile              VendorProfile?            @relation("VendorProfileUser")
+  vendorApprovals            VendorProfile[]           @relation("VendorProfileApprover")
+  productApprovals           Product[]                 @relation("ProductApprover")
+  serviceApprovals           Service[]                 @relation("ServiceApprover")
+  projectApprovals           Project[]                 @relation("ProjectApprover")
+  memberProfile              MemberProfile?            @relation("MemberProfileUser")
+  referredMembers            MemberProfile[]           @relation("ReferredBy")
+  addresses                  Address[]
+  bankAccounts               BankAccount[]             @relation("BankAccountOwner")
+  bankVerifications          BankAccount[]             @relation("BankAccountVerifier")
+  otpVerifications           OtpVerification[]
+  notifications              Notification[]
+  carts                      Cart[]
+  checkouts                  Checkout[]
+  ordersAsBuyer              Order[]                   @relation("OrderBuyer")
+  orderStatusChanges         OrderStatusHistory[]
+  couponsCreated             Coupon[]
+  settingsUpdated            SystemSetting[]
+  commissionRulesCreated     CommissionRule[]
+  commissionStatusChanges    CommissionStatusHistory[]
+  wallet                     Wallet?
+  payoutRequestsRequested    PayoutRequest[]           @relation("PayoutRequester")
+  payoutRequestsApproved     PayoutRequest[]           @relation("PayoutApprover")
+  payoutTransactionsRecorded PayoutTransaction[]
+  subscriptionPlansCreated   SubscriptionPlan[]
+  epinsGenerated             Epin[]                    @relation("EpinGenerator")
+  epinRedemptions            EpinRedemption[]          @relation("EpinRedeemer")
+  payments                   Payment[]
+  ticketsOwned               SupportTicket[]           @relation("TicketOwner")
+  ticketsAssigned            SupportTicket[]           @relation("TicketAssignee")
+  ticketMessages             TicketMessage[]
+  messagesSent               Message[]                 @relation("MessageSender")
+  messagesReceived           Message[]                 @relation("MessageRecipient")
+  blogPosts                  BlogPost[]                @relation("BlogAuthor")
+  feedbacks                  Feedback[]
+  requirementsPosted         Requirement[]             @relation("RequirementBuyer")
+
+  @@index([status])
+  @@map("users")
+}
+
+enum UserStatus {
+  ACTIVE
+  BLOCKED
+  PENDING_VERIFICATION
+}
+
+/// Role catalog. The 6 roles from docs/rbac.md §2 are seeded with
+/// isSystem=true and cannot be renamed or deleted through the admin UI
+/// (see docs/adr/0010-vendor-profile-and-dynamic-roles.md) — everything
+/// else is an admin-created custom role, composed only from the fixed
+/// permission catalog in src/server/auth/permissions.ts.
+model Role {
+  id       String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code     String  @unique
+  label    String
+  isSystem Boolean @default(false) @map("is_system")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  rolePermissions RolePermission[]
+  userRoles       UserRole[]
+
+  @@map("roles")
+}
+
+/// Static permission catalog — seed data. See docs/rbac.md §3.
+model Permission {
+  id          String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code        String @unique
+  description String
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  rolePermissions RolePermission[]
+
+  @@map("permissions")
+}
+
+/// Default permission bundle per role. See docs/rbac.md §4.
+model RolePermission {
+  id           String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  roleId       String @map("role_id") @db.Uuid
+  permissionId String @map("permission_id") @db.Uuid
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  role       Role       @relation(fields: [roleId], references: [id])
+  permission Permission @relation(fields: [permissionId], references: [id])
+
+  @@unique([roleId, permissionId])
+  @@index([permissionId])
+  @@map("role_permissions")
+}
+
+/// Which roles a user actually holds — many-to-many, supports CUSTOMER +
+/// VENDOR on one account. Has its own revoked_at lifecycle instead of a
+/// generic soft delete. See docs/database-tables.md §1 `user_roles`.
+model UserRole {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  roleId    String    @map("role_id") @db.Uuid
+  grantedBy String?   @map("granted_by") @db.Uuid
+  grantedAt DateTime  @default(now()) @map("granted_at")
+  revokedBy String?   @map("revoked_by") @db.Uuid
+  revokedAt DateTime? @map("revoked_at")
+
+  user          User  @relation("UserRoles", fields: [userId], references: [id])
+  role          Role  @relation(fields: [roleId], references: [id])
+  grantedByUser User? @relation("GrantedBy", fields: [grantedBy], references: [id])
+  revokedByUser User? @relation("RevokedBy", fields: [revokedBy], references: [id])
+
+  @@index([userId])
+  @@index([roleId])
+  @@map("user_roles")
+}
+
+/// The immutable, platform-wide audit trail. INSERT-only at the application
+/// role level (see docs/audit-logging.md §2) — no update()/delete() call is
+/// ever made against this model from application code.
+model AuditLog {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  actorId    String?  @map("actor_id") @db.Uuid
+  action     String
+  entityType String   @map("entity_type")
+  entityId   String   @map("entity_id") @db.Uuid
+  beforeJson Json?    @map("before_json")
+  afterJson  Json?    @map("after_json")
+  ip         String?
+  userAgent  String?  @map("user_agent")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  actor User? @relation(fields: [actorId], references: [id])
+
+  @@index([entityType, entityId])
+  @@index([actorId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// ---------------------------------------------------------------------------
+// Phase 4: member identity — registration, profile, KYC, addresses, bank
+// details, OTP verification, referral linkage, and in-app notifications.
+// Column-level source of truth: docs/database-tables.md §1 (member_profiles,
+// addresses, bank_accounts, otp_verifications) and §5 (referral_relationships)
+// and §12 (notifications). See docs/adr/0012-otp-session-bridge.md for why
+// every account has an email even when mobile/WhatsApp is the primary
+// verification channel.
+// ---------------------------------------------------------------------------
+
+/// The business "member" identity — every user gets exactly one, created at
+/// the end of a successful registration (see registration-service.ts).
+/// `referralPath` is stored as a plain dot-separated string today (hyphens
+/// stripped from each member id segment, so it already matches Postgres
+/// `ltree` label syntax); it becomes a real `ltree` column + GiST index in
+/// the phase that actually needs tree-traversal queries (commission
+/// fan-out) — see docs/adr/0003-referral-tree-model.md.
+model MemberProfile {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId           String    @unique @map("user_id") @db.Uuid
+  /// Monotonic sequence backing the public `memberId` — assigned by the DB,
+  /// formatted into `JR-000001` etc. by src/server/domain/identity/member-id.ts.
+  memberSeq        BigInt    @unique @default(autoincrement()) @map("member_seq")
+  memberId         String?   @unique @map("member_id")
+  referralCode     String?   @unique @map("referral_code")
+  referralPath     String    @map("referral_path")
+  referredByUserId String?   @map("referred_by_user_id") @db.Uuid
+  dob              DateTime? @db.Date
+  pan              String?
+  gstin            String?
+  websiteUrl       String?   @map("website_url")
+  socialLinks      Json?     @map("social_links")
+  kycStatus        KycStatus @default(PENDING) @map("kyc_status")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  user              User                   @relation("MemberProfileUser", fields: [userId], references: [id])
+  referredByUser    User?                  @relation("ReferredBy", fields: [referredByUserId], references: [id])
+  asMember          ReferralRelationship?  @relation("ReferralMember")
+  asReferrer        ReferralRelationship[] @relation("ReferralReferrer")
+  couponRedemptions CouponRedemption[]
+  commissionsEarned Commission[]
+  subscriptions     Subscription[]
+
+  @@index([referredByUserId])
+  @@map("member_profiles")
+}
+
+enum KycStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+/// Authoritative direct-parent-of-record — see docs/business-rules.md Q-05
+/// (repoint is `SUPER_ADMIN`-only, via `referral:repoint`, always audited).
+model ReferralRelationship {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  memberId   String    @unique @map("member_id") @db.Uuid
+  referrerId String    @map("referrer_id") @db.Uuid
+  level      Int       @default(1)
+  changedBy  String?   @map("changed_by") @db.Uuid
+  changedAt  DateTime? @map("changed_at")
+
+  member   MemberProfile @relation("ReferralMember", fields: [memberId], references: [id])
+  referrer MemberProfile @relation("ReferralReferrer", fields: [referrerId], references: [id])
+
+  @@index([referrerId])
+  @@map("referral_relationships")
+}
+
+/// Residence/office/billing addresses — many per user.
+model Address {
+  id          String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ownerUserId String      @map("owner_user_id") @db.Uuid
+  type        AddressType
+  line1       String
+  line2       String?
+  city        String
+  state       String
+  postalCode  String      @map("postal_code")
+  country     String      @default("IN")
+  isDefault   Boolean     @default(false) @map("is_default")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+  deletedAt   DateTime?   @map("deleted_at")
+
+  owner User @relation(fields: [ownerUserId], references: [id])
+
+  @@index([ownerUserId])
+  @@map("addresses")
+}
+
+enum AddressType {
+  RESIDENCE
+  OFFICE
+  BILLING
+}
+
+/// Payout bank details — account number is app-layer AES-256-GCM encrypted
+/// (never plaintext at rest); `accountNoMasked` is the only form returned by
+/// any list/read API. See docs/security.md §6-7 and
+/// src/server/domain/identity/encryption.ts.
+model BankAccount {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId             String    @map("user_id") @db.Uuid
+  accountHolderName  String    @map("account_holder_name")
+  accountNoEncrypted Bytes     @map("account_no_encrypted")
+  accountNoMasked    String    @map("account_no_masked")
+  ifsc               String
+  branchAddress      String?   @map("branch_address")
+  verifiedAt         DateTime? @map("verified_at")
+  verifiedBy         String?   @map("verified_by") @db.Uuid
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+  deletedAt          DateTime? @map("deleted_at")
+
+  user           User            @relation("BankAccountOwner", fields: [userId], references: [id])
+  verifier       User?           @relation("BankAccountVerifier", fields: [verifiedBy], references: [id])
+  payoutRequests PayoutRequest[]
+
+  @@unique([userId, accountNoMasked])
+  @@index([userId])
+  @@map("bank_accounts")
+}
+
+/// OTP challenge records — email/mobile/WhatsApp, shared by registration AND
+/// mobile-OTP login (see docs/adr/0012). Raw codes are never stored, only a
+/// SHA-256 hash — see src/server/domain/identity/otp.ts.
+model OtpVerification {
+  id                String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId            String?    @map("user_id") @db.Uuid
+  channel           OtpChannel
+  purpose           OtpPurpose
+  destinationMasked String     @map("destination_masked")
+  codeHash          String     @map("code_hash")
+  expiresAt         DateTime   @map("expires_at")
+  consumedAt        DateTime?  @map("consumed_at")
+  attemptCount      Int        @default(0) @map("attempt_count")
+  createdAt         DateTime   @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([destinationMasked, channel, createdAt])
+  @@index([userId])
+  @@map("otp_verifications")
+}
+
+enum OtpChannel {
+  EMAIL
+  SMS
+  WHATSAPP
+}
+
+enum OtpPurpose {
+  REGISTRATION
+  LOGIN
+}
+
+/// In-app notification feed (the "bell icon") — see docs/notifications.md.
+/// High volume, non-financial: no dedicated audit_logs rows, purged by a
+/// retention job rather than soft-deleted.
+model Notification {
+  id        String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String              @map("user_id") @db.Uuid
+  type      String
+  payload   Json                @map("payload_json")
+  channel   NotificationChannel @default(IN_APP)
+  readAt    DateTime?           @map("read_at")
+  createdAt DateTime            @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, readAt])
+  @@map("notifications")
+}
+
+enum NotificationChannel {
+  IN_APP
+  SMS
+  EMAIL
+  WHATSAPP
+}
+
+/// Vendor capability + approval lifecycle, admin-managed in Phase 2.
+/// Deliberately hangs off `User` directly rather than a `member_profiles`
+/// row (which doesn't exist yet) — see docs/adr/0010.
+model VendorProfile {
+  id             String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String               @unique @map("user_id") @db.Uuid
+  businessName   String               @map("business_name")
+  approvalStatus VendorApprovalStatus @default(PENDING) @map("approval_status")
+  approvedBy     String?              @map("approved_by") @db.Uuid
+  approvedAt     DateTime?            @map("approved_at")
+  rejectedReason String?              @map("rejected_reason")
+  /// Phase 5 addition — not in the original vendor_profiles spec (which
+  /// assumed vendor hangs off member_profiles, where GSTIN already lives).
+  /// ADR-0010 detached VendorProfile from MemberProfile, and a vendor
+  /// account need not have a member profile at all, so the invoice
+  /// generator (Q-19: "carrying the vendor's GSTIN when present") needs its
+  /// own copy here.
+  gstin          String?
+  createdAt      DateTime             @default(now()) @map("created_at")
+  updatedAt      DateTime             @updatedAt @map("updated_at")
+
+  user     User  @relation("VendorProfileUser", fields: [userId], references: [id])
+  approver User? @relation("VendorProfileApprover", fields: [approvedBy], references: [id])
+
+  products Product[]
+  services Service[]
+  projects Project[]
+  orders   Order[]
+  bids     Bid[]
+
+  @@index([approvalStatus])
+  @@index([businessName])
+  @@map("vendor_profiles")
+}
+
+enum VendorApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Phase 3 — catalog: Products, Services, Projects.
+//
+// Three parallel model families (Category/Subcategory/Item/Image) rather
+// than one polymorphic table — see docs/adr/0011-catalog-architecture.md
+// for why, and for how the *application* layer (repository/service/UI) is
+// still genuinely shared across all three despite separate Prisma models.
+// Field names are kept identical across Product/Service/Project on purpose
+// (even "price" for a project, where docs/database-tables.md originally
+// called it "cost") so the generic catalog engine can address all three
+// through one config shape — see ADR-0011.
+// ─────────────────────────────────────────────────────────────────────────
+
+/// Shared across Product/Service/Project — two independent axes of
+/// visibility: approvalStatus (admin-controlled) and isActive (vendor-
+/// controlled). Both must be APPROVED + true for a customer to see it.
+enum ListingApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+/// Service-only: whether `price` is a fixed listed price or the vendor
+/// must be contacted for a quote — see docs/business-rules.md Q-24.
+enum ServicePricingType {
+  FIXED
+  QUOTE
+}
+
+model ProductCategory {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String
+  slug      String    @unique
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  subcategories ProductSubcategory[]
+  products      Product[]
+
+  @@map("product_categories")
+}
+
+model ProductSubcategory {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  categoryId String    @map("category_id") @db.Uuid
+  name       String
+  slug       String
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+  deletedAt  DateTime? @map("deleted_at")
+
+  category ProductCategory @relation(fields: [categoryId], references: [id])
+  products Product[]
+
+  @@unique([categoryId, slug])
+  @@index([categoryId])
+  @@map("product_subcategories")
+}
+
+model Product {
+  id             String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  vendorId       String                @map("vendor_id") @db.Uuid
+  categoryId     String                @map("category_id") @db.Uuid
+  subcategoryId  String?               @map("subcategory_id") @db.Uuid
+  title          String
+  slug           String                @unique
+  description    String?
+  sku            String?
+  price          BigInt
+  currency       String                @default("INR") @db.Char(3)
+  stock          Int                   @default(0)
+  approvalStatus ListingApprovalStatus @default(PENDING) @map("approval_status")
+  isActive       Boolean               @default(true) @map("is_active")
+  rejectedReason String?               @map("rejected_reason")
+  approvedBy     String?               @map("approved_by") @db.Uuid
+  approvedAt     DateTime?             @map("approved_at")
+  createdAt      DateTime              @default(now()) @map("created_at")
+  updatedAt      DateTime              @updatedAt @map("updated_at")
+  deletedAt      DateTime?             @map("deleted_at")
+
+  vendor      VendorProfile       @relation(fields: [vendorId], references: [id])
+  category    ProductCategory     @relation(fields: [categoryId], references: [id])
+  subcategory ProductSubcategory? @relation(fields: [subcategoryId], references: [id])
+  approver    User?               @relation("ProductApprover", fields: [approvedBy], references: [id])
+  images      ProductImage[]
+
+  @@index([vendorId])
+  @@index([categoryId])
+  @@index([subcategoryId])
+  @@index([approvalStatus])
+  @@index([createdAt])
+  @@index([approvalStatus, isActive])
+  @@map("products")
+}
+
+model ProductImage {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId   String   @map("product_id") @db.Uuid
+  storagePath String   @map("storage_path")
+  altText     String?  @map("alt_text")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([productId])
+  @@map("product_images")
+}
+
+model ServiceCategory {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String
+  slug      String    @unique
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  subcategories ServiceSubcategory[]
+  services      Service[]
+
+  @@map("service_categories")
+}
+
+model ServiceSubcategory {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  categoryId String    @map("category_id") @db.Uuid
+  name       String
+  slug       String
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+  deletedAt  DateTime? @map("deleted_at")
+
+  category ServiceCategory @relation(fields: [categoryId], references: [id])
+  services Service[]
+
+  @@unique([categoryId, slug])
+  @@index([categoryId])
+  @@map("service_subcategories")
+}
+
+model Service {
+  id             String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  vendorId       String                @map("vendor_id") @db.Uuid
+  categoryId     String                @map("category_id") @db.Uuid
+  subcategoryId  String?               @map("subcategory_id") @db.Uuid
+  title          String
+  slug           String                @unique
+  description    String?
+  pricingType    ServicePricingType    @default(FIXED) @map("pricing_type")
+  price          BigInt?
+  currency       String                @default("INR") @db.Char(3)
+  approvalStatus ListingApprovalStatus @default(PENDING) @map("approval_status")
+  isActive       Boolean               @default(true) @map("is_active")
+  rejectedReason String?               @map("rejected_reason")
+  approvedBy     String?               @map("approved_by") @db.Uuid
+  approvedAt     DateTime?             @map("approved_at")
+  createdAt      DateTime              @default(now()) @map("created_at")
+  updatedAt      DateTime              @updatedAt @map("updated_at")
+  deletedAt      DateTime?             @map("deleted_at")
+
+  vendor      VendorProfile       @relation(fields: [vendorId], references: [id])
+  category    ServiceCategory     @relation(fields: [categoryId], references: [id])
+  subcategory ServiceSubcategory? @relation(fields: [subcategoryId], references: [id])
+  approver    User?               @relation("ServiceApprover", fields: [approvedBy], references: [id])
+  images      ServiceImage[]
+
+  @@index([vendorId])
+  @@index([categoryId])
+  @@index([subcategoryId])
+  @@index([approvalStatus])
+  @@index([createdAt])
+  @@index([approvalStatus, isActive])
+  @@map("services")
+}
+
+model ServiceImage {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  serviceId   String   @map("service_id") @db.Uuid
+  storagePath String   @map("storage_path")
+  altText     String?  @map("alt_text")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  service Service @relation(fields: [serviceId], references: [id])
+
+  @@index([serviceId])
+  @@map("service_images")
+}
+
+model ProjectCategory {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String
+  slug      String    @unique
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  subcategories ProjectSubcategory[]
+  projects      Project[]
+
+  @@map("project_categories")
+}
+
+model ProjectSubcategory {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  categoryId String    @map("category_id") @db.Uuid
+  name       String
+  slug       String
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+  deletedAt  DateTime? @map("deleted_at")
+
+  category ProjectCategory @relation(fields: [categoryId], references: [id])
+  projects Project[]
+
+  @@unique([categoryId, slug])
+  @@index([categoryId])
+  @@map("project_subcategories")
+}
+
+model Project {
+  id             String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  vendorId       String                @map("vendor_id") @db.Uuid
+  categoryId     String                @map("category_id") @db.Uuid
+  subcategoryId  String?               @map("subcategory_id") @db.Uuid
+  title          String
+  slug           String                @unique
+  description    String?
+  price          BigInt
+  currency       String                @default("INR") @db.Char(3)
+  approvalStatus ListingApprovalStatus @default(PENDING) @map("approval_status")
+  isActive       Boolean               @default(true) @map("is_active")
+  rejectedReason String?               @map("rejected_reason")
+  approvedBy     String?               @map("approved_by") @db.Uuid
+  approvedAt     DateTime?             @map("approved_at")
+  createdAt      DateTime              @default(now()) @map("created_at")
+  updatedAt      DateTime              @updatedAt @map("updated_at")
+  deletedAt      DateTime?             @map("deleted_at")
+
+  vendor      VendorProfile       @relation(fields: [vendorId], references: [id])
+  category    ProjectCategory     @relation(fields: [categoryId], references: [id])
+  subcategory ProjectSubcategory? @relation(fields: [subcategoryId], references: [id])
+  approver    User?               @relation("ProjectApprover", fields: [approvedBy], references: [id])
+  images      ProjectImage[]
+
+  @@index([vendorId])
+  @@index([categoryId])
+  @@index([subcategoryId])
+  @@index([approvalStatus])
+  @@index([createdAt])
+  @@index([approvalStatus, isActive])
+  @@map("projects")
+}
+
+model ProjectImage {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectId   String   @map("project_id") @db.Uuid
+  storagePath String   @map("storage_path")
+  altText     String?  @map("alt_text")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  project Project @relation(fields: [projectId], references: [id])
+
+  @@index([projectId])
+  @@map("project_images")
+}
+
+// ---------------------------------------------------------------------------
+// Phase 5: cart, checkout, orders, coupons, invoicing, and platform settings.
+// Column-level source of truth: docs/database-tables.md §3 (cart/orders),
+// §4 (payments & invoicing — payments/payment_events/payment_transactions
+// are NOT modeled yet: order creation here produces a PLACED order and a
+// real payment-gateway integration is an explicitly separate, later phase,
+// same boundary as bidding→payment in docs/business-rules.md Q-25), §9
+// (coupons), §13 (system_settings). See docs/adr/0013-commerce-money-math.md
+// for the integer-basis-points rate representation and the per-order
+// Checkout/Order split, which both deviate slightly from the literal
+// database-tables.md column types/shape for reasons documented there.
+// ---------------------------------------------------------------------------
+
+/// Polymorphic item reference shared by CartItem/OrderItem — mirrors
+/// CatalogKind (src/server/domain/catalog/types.ts) but as its own Prisma
+/// enum since that TS union isn't itself a DB type.
+enum CatalogItemKind {
+  PRODUCT
+  SERVICE
+  PROJECT
+}
+
+enum CartStatus {
+  OPEN
+  CHECKED_OUT
+  ABANDONED
+}
+
+/// One per user in steady state (enforced at the application layer, not a
+/// DB partial-unique-index, since Prisma's schema DSL has no filtered
+/// unique constraint — see src/server/repositories/commerce/cart-repository.ts).
+model Cart {
+  id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ownerUserId String     @map("owner_user_id") @db.Uuid
+  status      CartStatus @default(OPEN)
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  owner     User       @relation(fields: [ownerUserId], references: [id])
+  items     CartItem[]
+  checkouts Checkout[]
+
+  @@index([ownerUserId])
+  @@map("carts")
+}
+
+model CartItem {
+  id        String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cartId    String          @map("cart_id") @db.Uuid
+  itemType  CatalogItemKind @map("item_type")
+  itemId    String          @map("item_id") @db.Uuid
+  qty       Int             @default(1)
+  createdAt DateTime        @default(now()) @map("created_at")
+  updatedAt DateTime        @updatedAt @map("updated_at")
+
+  cart Cart @relation(fields: [cartId], references: [id])
+
+  @@unique([cartId, itemType, itemId])
+  @@index([cartId])
+  @@map("cart_items")
+}
+
+enum CheckoutStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+/// The cart→orders conversion event. `idempotencyKey` (Phase 5 addition,
+/// not in the original spec, which only put an idempotency key on
+/// `payments`) is what makes order creation itself idempotent — a retried
+/// submission with the same key returns the already-created orders instead
+/// of creating duplicates. See checkout-service.ts.
+model Checkout {
+  id             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cartId         String         @map("cart_id") @db.Uuid
+  buyerId        String         @map("buyer_id") @db.Uuid
+  couponId       String?        @map("coupon_id") @db.Uuid
+  status         CheckoutStatus @default(PENDING)
+  idempotencyKey String         @unique @map("idempotency_key")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  cart     Cart      @relation(fields: [cartId], references: [id])
+  buyer    User      @relation(fields: [buyerId], references: [id])
+  coupon   Coupon?   @relation(fields: [couponId], references: [id])
+  orders   Order[]
+  payments Payment[]
+
+  @@index([cartId])
+  @@index([buyerId])
+  @@map("checkouts")
+}
+
+enum OrderStatus {
+  PLACED
+  PAID
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  COMPLETED
+  CANCELLED
+  REFUNDED
+}
+
+/// One per vendor per checkout — a multi-vendor cart splits into exactly
+/// one Order per distinct vendor represented in the cart. `@@unique([checkoutId,
+/// vendorId])` is the structural guarantee behind that split (and replaces
+/// the separate `order_vendor_groups` join table from the original spec,
+/// which was otherwise 1:1 with this pair — simplified deliberately, see
+/// docs/adr/0013-commerce-money-math.md).
+model Order {
+  id               String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  checkoutId       String      @map("checkout_id") @db.Uuid
+  /// Backs `orderNumber` the same two-step way MemberProfile.memberSeq
+  /// backs memberId — see src/server/repositories/commerce/order-repository.ts.
+  orderSeq         BigInt      @unique @default(autoincrement()) @map("order_seq")
+  orderNumber      String?     @unique @map("order_number")
+  vendorId         String      @map("vendor_id") @db.Uuid
+  buyerId          String      @map("buyer_id") @db.Uuid
+  status           OrderStatus @default(PLACED)
+  subtotal         BigInt
+  discountTotal    BigInt      @default(0) @map("discount_total")
+  taxTotal         BigInt      @default(0) @map("tax_total")
+  platformFeeTotal BigInt      @default(0) @map("platform_fee_total")
+  grandTotal       BigInt      @map("grand_total")
+  currency         String      @default("INR") @db.Char(3)
+  createdAt        DateTime    @default(now()) @map("created_at")
+  updatedAt        DateTime    @updatedAt @map("updated_at")
+
+  checkout         Checkout             @relation(fields: [checkoutId], references: [id])
+  vendor           VendorProfile        @relation(fields: [vendorId], references: [id])
+  buyer            User                 @relation("OrderBuyer", fields: [buyerId], references: [id])
+  items            OrderItem[]
+  statusHistory    OrderStatusHistory[]
+  couponRedemption CouponRedemption?
+  invoice          Invoice?
+  commissions      Commission[]
+
+  @@unique([checkoutId, vendorId])
+  @@index([buyerId])
+  @@index([vendorId])
+  // Composite indexes matching the actual cursor-pagination query shape
+  // (WHERE buyerId/vendorId = ? ORDER BY createdAt DESC, id ASC) used by
+  // listOrdersForBuyer/listOrdersForVendor — the single-column indexes
+  // above still serve point lookups/joins, these serve the paginated lists.
+  @@index([buyerId, createdAt])
+  @@index([vendorId, createdAt])
+  @@index([status])
+  @@map("orders")
+}
+
+model OrderItem {
+  id                String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId           String          @map("order_id") @db.Uuid
+  itemType          CatalogItemKind @map("item_type")
+  itemId            String          @map("item_id") @db.Uuid
+  titleSnapshot     String          @map("title_snapshot")
+  unitPriceSnapshot BigInt          @map("unit_price_snapshot")
+  qty               Int
+  lineTotal         BigInt          @map("line_total")
+  createdAt         DateTime        @default(now()) @map("created_at")
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+/// Append-only — see docs/adr/0008-explicit-state-machines.md. The only
+/// writer is src/server/domain/commerce/order-state-machine.ts's
+/// transition(); nothing else ever writes Order.status directly.
+model OrderStatusHistory {
+  id         String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId    String       @map("order_id") @db.Uuid
+  fromStatus OrderStatus? @map("from_status")
+  toStatus   OrderStatus  @map("to_status")
+  actorId    String?      @map("actor_id") @db.Uuid
+  reason     String?
+  createdAt  DateTime     @default(now()) @map("created_at")
+
+  order Order @relation(fields: [orderId], references: [id])
+  actor User? @relation(fields: [actorId], references: [id])
+
+  @@index([orderId])
+  @@map("order_status_history")
+}
+
+enum CouponDiscountType {
+  PERCENT
+  FIXED
+}
+
+/// `valuePercentBps` is percent × 100 (e.g. 18.5% → 1850) — an integer, not
+/// the spec's `numeric(5,2)` — so discount math never touches floating
+/// point or Prisma's Decimal type anywhere, per ADR-0002's "never a bare
+/// numeric used for arithmetic" rule taken to its logical conclusion. See
+/// src/server/domain/commerce/pricing.ts and docs/adr/0013.
+model Coupon {
+  id                  String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code                String             @unique
+  discountType        CouponDiscountType @map("discount_type")
+  valuePercentBps     Int?               @map("value_percent_bps")
+  valueFixed          BigInt?            @map("value_fixed")
+  minOrderAmount      BigInt             @default(0) @map("min_order_amount")
+  startsAt            DateTime           @map("starts_at")
+  expiresAt           DateTime?          @map("expires_at")
+  usageLimit          Int?               @map("usage_limit")
+  usageLimitPerMember Int                @default(1) @map("usage_limit_per_member")
+  createdBy           String             @map("created_by") @db.Uuid
+  createdAt           DateTime           @default(now()) @map("created_at")
+  updatedAt           DateTime           @updatedAt @map("updated_at")
+  deletedAt           DateTime?          @map("deleted_at")
+
+  creator     User               @relation(fields: [createdBy], references: [id])
+  checkouts   Checkout[]
+  redemptions CouponRedemption[]
+
+  @@map("coupons")
+}
+
+/// One row per vendor-order a cross-cart coupon's discount was apportioned
+/// to — see allocateAmount() in pricing.ts. `@@unique([couponId, orderId])`
+/// is what the "duplicate checkout" / idempotency tests lean on: redeeming
+/// twice against the same order is structurally impossible.
+model CouponRedemption {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  couponId         String   @map("coupon_id") @db.Uuid
+  memberId         String   @map("member_id") @db.Uuid
+  orderId          String   @unique @map("order_id") @db.Uuid
+  amountDiscounted BigInt   @map("amount_discounted")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  coupon Coupon        @relation(fields: [couponId], references: [id])
+  member MemberProfile @relation(fields: [memberId], references: [id])
+  order  Order         @relation(fields: [orderId], references: [id])
+
+  @@unique([couponId, orderId])
+  @@index([couponId, memberId])
+  @@map("coupon_redemptions")
+}
+
+/// One per Order, generated right after order creation — see
+/// docs/adr/0007-pdf-generation.md. `gstRateBps`/amounts here are the
+/// recomputed, re-fetched server-side figures (never anything trusted from
+/// the browser), snapshotted into buyer/vendor JSON for a stable statutory
+/// document even if the underlying profile changes later.
+model Invoice {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId        String   @unique @map("order_id") @db.Uuid
+  /// DB-assigned, guarantees collision-free numbering under concurrency.
+  /// Not reset per financial year (true gapless-per-FY numbering needs a
+  /// dedicated per-FY DB sequence or advisory lock — deferred pending
+  /// Q-19's exact statutory numbering confirmation; this is a documented
+  /// simplification, not a production-final answer).
+  invoiceSeq     BigInt   @unique @default(autoincrement()) @map("invoice_seq")
+  /// Nullable, same reason as Order.orderNumber: unset until invoiceSeq is
+  /// known (Postgres allows multiple NULLs under a unique constraint, so
+  /// this is safe — never an empty-string placeholder).
+  invoiceNumber  String?  @unique @map("invoice_number")
+  financialYear  String   @map("financial_year")
+  buyerSnapshot  Json     @map("buyer_snapshot")
+  vendorSnapshot Json     @map("vendor_snapshot")
+  subtotal       BigInt
+  gstTotal       BigInt   @map("gst_total")
+  platformFee    BigInt   @default(0) @map("platform_fee")
+  grandTotal     BigInt   @map("grand_total")
+  pdfStoragePath String?  @map("pdf_storage_path")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  order Order         @relation(fields: [orderId], references: [id])
+  items InvoiceItem[]
+
+  @@index([financialYear])
+  @@map("invoices")
+}
+
+model InvoiceItem {
+  id          String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  invoiceId   String  @map("invoice_id") @db.Uuid
+  orderItemId String  @map("order_item_id") @db.Uuid
+  hsnCode     String? @map("hsn_code")
+  gstRateBps  Int     @map("gst_rate_bps")
+  gstAmount   BigInt  @map("gst_amount")
+  lineTotal   BigInt  @map("line_total")
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id])
+
+  @@index([invoiceId])
+  @@map("invoice_items")
+}
+
+enum SettingValueType {
+  STRING
+  NUMBER
+  BOOLEAN
+  JSON
+}
+
+/// Admin-configurable platform rates (platform fee %, GST %) — "according
+/// to confirmed configuration" per the Phase 5 brief. Seeded with
+/// documented placeholder defaults (prisma/seed.ts) pending the real rates
+/// from docs/business-rules.md Q-19/Q-20 (client's CA / commercial
+/// decision); nothing here is invented as a production-ready rate.
+model SystemSetting {
+  id        String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  key       String           @unique
+  valueJson Json             @map("value_json")
+  valueType SettingValueType @map("value_type")
+  /// Nullable — the initial GST/platform-fee defaults are seed-time,
+  /// system-set values with no human actor yet (same "system can act
+  /// without an actor" allowance as AuditLog.actorId).
+  updatedBy String?          @map("updated_by") @db.Uuid
+  createdAt DateTime         @default(now()) @map("created_at")
+  updatedAt DateTime         @updatedAt @map("updated_at")
+
+  updater User? @relation(fields: [updatedBy], references: [id])
+
+  @@map("system_settings")
+}
+
+// ---------------------------------------------------------------------------
+// Phase 6: referral commission engine. Column-level source of truth:
+// docs/database-tables.md §5 (commission_rules, commission_ledger), reconciled
+// with docs/adr/0014-commission-engine.md for the mutable-status /
+// row-is-version / per-kind-calculation-base decisions documented there.
+// Referral identity itself (MemberProfile.referralCode/referralPath,
+// ReferralRelationship) already exists from Phase 4.
+// ---------------------------------------------------------------------------
+
+enum CommissionRateBasis {
+  PERCENT_OF_ORDER
+  PERCENT_OF_VENDOR_SALE
+  PERCENT_OF_PLATFORM_FEE
+  FIXED
+}
+
+/// Matches docs/database-tables.md's `commission_rules.applies_to` exactly
+/// (EPIN/SUBSCRIPTION included for forward compatibility — neither is an
+/// orderable kind yet, so a rule using them can never actually match in
+/// this phase).
+enum CommissionApplicableTo {
+  PRODUCT
+  SERVICE
+  PROJECT
+  EPIN
+  SUBSCRIPTION
+}
+
+/// Extensible per Q-03 ("no event triggers a commission by default until
+/// listed here") — ORDER_COMPLETED is the only event this phase's order
+/// lifecycle can actually produce.
+enum CommissionQualifyingEvent {
+  ORDER_COMPLETED
+}
+
+enum CommissionStatus {
+  PENDING
+  ELIGIBLE
+  AVAILABLE
+  REVERSED
+  CANCELLED
+}
+
+/// A configuration row is one VERSION of a (level, appliesTo) rate — see
+/// docs/adr/0014. Updating a rate never edits this row; it closes it
+/// (effectiveTo = now()) and inserts a new one. Never hardcode a rate
+/// anywhere else in the codebase — this table is the only source.
+model CommissionRule {
+  id                         String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  level                      Int
+  appliesTo                  CommissionApplicableTo    @map("applies_to")
+  rateBasis                  CommissionRateBasis       @map("rate_basis")
+  /// Percent × 100 (e.g. 5% → 500) — set iff rateBasis is a PERCENT_* variant. See docs/adr/0013.
+  rateValueBps               Int?                      @map("rate_value_bps")
+  /// Paise — set iff rateBasis = FIXED.
+  rateValueFixed             BigInt?                   @map("rate_value_fixed")
+  qualifyingEvent            CommissionQualifyingEvent @map("qualifying_event")
+  /// Q-04 eligibility predicate, part 1: the BENEFICIARY (referrer) must hold an active subscription to earn.
+  requiresActiveSubscription Boolean                   @default(false) @map("requires_active_subscription")
+  /// Q-04 eligibility predicate, part 2: the beneficiary must have at least
+  /// this many of their OWN completed orders to earn at this level — null
+  /// means no minimum. This specific definition of "activity" is a Phase 6
+  /// implementation choice (the business rule itself is undefined in
+  /// business-rules.md Q-04 beyond "minimum activity threshold") —
+  /// flagged here, not silently assumed elsewhere.
+  minimumActivityCount       Int?                      @map("minimum_activity_count")
+  /// Q-06: days after becoming ELIGIBLE before a commission may move to
+  /// AVAILABLE — required, no implicit default (the brief says "days TBD";
+  /// see prisma/seed.ts for the flagged placeholder value this phase ships with).
+  releaseDelayDays           Int                       @map("release_delay_days")
+  effectiveFrom              DateTime                  @map("effective_from")
+  effectiveTo                DateTime?                 @map("effective_to")
+  createdBy                  String                    @map("created_by") @db.Uuid
+  createdAt                  DateTime                  @default(now()) @map("created_at")
+  updatedAt                  DateTime                  @updatedAt @map("updated_at")
+
+  creator     User         @relation(fields: [createdBy], references: [id])
+  commissions Commission[]
+
+  @@index([level, appliesTo, effectiveFrom])
+  @@index([appliesTo, qualifyingEvent, effectiveFrom, effectiveTo])
+  @@map("commission_rules")
+}
+
+/// One row per (order, beneficiary, level) — created PENDING at order
+/// placement, status-transitioned (never re-priced) as the order's own
+/// lifecycle and the release window progress. See docs/adr/0014 for why
+/// `status` is the one mutable field here and everything else is set once.
+model Commission {
+  id                    String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId               String                    @map("order_id") @db.Uuid
+  /// Nullable — this phase calculates per matching-kind item GROUP, not
+  /// per individual order line. See docs/adr/0014.
+  orderItemId           String?                   @map("order_item_id") @db.Uuid
+  beneficiaryMemberId   String                    @map("beneficiary_member_id") @db.Uuid
+  /// 1 = the buyer's direct referrer, 2 = that referrer's own referrer, etc.
+  level                 Int
+  ruleId                String                    @map("rule_id") @db.Uuid
+  qualifyingEvent       CommissionQualifyingEvent @map("qualifying_event")
+  calculationBasis      CommissionRateBasis       @map("calculation_basis")
+  /// Paise the rate was applied to (0 for FIXED, which ignores the base).
+  calculationBaseAmount BigInt                    @map("calculation_base_amount")
+  rateBpsSnapshot       Int?                      @map("rate_bps_snapshot")
+  rateFixedSnapshot     BigInt?                   @map("rate_fixed_snapshot")
+  /// The calculated commission, paise. Immutable after creation — see docs/adr/0014.
+  amount                BigInt
+  status                CommissionStatus          @default(PENDING)
+  /// Set when the commission becomes ELIGIBLE (now + rule.releaseDelayDays) — when AVAILABLE may fire.
+  releaseAt             DateTime?                 @map("release_at")
+  createdAt             DateTime                  @default(now()) @map("created_at")
+  updatedAt             DateTime                  @updatedAt @map("updated_at")
+
+  order         Order                     @relation(fields: [orderId], references: [id])
+  beneficiary   MemberProfile             @relation(fields: [beneficiaryMemberId], references: [id])
+  rule          CommissionRule            @relation(fields: [ruleId], references: [id])
+  statusHistory CommissionStatusHistory[]
+
+  // One commission per beneficiary per level per order — the structural
+  // guard against ever double-crediting the same referral fact.
+  @@unique([orderId, beneficiaryMemberId, level])
+  @@index([beneficiaryMemberId, status])
+  @@index([orderId])
+  @@index([status, releaseAt])
+  @@map("commissions")
+}
+
+/// Append-only — see docs/adr/0008-explicit-state-machines.md and
+/// docs/adr/0014. The only writer is
+/// src/server/domain/commission/commission-state-machine.ts's transition(),
+/// via commission-service.ts; nothing else ever writes Commission.status.
+model CommissionStatusHistory {
+  id           String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  commissionId String            @map("commission_id") @db.Uuid
+  fromStatus   CommissionStatus? @map("from_status")
+  toStatus     CommissionStatus  @map("to_status")
+  actorId      String?           @map("actor_id") @db.Uuid
+  reason       String?
+  createdAt    DateTime          @default(now()) @map("created_at")
+
+  commission Commission @relation(fields: [commissionId], references: [id])
+  actor      User?      @relation(fields: [actorId], references: [id])
+
+  @@index([commissionId])
+  @@map("commission_status_history")
+}
+
+// ---------------------------------------------------------------------------
+// Phase 7: wallet, payout, e-pin, subscription. Column-level source of
+// truth: docs/database-tables.md §6 (wallet), §7 (payout), §8
+// (e-pin/subscription), reconciled with docs/adr/0015-wallet-epin-subscription.md
+// for the conditional-update race-safety pattern and the e-pin keyed-hash
+// lookup decision.
+// ---------------------------------------------------------------------------
+
+enum WalletTransactionDirection {
+  CREDIT
+  DEBIT
+}
+
+enum WalletTransactionType {
+  TOPUP
+  COMMISSION
+  PAYOUT
+  REFUND
+  REWARD
+  TRANSFER
+  ADJUSTMENT
+}
+
+/// One per user. `balance`/`pendingBalance` are cached projections, written
+/// only inside the same transaction as the WalletTransaction row that
+/// justifies them (ADR-0002) — never edited any other way. The `>= 0`
+/// invariant is enforced at the application layer via atomic conditional
+/// updates, not a DB CHECK constraint — see ADR-0015 and
+/// src/server/repositories/wallet/wallet-repository.ts.
+model Wallet {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ownerUserId    String   @unique @map("owner_user_id") @db.Uuid
+  balance        BigInt   @default(0)
+  pendingBalance BigInt   @default(0) @map("pending_balance")
+  currency       String   @default("INR") @db.Char(3)
+  /// scrypt(pin, salt) — see ADR-0015. Format: "<saltHex>:<hashHex>".
+  walletPinHash  String?  @map("wallet_pin_hash")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  owner          User                @relation(fields: [ownerUserId], references: [id])
+  transactions   WalletTransaction[]
+  payoutRequests PayoutRequest[]
+
+  @@map("wallets")
+}
+
+/// Insert-only — the single ledger for every balance-affecting event (ADR-0002).
+model WalletTransaction {
+  id             String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  walletId       String                     @map("wallet_id") @db.Uuid
+  direction      WalletTransactionDirection
+  /// Always positive — direction carries the sign, never the value.
+  amount         BigInt
+  type           WalletTransactionType
+  referenceType  String                     @map("reference_type")
+  referenceId    String                     @map("reference_id") @db.Uuid
+  idempotencyKey String                     @unique @map("idempotency_key")
+  /// Snapshot for reconciliation — the balance immediately after this entry applied.
+  balanceAfter   BigInt                     @map("balance_after")
+  createdAt      DateTime                   @default(now()) @map("created_at")
+
+  wallet Wallet @relation(fields: [walletId], references: [id])
+
+  @@index([walletId])
+  @@index([referenceType, referenceId])
+  // Matches listWalletTransactions' actual query shape (WHERE walletId = ?
+  // ORDER BY createdAt DESC, id ASC) — grows unbounded over a wallet's
+  // lifetime, so this composite index matters more here than most.
+  @@index([walletId, createdAt])
+  @@map("wallet_transactions")
+}
+
+enum PayoutStatus {
+  REQUESTED
+  APPROVED
+  REJECTED
+  PROCESSING
+  PAID
+  FAILED
+}
+
+/// `approvedBy` is enforced <> `requestedBy` at the application layer
+/// (Q-12's second-approver rule) — see commission/payout-service.ts.
+model PayoutRequest {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  walletId       String       @map("wallet_id") @db.Uuid
+  bankAccountId  String       @map("bank_account_id") @db.Uuid
+  amount         BigInt
+  status         PayoutStatus @default(REQUESTED)
+  requestedBy    String       @map("requested_by") @db.Uuid
+  approvedBy     String?      @map("approved_by") @db.Uuid
+  rejectedReason String?      @map("rejected_reason")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  wallet      Wallet             @relation(fields: [walletId], references: [id])
+  bankAccount BankAccount        @relation(fields: [bankAccountId], references: [id])
+  requester   User               @relation("PayoutRequester", fields: [requestedBy], references: [id])
+  approver    User?              @relation("PayoutApprover", fields: [approvedBy], references: [id])
+  transaction PayoutTransaction?
+
+  @@index([walletId])
+  @@index([status])
+  // listPayoutRequestsForWallet / listAllPayoutRequests both filter then
+  // ORDER BY createdAt DESC, id ASC — these composites serve the actual
+  // paginated queries directly instead of the planner falling back to the
+  // single-column indexes above plus a sort.
+  @@index([walletId, createdAt])
+  @@index([status, createdAt])
+  @@map("payout_requests")
+}
+
+model PayoutTransaction {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  payoutRequestId   String    @unique @map("payout_request_id") @db.Uuid
+  /// Manual bank-transfer UTR — automated provider integration left for a
+  /// later phase (Q-12); this field is where its reference would also go.
+  transferReference String?   @map("transfer_reference")
+  tdsDeducted       BigInt    @default(0) @map("tds_deducted")
+  netAmount         BigInt    @map("net_amount")
+  paidAt            DateTime? @map("paid_at")
+  recordedBy        String    @map("recorded_by") @db.Uuid
+  createdAt         DateTime  @default(now()) @map("created_at")
+
+  payoutRequest PayoutRequest @relation(fields: [payoutRequestId], references: [id])
+  recorder      User          @relation(fields: [recordedBy], references: [id])
+
+  @@map("payout_transactions")
+}
+
+enum SubscriptionPlanType {
+  YEARLY
+  TIME_BOUND
+  LIFETIME
+}
+
+/// Pricing/eligibility are fully configurable here — never hardcode a plan
+/// price or duration elsewhere. No real prices are seeded (Q-16 pending).
+model SubscriptionPlan {
+  id           String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code         String               @unique
+  type         SubscriptionPlanType
+  price        BigInt
+  currency     String               @default("INR") @db.Char(3)
+  /// Null for LIFETIME; required for YEARLY/TIME_BOUND.
+  durationDays Int?                 @map("duration_days")
+  benefits     Json?
+  active       Boolean              @default(true)
+  createdBy    String               @map("created_by") @db.Uuid
+  createdAt    DateTime             @default(now()) @map("created_at")
+  updatedAt    DateTime             @updatedAt @map("updated_at")
+  deletedAt    DateTime?            @map("deleted_at")
+
+  creator       User           @relation(fields: [createdBy], references: [id])
+  subscriptions Subscription[]
+  epins         Epin[]
+
+  @@map("subscription_plans")
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+model Subscription {
+  id        String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  memberId  String             @map("member_id") @db.Uuid
+  planId    String             @map("plan_id") @db.Uuid
+  startsAt  DateTime           @map("starts_at")
+  expiresAt DateTime?          @map("expires_at")
+  status    SubscriptionStatus @default(ACTIVE)
+  createdAt DateTime           @default(now()) @map("created_at")
+  updatedAt DateTime           @updatedAt @map("updated_at")
+
+  member          MemberProfile    @relation(fields: [memberId], references: [id])
+  plan            SubscriptionPlan @relation(fields: [planId], references: [id])
+  epinRedemptions EpinRedemption[]
+
+  @@index([memberId])
+  @@index([status])
+  @@map("subscriptions")
+}
+
+enum EpinStatus {
+  FRESH
+  USED
+  EXPIRED
+  REVOKED
+}
+
+/// `codeHash` is a deterministic HMAC, not a salted slow hash — see
+/// ADR-0015 for why e-pins specifically need direct lookup-by-code. The raw
+/// code is NEVER stored or logged; `codeLast4` is the only form shown in
+/// support/admin tooling (security.md §7).
+model Epin {
+  id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  codeHash    String     @unique @map("code_hash")
+  codeLast4   String     @map("code_last4")
+  planId      String     @map("plan_id") @db.Uuid
+  status      EpinStatus @default(FRESH)
+  price       BigInt
+  generatedBy String     @map("generated_by") @db.Uuid
+  expiresAt   DateTime?  @map("expires_at")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  plan       SubscriptionPlan @relation(fields: [planId], references: [id])
+  generator  User             @relation("EpinGenerator", fields: [generatedBy], references: [id])
+  redemption EpinRedemption?
+
+  @@index([status])
+  @@index([planId])
+  // searchEpins filters by status then ORDER BY createdAt DESC, id ASC.
+  @@index([status, createdAt])
+  @@map("epins")
+}
+
+/// `@@unique([epinId])` is the single-use guard.
+model EpinRedemption {
+  id                      String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  epinId                  String   @unique @map("epin_id") @db.Uuid
+  redeemedBy              String   @map("redeemed_by") @db.Uuid
+  redeemedAt              DateTime @default(now()) @map("redeemed_at")
+  resultingSubscriptionId String?  @map("resulting_subscription_id") @db.Uuid
+
+  epin                  Epin          @relation(fields: [epinId], references: [id])
+  redeemer              User          @relation("EpinRedeemer", fields: [redeemedBy], references: [id])
+  resultingSubscription Subscription? @relation(fields: [resultingSubscriptionId], references: [id])
+
+  @@index([redeemedBy])
+  @@map("epin_redemptions")
+}
+
+// ---------------------------------------------------------------------------
+// Phase 8: Razorpay payment integration. Column-level source of truth:
+// docs/database-tables.md §4 (payments/payment_events/payment_transactions),
+// reconciled with docs/adr/0016-razorpay-payment-integration.md for the
+// Checkout-keyed Payment decision and the dual-signature-path design.
+// ---------------------------------------------------------------------------
+
+enum PaymentPurpose {
+  ORDER
+  WALLET_TOPUP
+  EPIN_PURCHASE
+  SUBSCRIPTION
+}
+
+enum PaymentStatus {
+  CREATED
+  AUTHORIZED
+  CAPTURED
+  FAILED
+  REFUNDED
+}
+
+/// `checkoutId` (Phase 8 addition, replacing the original spec's singular
+/// `order_id`) — one Razorpay order covers every vendor-order split out of
+/// one checkout. See ADR-0016. A checkout may have more than one Payment
+/// row over time (a FAILED attempt followed by a retry, each with its own
+/// idempotencyKey) — never update one row's provider_order_id in place.
+model Payment {
+  id                String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  checkoutId        String?        @map("checkout_id") @db.Uuid
+  payerId           String         @map("payer_id") @db.Uuid
+  purpose           PaymentPurpose @default(ORDER)
+  provider          String         @default("RAZORPAY")
+  providerOrderId   String         @map("provider_order_id")
+  providerPaymentId String?        @map("provider_payment_id")
+  amount            BigInt
+  currency          String         @default("INR") @db.Char(3)
+  status            PaymentStatus  @default(CREATED)
+  idempotencyKey    String         @unique @map("idempotency_key")
+  createdAt         DateTime       @default(now()) @map("created_at")
+  updatedAt         DateTime       @updatedAt @map("updated_at")
+
+  checkout     Checkout?            @relation(fields: [checkoutId], references: [id])
+  payer        User                 @relation(fields: [payerId], references: [id])
+  events       PaymentEvent[]
+  transactions PaymentTransaction[]
+
+  @@index([checkoutId])
+  @@index([payerId])
+  @@index([providerOrderId])
+  @@map("payments")
+}
+
+/// Append-only (ADR-0002) — the raw webhook/callback evidence, every
+/// signature check this system ever performed, valid AND invalid (an
+/// invalid signature is still inserted, with signatureValid=false, never
+/// silently dropped — see ADR-0016).
+model PaymentEvent {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  provider       String
+  eventId        String    @map("event_id")
+  paymentId      String?   @map("payment_id") @db.Uuid
+  signatureValid Boolean   @map("signature_valid")
+  rawPayload     Json      @map("raw_payload")
+  processedAt    DateTime? @map("processed_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  payment Payment? @relation(fields: [paymentId], references: [id])
+
+  @@unique([provider, eventId])
+  @@index([paymentId])
+  @@map("payment_events")
+}
+
+enum PaymentTransactionType {
+  CAPTURE
+  REFUND
+}
+
+model PaymentTransaction {
+  id                String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  paymentId         String                 @map("payment_id") @db.Uuid
+  type              PaymentTransactionType
+  amount            BigInt
+  providerReference String?                @map("provider_reference")
+  createdAt         DateTime               @default(now()) @map("created_at")
+
+  payment Payment @relation(fields: [paymentId], references: [id])
+
+  @@index([paymentId])
+  @@map("payment_transactions")
+}
+
+// ---------------------------------------------------------------------------
+// Support, messaging, content and feedback (workflow doc weeks 7 and 10-11).
+// Permissions for all of these were already in the RBAC catalog.
+// ---------------------------------------------------------------------------
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum TicketPriority {
+  LOW
+  NORMAL
+  HIGH
+}
+
+/// A member's support request. `ticketNo` is the human-readable number shown
+/// in the UI (TKT-000123); the uuid `id` is what URLs and actions use.
+model SupportTicket {
+  id         String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ticketNo   Int            @unique @default(autoincrement()) @map("ticket_no")
+  userId     String         @map("user_id") @db.Uuid
+  subject    String
+  category   String?
+  priority   TicketPriority @default(NORMAL)
+  status     TicketStatus   @default(OPEN)
+  assignedTo String?        @map("assigned_to") @db.Uuid
+  createdAt  DateTime       @default(now()) @map("created_at")
+  updatedAt  DateTime       @updatedAt @map("updated_at")
+  closedAt   DateTime?      @map("closed_at")
+
+  user     User            @relation("TicketOwner", fields: [userId], references: [id])
+  assignee User?           @relation("TicketAssignee", fields: [assignedTo], references: [id])
+  messages TicketMessage[]
+
+  @@index([userId, status])
+  @@index([status, createdAt])
+  @@map("support_tickets")
+}
+
+/// Insert-only conversation entries on a ticket.
+model TicketMessage {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ticketId     String   @map("ticket_id") @db.Uuid
+  authorId     String   @map("author_id") @db.Uuid
+  body         String
+  isStaffReply Boolean  @default(false) @map("is_staff_reply")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  ticket SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  author User          @relation(fields: [authorId], references: [id])
+
+  @@index([ticketId, createdAt])
+  @@map("ticket_messages")
+}
+
+/// Internal messaging (workflow doc: Admin to Vendor, Vendor to Admin).
+/// Either `toUserId` is set (staff writing to one member) or `toStaff` is
+/// true (a member writing to the Just Reference team, visible to staff).
+model Message {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  fromUserId String    @map("from_user_id") @db.Uuid
+  toUserId   String?   @map("to_user_id") @db.Uuid
+  toStaff    Boolean   @default(false) @map("to_staff")
+  subject    String
+  body       String
+  readAt     DateTime? @map("read_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  from User  @relation("MessageSender", fields: [fromUserId], references: [id])
+  to   User? @relation("MessageRecipient", fields: [toUserId], references: [id])
+
+  @@index([toUserId, readAt])
+  @@index([toStaff, createdAt])
+  @@index([fromUserId, createdAt])
+  @@map("messages")
+}
+
+enum BlogStatus {
+  DRAFT
+  PUBLISHED
+}
+
+/// News / blog posts. Body is plain text (paragraphs separated by blank
+/// lines) and is always rendered as text, never as HTML.
+model BlogPost {
+  id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title       String
+  slug        String     @unique
+  excerpt     String?
+  body        String
+  status      BlogStatus @default(DRAFT)
+  publishedAt DateTime?  @map("published_at")
+  authorId    String     @map("author_id") @db.Uuid
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+  deletedAt   DateTime?  @map("deleted_at")
+
+  author User @relation("BlogAuthor", fields: [authorId], references: [id])
+
+  @@index([status, publishedAt])
+  @@map("blog_posts")
+}
+
+/// Feedback from the public "Feedback" form (anyone) or a signed-in member.
+model Feedback {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String?   @map("user_id") @db.Uuid
+  name       String
+  email      String
+  rating     Int?
+  message    String
+  reviewedAt DateTime? @map("reviewed_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([createdAt])
+  @@map("feedbacks")
+}
+
+// ---------------------------------------------------------------------------
+// Bidding and reverse auctions (GeM-style "bids"). A buyer posts a
+// requirement; approved vendors bid; the lowest total price (L1) is the
+// natural winner but the buyer awards. Money is integer paise throughout.
+// ---------------------------------------------------------------------------
+
+enum RequirementType {
+  /// Sealed bids: vendors see only their own offer until the deadline passes.
+  TENDER
+  /// Live reverse auction: vendors see their rank and the current L1 price and
+  /// may only lower their price; a late bid can extend the closing time.
+  REVERSE_AUCTION
+}
+
+enum RequirementStatus {
+  OPEN
+  CLOSED
+  AWARDED
+  CANCELLED
+}
+
+enum RequirementItemKind {
+  PRODUCT
+  SERVICE
+  PROJECT
+}
+
+enum BidStatus {
+  ACTIVE
+  WITHDRAWN
+  ACCEPTED
+  REJECTED
+}
+
+/// What a buyer wants to buy. `status` OPEN becomes effectively CLOSED once
+/// `closesAt` passes (derived at read time and persisted lazily), so a
+/// deadline never depends on a background job having run.
+model Requirement {
+  id                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  /// Display number is derived from this (REQ-000123).
+  reqSeq            BigInt              @unique @default(autoincrement()) @map("req_seq")
+  buyerId           String              @map("buyer_id") @db.Uuid
+  title             String
+  description       String
+  itemKind          RequirementItemKind @map("item_kind")
+  categoryLabel     String?             @map("category_label")
+  quantity          Int
+  unit              String              @default("units")
+  deliveryCity      String?             @map("delivery_city")
+  /// Optional ceiling/estimate in paise TOTAL, shown to bidders as the estimated value.
+  estimatedValue    BigInt?             @map("estimated_value")
+  type              RequirementType     @default(TENDER)
+  status            RequirementStatus   @default(OPEN)
+  closesAt          DateTime            @map("closes_at")
+  /// Reverse auction only: minimum price drop (paise per unit) a revision must make.
+  minDecrement      BigInt              @default(0) @map("min_decrement")
+  /// Reverse auction only: a bid in the last N minutes pushes the close out by N minutes (0 = off).
+  autoExtendMinutes Int                 @default(0) @map("auto_extend_minutes")
+  awardedBidId      String?             @unique @map("awarded_bid_id") @db.Uuid
+  cancelledReason   String?             @map("cancelled_reason")
+  createdAt         DateTime            @default(now()) @map("created_at")
+  updatedAt         DateTime            @updatedAt @map("updated_at")
+
+  buyer      User  @relation("RequirementBuyer", fields: [buyerId], references: [id])
+  bids       Bid[] @relation("RequirementBids")
+  awardedBid Bid?  @relation("AwardedBid", fields: [awardedBidId], references: [id])
+
+  @@index([status, closesAt])
+  @@index([buyerId, createdAt])
+  @@map("requirements")
+}
+
+/// One live offer per vendor per requirement (revisions are history rows).
+model Bid {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  requirementId String    @map("requirement_id") @db.Uuid
+  vendorId      String    @map("vendor_id") @db.Uuid
+  /// Paise per unit; `totalPrice` = unitPrice x quantity, computed server-side only.
+  unitPrice     BigInt    @map("unit_price")
+  totalPrice    BigInt    @map("total_price")
+  deliveryDays  Int       @map("delivery_days")
+  note          String?
+  status        BidStatus @default(ACTIVE)
+  /// When the CURRENT price was set — breaks ties (earlier at the same price ranks higher).
+  priceSetAt    DateTime  @default(now()) @map("price_set_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  requirement Requirement   @relation("RequirementBids", fields: [requirementId], references: [id])
+  awardedFor  Requirement?  @relation("AwardedBid")
+  vendor      VendorProfile @relation(fields: [vendorId], references: [id])
+  revisions   BidRevision[]
+
+  @@unique([requirementId, vendorId])
+  @@index([requirementId, totalPrice])
+  @@index([vendorId, createdAt])
+  @@map("bids")
+}
+
+/// Append-only price history of a bid (every submit and revision).
+model BidRevision {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  bidId        String   @map("bid_id") @db.Uuid
+  unitPrice    BigInt   @map("unit_price")
+  totalPrice   BigInt   @map("total_price")
+  deliveryDays Int      @map("delivery_days")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  bid Bid @relation(fields: [bidId], references: [id], onDelete: Cascade)
+
+  @@index([bidId, createdAt])
+  @@map("bid_revisions")
+}

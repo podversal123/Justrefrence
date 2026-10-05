@@ -1,0 +1,18 @@
+node_modules
+.next
+coverage
+playwright-report
+test-results
+prisma/generated
+src/generated
+docs
+README.md
+*.pdf
+*.docx
+*.jpeg
+*.jpg
+
+# Auto-installed by `prisma init` — vendor tool config, not our source.
+.agents/skills
+.windsurf/skills
+skills-lock.json

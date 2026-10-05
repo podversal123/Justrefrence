@@ -1,0 +1,23 @@
+# ADR-0012: Every account requires an email; mobile/WhatsApp OTP bridges to a session via a server-signed magic-link token
+
+## Status
+Accepted
+
+## Context
+Phase 4 asks for registration and login by Email, Mobile, and WhatsApp OTP. [ADR-0006](0006-auth-strategy.md) already established that mobile/WhatsApp OTP is a **custom flow layered on top of** Supabase Auth (Supabase's own native phone-OTP only works when Supabase itself sends the SMS through one of its directly-integrated providers — Twilio, MessageBird, Vonage — none of which is MSG91, the provider this project specified). That leaves an open question ADR-0006 didn't answer: once *we* (not Supabase) have verified a one-time code sent via MSG91, how do we actually establish a real Supabase session for that user?
+
+Verified against the installed `@supabase/auth-js` types (not assumed): `supabase.auth.admin.generateLink()` supports `signup | magiclink | invite | recovery | email_change_current | email_change_new | phone_change` — there is no phone-only variant that mints a session. `supabase.auth.verifyOtp()` accepts either a phone+SMS-code pair (only meaningful for OTPs Supabase itself generated and tracks) or `{ token_hash, type: EmailOtpType }` — and `magiclink` is a valid `EmailOtpType`. So the one supported "mint a session server-side, for an OTP flow the app itself controls" pathway that Supabase actually exposes an API contract for is: generate a magic-link token (email-bound) and redeem it.
+
+## Decision
+1. **Every account has an email**, collected at registration regardless of which channel (Email/SMS/WhatsApp) the person chooses to verify with. Email is never itself the *required verification channel* — a person who verifies via SMS never has to click an email link — it is only the Supabase Auth identity anchor.
+2. **Our own OTP flow governs Email, SMS, and WhatsApp identically** (one `otp_verifications` row shape, one rate-limit/expiry/retry policy — see `src/server/domain/identity/otp.ts`), rather than using Supabase's native email-OTP for the email channel and a different mechanism for SMS/WhatsApp. Consistency across all three was judged more valuable than getting Supabase's built-in email-OTP handling "for free," since the retry/expiry/rate-limit guarantees need to be identical and auditable across all three channels regardless.
+3. **After our own OTP verification succeeds** (any channel), the server mints the session via: `supabaseAdmin.auth.admin.generateLink({ type: "magiclink", email })` → take `properties.hashed_token` → `supabase.auth.verifyOtp({ token_hash, type: "magiclink" })` using the request-scoped server client (which writes the session cookie through the normal `@/lib/supabase/server` path). The person never sees an email or a link — this exchange happens entirely server-side inside the same request that processed their SMS/WhatsApp code.
+
+## Consequences
+- A mobile-first user still needs to supply an email at signup. This is a real, user-visible product constraint the client should be aware of — flagged here rather than silently designed around, consistent with this project's "don't invent requirements" discipline. If the client confirms phone-only accounts (no email at all) are a hard requirement, that needs a different Supabase Auth strategy entirely (e.g., a fully custom JWT issuer bypassing Supabase Auth for phone-only identities), which is a materially bigger change than this ADR covers.
+- Every OTP-driven session mint costs one extra Admin API round-trip (`generateLink`) beyond the OTP verification itself. Acceptable — this happens once per login/registration, not per request.
+- Because the bridge is keyed on `magiclink`, the generated link/token is never actually sent anywhere (no email is sent for this step) — `generateLink` only *creates* the token; nothing calls Supabase's email sender for it. Confirmed via the same type inspection: `generateLink` returns the token/link as data for the caller to use, it does not have a "send it" side effect on its own for the `magiclink` type.
+
+## Alternatives considered
+- **Use Supabase's native phone auth end-to-end** — rejected: requires configuring Supabase's own SMS provider, which doesn't support MSG91, contradicting the project's chosen provider (docs/environment.md, docs/notifications.md).
+- **Roll a fully custom JWT/session layer, bypassing Supabase Auth for phone-verified users** — rejected as disproportionate: it would mean maintaining two parallel auth systems (Supabase Auth for email/password + admin/vendor accounts, a custom one for phone-first members), doubling the RBAC/session-resolution surface for a problem the magic-link bridge already solves within Supabase Auth's existing guarantees.

@@ -1,0 +1,22 @@
+# Secrets and local state — never uploaded
+.env
+.env.*
+!.env.example
+
+# Client documents and reference screenshots at the repo root (confidential, not part of the app)
+/*.pdf
+/*.docx
+/*.jpeg
+/*.png
+
+# Dev tooling, tests, internal docs and one-off scripts are not needed to build or run the site
+.next
+node_modules
+.agents
+.windsurf
+.playwright-mcp
+playwright-report
+docs
+scripts
+tests
+tsconfig.tsbuildinfo

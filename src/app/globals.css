@@ -1,0 +1,309 @@
+/*
+ * Justreference design tokens.
+ *
+ * Brand reference: "Justreference Logo.jpeg" — a red (approx. #E0231F)
+ * globe/leaf "A" mark on white. --primary below is tuned to that red;
+ * --destructive is a deliberately different (more crimson) red so danger
+ * actions never read as "just another brand-colored button". Confirm the
+ * exact brand hex/Pantone with the client (see docs/business-rules.md,
+ * "Content" checklist item: logo + brand colours) before treating this as
+ * final — this is a Phase 1 foundation palette, not a signed-off brand kit.
+ *
+ * Phase 10 design system (added):
+ * - --success/--warning/--info are genuine semantic colors, not Tailwind
+ *   utility-picks. They exist so status/financial UI can distinguish
+ *   "good" (success, green), "needs attention" (warning, amber) and
+ *   "neutral/in progress" (info, blue) from the brand red, which is
+ *   reserved for brand chrome + destructive-adjacent emphasis. Before this,
+ *   StatusBadge mapped every "positive" status (ACTIVE, PAID, AVAILABLE...)
+ *   onto the brand-red badge variant, which reads as an alert in financial
+ *   UI, not a good outcome — that mapping is corrected alongside this.
+ * - Spacing: Tailwind v4's default scale is already 4px-based (spacing-1
+ *   = 4px ... spacing-8 = 32px), so it already satisfies the required
+ *   4/8/12/16/24/32 scale. No new spacing tokens were needed — the rule
+ *   going forward is to only use those six steps (plus spacing-0), never
+ *   arbitrary values like `px-[13px]`.
+ * - --size-touch (44px) backs a new `touch` Button size for public-site
+ *   and primary customer/vendor actions. Dense admin tables intentionally
+ *   keep the smaller `sm`/`default` button sizes (an accepted enterprise
+ *   data-density pattern) — 44px everywhere would bloat table rows, so
+ *   this is applied selectively, not globally.
+ * - --shadow-* tokens are deliberately few and subtle: elevation is used
+ *   for true overlays (popovers, drawers, toasts) only, never for flat
+ *   content cards, per the brief's "do not overuse cards" / "no excessive
+ *   gradients" direction. Default separation is a 1px border, not a shadow.
+ */
+
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-heading: var(--font-sans);
+  --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
+  --color-ink: var(--ink);
+  --color-ink-foreground: var(--ink-foreground);
+  --color-ink-soft: var(--ink-soft);
+  --color-marigold: var(--marigold);
+  --color-marigold-foreground: var(--marigold-foreground);
+  --font-sans: var(--font-sans);
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
+  --color-surface-sunken: var(--surface-sunken);
+  --size-touch: var(--size-touch);
+  --shadow-color: var(--shadow-color);
+  --text-display: var(--text-display);
+  --text-display--line-height: var(--text-display-line-height);
+  --text-eyebrow: var(--text-eyebrow);
+  --text-eyebrow--line-height: var(--text-eyebrow-line-height);
+  --text-eyebrow--letter-spacing: var(--text-eyebrow-letter-spacing);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  /* Palette: deep ink navy for structure, brand red for action, marigold for highlights, warm paper for surfaces. */
+  --ink: oklch(0.21 0.05 257);
+  --ink-soft: oklch(0.28 0.055 257);
+  --ink-foreground: oklch(0.97 0.01 257);
+  --marigold: oklch(0.83 0.15 82);
+  --marigold-foreground: oklch(0.25 0.06 70);
+  --background: oklch(0.985 0.004 85);
+  --foreground: oklch(0.2 0.03 257);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.17 0.005 285);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.17 0.005 285);
+  --primary: oklch(0.55 0.215 25);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.97 0.003 285);
+  --secondary-foreground: oklch(0.21 0.005 285);
+  --muted: oklch(0.965 0.006 85);
+  --muted-foreground: oklch(0.48 0.025 257);
+  --accent: oklch(0.96 0.02 25);
+  --accent-foreground: oklch(0.35 0.14 25);
+  --destructive: oklch(0.55 0.22 10);
+  --border: oklch(0.92 0.008 85);
+  --input: oklch(0.9 0.008 85);
+  --ring: oklch(0.55 0.215 25 / 0.5);
+  --brand: oklch(0.55 0.215 25);
+  --brand-foreground: oklch(0.99 0 0);
+  --success: oklch(0.52 0.15 150);
+  --warning: oklch(0.58 0.17 66);
+  --info: oklch(0.55 0.15 231);
+  --surface-sunken: oklch(0.97 0.008 85);
+  --size-touch: 2.75rem;
+  --shadow-color: oklch(0.2 0.05 257 / 0.1);
+  --text-display: 2.75rem;
+  --text-display-line-height: 1.1;
+  --text-eyebrow: 0.75rem;
+  --text-eyebrow-line-height: 1.2;
+  --text-eyebrow-letter-spacing: 0.08em;
+  --chart-1: oklch(0.55 0.215 25);
+  --chart-2: oklch(0.6 0.13 40);
+  --chart-3: oklch(0.5 0.01 285);
+  --chart-4: oklch(0.65 0.15 60);
+  --chart-5: oklch(0.4 0.02 285);
+  --radius: 0.75rem;
+  /* Dashboards: a dark ink sidebar gives every panel a strong, consistent identity. */
+  --sidebar: oklch(0.21 0.05 257);
+  --sidebar-foreground: oklch(0.93 0.015 257);
+  --sidebar-primary: oklch(0.6 0.21 25);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.3 0.06 257);
+  --sidebar-accent-foreground: oklch(0.99 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.7 0.15 25 / 0.5);
+}
+
+.dark {
+  --ink: oklch(0.14 0.03 257);
+  --ink-soft: oklch(0.2 0.04 257);
+  --ink-foreground: oklch(0.97 0.01 257);
+  --marigold: oklch(0.8 0.14 82);
+  --marigold-foreground: oklch(0.25 0.06 70);
+  --background: oklch(0.16 0.005 285);
+  --foreground: oklch(0.96 0.002 285);
+  --card: oklch(0.2 0.006 285);
+  --card-foreground: oklch(0.96 0.002 285);
+  --popover: oklch(0.2 0.006 285);
+  --popover-foreground: oklch(0.96 0.002 285);
+  --primary: oklch(0.62 0.2 25);
+  --primary-foreground: oklch(0.15 0 0);
+  --secondary: oklch(0.27 0.006 285);
+  --secondary-foreground: oklch(0.96 0.002 285);
+  --muted: oklch(0.27 0.006 285);
+  --muted-foreground: oklch(0.65 0.01 285);
+  --accent: oklch(0.3 0.05 25);
+  --accent-foreground: oklch(0.93 0.03 25);
+  --destructive: oklch(0.62 0.2 10);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.62 0.2 25 / 0.5);
+  --brand: oklch(0.62 0.2 25);
+  --brand-foreground: oklch(0.15 0 0);
+  --success: oklch(0.68 0.15 150);
+  --warning: oklch(0.74 0.15 70);
+  --info: oklch(0.68 0.14 231);
+  --surface-sunken: oklch(0.19 0.006 285);
+  --shadow-color: oklch(0 0 0 / 0.3);
+  --chart-1: oklch(0.62 0.2 25);
+  --chart-2: oklch(0.65 0.13 40);
+  --chart-3: oklch(0.65 0.01 285);
+  --chart-4: oklch(0.7 0.15 60);
+  --chart-5: oklch(0.55 0.02 285);
+  --sidebar: oklch(0.19 0.006 285);
+  --sidebar-foreground: oklch(0.96 0.002 285);
+  --sidebar-primary: oklch(0.62 0.2 25);
+  --sidebar-primary-foreground: oklch(0.15 0 0);
+  --sidebar-accent: oklch(0.3 0.05 25);
+  --sidebar-accent-foreground: oklch(0.93 0.03 25);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.62 0.2 25 / 0.5);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    text-rendering: optimizeLegibility;
+  }
+  html {
+    @apply font-sans antialiased;
+  }
+  h1 {
+    @apply text-2xl font-semibold tracking-tight text-balance;
+  }
+  h2 {
+    @apply text-xl font-semibold tracking-tight;
+  }
+  h3 {
+    @apply text-lg font-semibold tracking-tight;
+  }
+  h4 {
+    @apply text-base font-semibold;
+  }
+}
+
+@layer utilities {
+  /*
+   * Marketing-scale heading for the public site hero only — dashboard
+   * screens use h1/h2/h3 from @layer base above. Kept as a token-backed
+   * utility (not an arbitrary text-[2.75rem]) so the one "bigger than h1"
+   * size in the whole app stays singular and intentional.
+   */
+  .text-display {
+    @apply font-heading text-display font-semibold tracking-tight text-balance;
+  }
+
+  /* Small-caps-style section label (e.g. "FEATURED", "HOW IT WORKS"). */
+  .text-eyebrow {
+    @apply text-eyebrow text-primary font-semibold tracking-wide uppercase;
+  }
+
+  /* Reserved for overlays (popover/drawer/toast/menu) — never flat cards. */
+  .shadow-overlay-sm {
+    box-shadow: 0 2px 8px -2px var(--shadow-color);
+  }
+  .shadow-overlay-lg {
+    box-shadow: 0 16px 48px -12px var(--shadow-color);
+  }
+}
+
+
+/* ---- Portal design utilities ------------------------------------------------ */
+@utility surface-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 1px 2px oklch(0.2 0.05 257 / 0.05), 0 12px 28px -18px oklch(0.2 0.05 257 / 0.25);
+}
+
+@utility surface-lift {
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 4px oklch(0.2 0.05 257 / 0.06), 0 22px 40px -22px oklch(0.2 0.05 257 / 0.38);
+    border-color: color-mix(in oklch, var(--primary) 35%, var(--border));
+  }
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+    &:hover {
+      transform: none;
+    }
+  }
+}
+
+/* Subtle dotted grid used on dark hero/footer surfaces. */
+@utility bg-dots {
+  background-image: radial-gradient(oklch(1 0 0 / 0.09) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+
+/* Hero banner: slow "Ken Burns" push-in on the active photo, and a progress bar that fills while a slide is showing. */
+@keyframes hero-zoom {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.07);
+  }
+}
+@keyframes hero-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-zoom,
+  .hero-progress {
+    animation: none !important;
+  }
+}
