@@ -16,7 +16,6 @@ const COLUMNS: { heading: string; links: { href: string; label: string }[] }[] =
       { href: "/services", label: "Services" },
       { href: "/projects", label: "Projects" },
       { href: "/bids", label: "Bids and auctions" },
-      { href: "/cart", label: "Your cart" },
     ],
   },
   {
@@ -24,7 +23,6 @@ const COLUMNS: { heading: string; links: { href: string; label: string }[] }[] =
     links: [
       { href: "/register", label: "Create an account" },
       { href: "/login", label: "Sign in" },
-      { href: "/orders", label: "Track your orders" },
       { href: "/requirements/new", label: "Post a requirement" },
     ],
   },
@@ -32,9 +30,8 @@ const COLUMNS: { heading: string; links: { href: string; label: string }[] }[] =
     heading: "Vendors and partners",
     links: [
       { href: "/register", label: "Become a vendor" },
-      { href: "/my-bids", label: "Your bids" },
+      { href: "/bids", label: "Open bids to quote on" },
       { href: "/referrals", label: "Referral program" },
-      { href: "/wallet", label: "Wallet and payouts" },
     ],
   },
   {

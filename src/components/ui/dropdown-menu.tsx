@@ -52,15 +52,20 @@ function DropdownMenuGroup({ ...props }: MenuPrimitive.Group.Props) {
   return <MenuPrimitive.Group data-slot="dropdown-menu-group" {...props} />;
 }
 
+/**
+ * A plain heading inside the menu. Base UI's GroupLabel throws (error #31) when it is
+ * rendered outside a <DropdownMenuGroup>, which crashed the whole page in production
+ * for the header menus, so this renders a simple element that works anywhere.
+ */
 function DropdownMenuLabel({
   className,
   inset,
   ...props
-}: MenuPrimitive.GroupLabel.Props & {
+}: React.ComponentProps<"div"> & {
   inset?: boolean;
 }) {
   return (
-    <MenuPrimitive.GroupLabel
+    <div
       data-slot="dropdown-menu-label"
       data-inset={inset}
       className={cn(

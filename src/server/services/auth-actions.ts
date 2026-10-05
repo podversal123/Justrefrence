@@ -31,6 +31,9 @@ async function clientIp(): Promise<string | null> {
  * neither can be used to bypass the other's lockout.
  */
 
+/** audit_logs.entity_id is a uuid column; used when there is no account row to point at. */
+const NIL_UUID = "00000000-0000-0000-0000-000000000000";
+
 export async function loginAction(
   _prevState: unknown,
   formData: FormData,
@@ -61,7 +64,8 @@ export async function loginAction(
       actorId: null,
       action: "LOGIN_RATE_LIMITED",
       entityType: "users",
-      entityId: parsed.data.email,
+      entityId: NIL_UUID,
+      after: { attemptedEmail: parsed.data.email },
       ip,
     });
     return {
@@ -125,7 +129,10 @@ export async function loginAction(
       actorId: null,
       action: "LOGIN_FAILED",
       entityType: "users",
-      entityId: parsed.data.email,
+      // entity_id is a uuid column: use the account's id when the email matches one, otherwise
+      // the nil uuid (the attempted email goes in the snapshot, not the id column).
+      entityId: localUser?.id ?? NIL_UUID,
+      after: { attemptedEmail: parsed.data.email },
       ip,
     });
     return {
@@ -203,7 +210,8 @@ export async function forgotPasswordAction(
     actorId: null,
     action: "PASSWORD_RESET_REQUESTED",
     entityType: "users",
-    entityId: parsed.data.email,
+    entityId: NIL_UUID,
+    after: { attemptedEmail: parsed.data.email },
     ip,
   });
 
