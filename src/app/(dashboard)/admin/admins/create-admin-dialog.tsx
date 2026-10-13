@@ -1,9 +1,11 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
+import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
 import { AlertCircle, Plus } from "lucide-react";
 import { createAdminAction } from "@/server/services/admin-actions";
+import { FormGrid } from "@/components/ui/form-grid";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -64,7 +66,7 @@ export function CreateAdminDialog({
           </Button>
         }
       />
-      <DialogContent>
+      <DialogContent className="sm:max-w-xl">
         <form action={formAction} className="space-y-4" noValidate>
           <DialogHeader>
             <DialogTitle>Create admin account</DialogTitle>
@@ -80,31 +82,38 @@ export function CreateAdminDialog({
             </Alert>
           ) : null}
 
-          <div className="space-y-2">
-            <Label htmlFor="admin-email">Email</Label>
-            <Input id="admin-email" name="email" type="email" required />
-          </div>
+          <FormGrid>
+            <div className="space-y-2">
+              <Label htmlFor="admin-fullName">Full name</Label>
+              <Input id="admin-fullName" name="fullName" required />
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="admin-fullName">Full name</Label>
-            <Input id="admin-fullName" name="fullName" required />
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="admin-email">Email</Label>
+              <Input id="admin-email" name="email" type="email" required />
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="admin-roleId">Role</Label>
-            <Select name="roleId" required>
-              <SelectTrigger id="admin-roleId" className="w-full">
-                <SelectValue placeholder="Choose a role" />
-              </SelectTrigger>
-              <SelectContent>
-                {roles.map((role) => (
-                  <SelectItem key={role.id} value={role.id}>
-                    {role.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="admin-phone">Mobile (optional)</Label>
+              <Input id="admin-phone" name="phone" type="tel" placeholder="+919876543210" />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="admin-roleId">Role</Label>
+              <Select name="roleId" required>
+                <SelectTrigger id="admin-roleId" className="w-full">
+                  <SelectValue placeholder="Choose a role" />
+                </SelectTrigger>
+                <SelectContent>
+                  {roles.map((role) => (
+                    <SelectItem key={role.id} value={role.id}>
+                      {role.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </FormGrid>
 
           <DialogFooter>
             <SubmitButton />

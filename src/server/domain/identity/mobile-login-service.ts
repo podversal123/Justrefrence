@@ -65,7 +65,13 @@ export async function confirmMobileLoginOtp(
         lockedUntil: nextLockState.lockedUntil,
       },
     });
-    await recordAudit({ actorId: null, action: "LOGIN_FAILED", entityType: "users", entityId: user.id, ip });
+    await recordAudit({
+      actorId: null,
+      action: "LOGIN_FAILED",
+      entityType: "users",
+      entityId: user.id,
+      ip,
+    });
     throw error;
   }
 

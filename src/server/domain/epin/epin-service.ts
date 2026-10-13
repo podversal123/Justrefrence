@@ -69,7 +69,11 @@ export interface RedeemEpinResult {
 }
 
 /** Q-15: non-transferable — the redeeming account is permanently tied to this e-pin via the unique epin_id on epin_redemptions. */
-export async function redeemEpin(userId: string, memberId: string, rawCode: string): Promise<RedeemEpinResult> {
+export async function redeemEpin(
+  userId: string,
+  memberId: string,
+  rawCode: string,
+): Promise<RedeemEpinResult> {
   const key = getFieldEncryptionKey();
   const codeHash = hashEpinCode(rawCode, key);
   const epin = await findEpinByCodeHash(codeHash);
@@ -79,7 +83,9 @@ export async function redeemEpin(userId: string, memberId: string, rawCode: stri
   }
 
   if (epin.status === "FRESH" && epin.expiresAt && epin.expiresAt.getTime() <= Date.now()) {
-    await prisma.$transaction((tx) => updateEpinStatus(tx, epin.id, assertEpinTransition("FRESH", "EXPIRED", "SYSTEM")));
+    await prisma.$transaction((tx) =>
+      updateEpinStatus(tx, epin.id, assertEpinTransition("FRESH", "EXPIRED", "SYSTEM")),
+    );
     throw new ConflictError("This e-pin has expired.");
   }
 
@@ -98,7 +104,10 @@ export async function redeemEpin(userId: string, memberId: string, rawCode: stri
   }
 
   const startsAt = new Date();
-  const expiresAt = computeSubscriptionExpiry({ type: plan.type, durationDays: plan.durationDays }, startsAt);
+  const expiresAt = computeSubscriptionExpiry(
+    { type: plan.type, durationDays: plan.durationDays },
+    startsAt,
+  );
 
   assertEpinTransition("FRESH", "USED", "MEMBER"); // policy check — the actual race defense is tryClaimFreshEpin() below
 
@@ -111,8 +120,17 @@ export async function redeemEpin(userId: string, memberId: string, rawCode: stri
       throw new ConflictError("This e-pin has already been redeemed.");
     }
 
-    const subscription = await createSubscription(tx, { memberId, planId: plan.id, startsAt, expiresAt });
-    await createRedemption(tx, { epinId: epin.id, redeemedBy: userId, resultingSubscriptionId: subscription.id });
+    const subscription = await createSubscription(tx, {
+      memberId,
+      planId: plan.id,
+      startsAt,
+      expiresAt,
+    });
+    await createRedemption(tx, {
+      epinId: epin.id,
+      redeemedBy: userId,
+      resultingSubscriptionId: subscription.id,
+    });
 
     return subscription;
   });

@@ -1,3 +1,5 @@
+import { mobileSchema, optionalLandlineSchema } from "@/lib/schemas/contact";
+import { optionalGstinSchema, optionalPanSchema } from "@/lib/schemas/tax-ids";
 import { z } from "zod";
 import { VendorApprovalStatus } from "@/generated/prisma/enums";
 
@@ -11,6 +13,7 @@ export const createVendorSchema = z.object({
   email: z.string().trim().toLowerCase().email("Enter a valid email address."),
   businessName: z.string().trim().min(2, "Enter a business name.").max(200),
   fullName: z.string().trim().min(2, "Enter the contact person's name.").max(200),
+  phone: mobileSchema,
 });
 export type CreateVendorInput = z.infer<typeof createVendorSchema>;
 
@@ -33,8 +36,17 @@ export type UpdateVendorStatusInput = z.infer<typeof updateVendorStatusSchema>;
 
 export const updateVendorProfileSchema = z.object({
   businessName: z.string().trim().min(2, "Enter a business name.").max(200),
+  phone: mobileSchema,
+  telephone: optionalLandlineSchema,
+  gstin: optionalGstinSchema,
+  pan: optionalPanSchema,
 });
 export type UpdateVendorProfileInput = z.infer<typeof updateVendorProfileSchema>;
+
+/** An admin editing a vendor's details: the same fields the vendor can edit, plus which vendor. */
+export const adminUpdateVendorSchema = updateVendorProfileSchema.extend({
+  vendorProfileId: z.string().uuid(),
+});
 
 export const vendorListQuerySchema = z.object({
   search: z.string().trim().max(200).optional(),

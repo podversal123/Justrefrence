@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
+import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
 import { AlertCircle, CheckCircle2, Minus, Plus } from "lucide-react";
 import { addToCartAction } from "@/server/services/cart-actions";
@@ -64,12 +65,7 @@ export function AddToCartForm({
           >
             <Minus />
           </Button>
-          <Input
-            className="w-16 text-center"
-            value={qty}
-            readOnly
-            aria-label="Quantity"
-          />
+          <Input className="w-16 text-center" value={qty} readOnly aria-label="Quantity" />
           <Button
             type="button"
             variant="outline"

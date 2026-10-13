@@ -23,7 +23,10 @@ const PRESET_DAYS: Record<Exclude<DateRangePreset, "ALL">, number> = {
   "90D": 90,
 };
 
-export function resolveDateRange(preset: DateRangePreset, now: Date = new Date()): ResolvedDateRange {
+export function resolveDateRange(
+  preset: DateRangePreset,
+  now: Date = new Date(),
+): ResolvedDateRange {
   if (preset === "ALL") {
     return { from: null, to: now, preset };
   }
@@ -36,7 +39,9 @@ export function enumerateDayBuckets(range: ResolvedDateRange, maxDays = 90): str
   const from = range.from ?? new Date(range.to.getTime() - maxDays * 24 * 60 * 60 * 1000);
   const days: string[] = [];
   const cursor = new Date(Date.UTC(from.getUTCFullYear(), from.getUTCMonth(), from.getUTCDate()));
-  const end = new Date(Date.UTC(range.to.getUTCFullYear(), range.to.getUTCMonth(), range.to.getUTCDate()));
+  const end = new Date(
+    Date.UTC(range.to.getUTCFullYear(), range.to.getUTCMonth(), range.to.getUTCDate()),
+  );
 
   while (cursor.getTime() <= end.getTime() && days.length < maxDays) {
     days.push(cursor.toISOString().slice(0, 10));

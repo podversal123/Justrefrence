@@ -34,6 +34,9 @@ export function maskBankAccountNumber(accountNo: string): string {
 }
 
 /** Masks whichever destination type a given OTP channel implies. */
-export function maskDestination(destination: string, channel: "EMAIL" | "SMS" | "WHATSAPP"): string {
+export function maskDestination(
+  destination: string,
+  channel: "EMAIL" | "SMS" | "WHATSAPP",
+): string {
   return channel === "EMAIL" ? maskEmail(destination) : maskPhone(destination);
 }

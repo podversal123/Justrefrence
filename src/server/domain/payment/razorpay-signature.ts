@@ -38,7 +38,11 @@ export function verifyCheckoutSignature(
  * parsed JSON — whitespace/key-order changes would break verification)
  * keyed by RAZORPAY_WEBHOOK_SECRET, sent in the `X-Razorpay-Signature` header.
  */
-export function verifyWebhookSignature(rawBody: string, signature: string, webhookSecret: string): boolean {
+export function verifyWebhookSignature(
+  rawBody: string,
+  signature: string,
+  webhookSecret: string,
+): boolean {
   const expected = hmacHex(webhookSecret, rawBody);
   return safeEqualHex(expected, signature);
 }

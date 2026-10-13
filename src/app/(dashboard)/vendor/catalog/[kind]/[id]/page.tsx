@@ -55,7 +55,7 @@ export default async function VendorListingDetailPage({ params }: PageProps) {
   const canDelete = session.permissions.has(CATALOG_PERMISSIONS[kind].delete);
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1>{listing.title}</h1>

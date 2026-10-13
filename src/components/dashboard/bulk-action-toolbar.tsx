@@ -37,9 +37,7 @@ export function BulkActionToolbar({
         <Button variant="ghost" size="icon-sm" onClick={onClear} aria-label="Clear selection">
           <X />
         </Button>
-        <span className="text-sm font-medium">
-          {count} selected
-        </span>
+        <span className="text-sm font-medium">{count} selected</span>
       </div>
       <div className="flex items-center gap-2">{actions}</div>
     </div>

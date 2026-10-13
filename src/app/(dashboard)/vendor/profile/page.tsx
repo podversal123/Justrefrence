@@ -1,19 +1,13 @@
+import { StatusBadge } from "@/components/ui/status-badge";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getAuthSession } from "@/server/auth/session";
 import { getVendorProfileByUserId } from "@/server/repositories/vendor-repository";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { VendorProfileForm } from "./vendor-profile-form";
+import { KycDocumentsCard } from "@/components/kyc/kyc-documents-card";
 
 export const metadata: Metadata = { title: "My vendor profile" };
-
-const STATUS_VARIANT = {
-  APPROVED: "default",
-  PENDING: "secondary",
-  REJECTED: "destructive",
-  SUSPENDED: "destructive",
-} as const;
 
 export default async function VendorProfilePage() {
   const session = await getAuthSession();
@@ -27,7 +21,7 @@ export default async function VendorProfilePage() {
   if (!vendorProfile) redirect("/unauthorized");
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
       <div>
         <h1>My vendor profile</h1>
         <p className="text-muted-foreground">
@@ -41,14 +35,22 @@ export default async function VendorProfilePage() {
             <CardTitle>Business profile</CardTitle>
             <CardDescription>Status is managed by an admin.</CardDescription>
           </div>
-          <Badge variant={STATUS_VARIANT[vendorProfile.approvalStatus]}>
-            {vendorProfile.approvalStatus}
-          </Badge>
+          <StatusBadge status={vendorProfile.approvalStatus} />
         </CardHeader>
         <CardContent>
-          <VendorProfileForm businessName={vendorProfile.businessName} />
+          <VendorProfileForm
+            values={{
+              businessName: vendorProfile.businessName,
+              phone: vendorProfile.phone,
+              telephone: vendorProfile.telephone,
+              gstin: vendorProfile.gstin,
+              pan: vendorProfile.pan,
+            }}
+          />
         </CardContent>
       </Card>
+
+      <KycDocumentsCard ownerUserId={session.userId} isVendor title="Business documents" />
 
       {vendorProfile.approvalStatus === "REJECTED" && vendorProfile.rejectedReason ? (
         <Card>

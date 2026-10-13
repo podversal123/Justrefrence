@@ -22,6 +22,11 @@ vi.mock("@/server/repositories/vendor-repository", () => ({
   getVendorProfileByUserId: mockGetVendorProfileByUserId,
 }));
 
+vi.mock("@/server/domain/approvals/change-service", () => ({
+  submitChange: vi.fn(),
+  reviewChange: vi.fn(),
+}));
+
 const mockAuthorize = vi.fn();
 vi.mock("@/server/auth/authorize", () => ({ authorize: mockAuthorize }));
 
@@ -102,7 +107,12 @@ describe("createVendorAction", () => {
 
     const result = await createVendorAction(
       undefined,
-      formData({ email: "v@example.com", businessName: "Acme", fullName: "Jane" }),
+      formData({
+        email: "v@example.com",
+        businessName: "Acme",
+        fullName: "Jane",
+        phone: "+919876543210",
+      }),
     );
 
     expect(result.success).toBe(false);
@@ -118,7 +128,12 @@ describe("createVendorAction", () => {
 
     const result = await createVendorAction(
       undefined,
-      formData({ email: "v@example.com", businessName: "Acme", fullName: "Jane" }),
+      formData({
+        email: "v@example.com",
+        businessName: "Acme",
+        fullName: "Jane",
+        phone: "+919876543210",
+      }),
     );
 
     expect(result.success).toBe(true);
@@ -135,7 +150,12 @@ describe("createVendorAction", () => {
 
     const result = await createVendorAction(
       undefined,
-      formData({ email: "v@example.com", businessName: "Acme", fullName: "Jane" }),
+      formData({
+        email: "v@example.com",
+        businessName: "Acme",
+        fullName: "Jane",
+        phone: "+919876543210",
+      }),
     );
 
     expect(result.success).toBe(false);
@@ -244,12 +264,17 @@ describe("updateVendorProfileAction — cross-vendor access", () => {
       id: "vendor-a-profile",
       userId: "vendor-a-user",
       businessName: "Old Name",
+      phone: null,
+      telephone: null,
+      gstin: null,
+      pan: null,
     });
 
     // A tampering attempt: the form includes a foreign vendorProfileId, but
     // the action never reads that field — see src/server/services/vendor-actions.ts.
     const tamperedForm = formData({
       businessName: "New Name",
+      phone: "+919876543210",
       vendorProfileId: "vendor-b-profile",
     });
 
@@ -261,7 +286,13 @@ describe("updateVendorProfileAction — cross-vendor access", () => {
     expect(mockGetVendorProfileByUserId).not.toHaveBeenCalledWith("vendor-b-profile");
     expect(prismaMock.vendorProfile.update).toHaveBeenCalledWith({
       where: { id: "vendor-a-profile" },
-      data: { businessName: "New Name" },
+      data: {
+        businessName: "New Name",
+        phone: "+919876543210",
+        telephone: null,
+        gstin: null,
+        pan: null,
+      },
     });
     // Vendor B's profile is never touched.
     expect(prismaMock.vendorProfile.update).not.toHaveBeenCalledWith(
@@ -275,7 +306,7 @@ describe("updateVendorProfileAction — cross-vendor access", () => {
 
     const result = await updateVendorProfileAction(
       undefined,
-      formData({ businessName: "New Name" }),
+      formData({ businessName: "New Name", phone: "+919876543210" }),
     );
 
     expect(result.success).toBe(false);

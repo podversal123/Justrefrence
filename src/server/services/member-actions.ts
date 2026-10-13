@@ -291,6 +291,7 @@ export async function updateMemberDetailsAction(
     gstin: formData.get("gstin") || undefined,
     websiteUrl: formData.get("websiteUrl") || undefined,
     socialLinks: formData.get("socialLinks") || undefined,
+    telephone: formData.get("telephone") || undefined,
   });
 
   if (!parsed.success) {
@@ -312,6 +313,7 @@ export async function updateMemberDetailsAction(
     gstin: parsed.data.gstin,
     websiteUrl: parsed.data.websiteUrl,
     socialLinks: parsed.data.socialLinks,
+    telephone: parsed.data.telephone,
   });
 
   await recordAudit({
@@ -346,6 +348,7 @@ export async function upsertAddressAction(
     state: formData.get("state"),
     postalCode: formData.get("postalCode"),
     country: formData.get("country") || "IN",
+    phone: formData.get("phone") || undefined,
   });
 
   if (!parsed.success) {

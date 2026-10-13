@@ -26,15 +26,27 @@ export function OrderStatusChart({ data }: { data: StatusCount[] }) {
     <Card>
       <CardHeader>
         <CardTitle className="text-base">Orders by status</CardTitle>
-        <CardDescription>{total} order{total === 1 ? "" : "s"} in this period.</CardDescription>
+        <CardDescription>
+          {total} order{total === 1 ? "" : "s"} in this period.
+        </CardDescription>
       </CardHeader>
       <CardContent className="h-64">
         {total > 0 ? (
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
-              <Pie data={data} dataKey="count" nameKey="status" innerRadius="55%" outerRadius="80%" paddingAngle={2}>
+              <Pie
+                data={data}
+                dataKey="count"
+                nameKey="status"
+                innerRadius="55%"
+                outerRadius="80%"
+                paddingAngle={2}
+              >
                 {data.map((entry) => (
-                  <Cell key={entry.status} fill={STATUS_COLORS[entry.status] ?? "var(--muted-foreground)"} />
+                  <Cell
+                    key={entry.status}
+                    fill={STATUS_COLORS[entry.status] ?? "var(--muted-foreground)"}
+                  />
                 ))}
               </Pie>
               <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />

@@ -68,7 +68,10 @@ export async function updateEpinStatus(tx: Tx, id: string, status: EpinStatus) {
  * second's WHERE no longer matches. See ADR-0015 and epin-service.ts.
  */
 export async function tryClaimFreshEpin(tx: Tx, id: string): Promise<boolean> {
-  const result = await tx.epin.updateMany({ where: { id, status: "FRESH" }, data: { status: "USED" } });
+  const result = await tx.epin.updateMany({
+    where: { id, status: "FRESH" },
+    data: { status: "USED" },
+  });
   return result.count > 0;
 }
 

@@ -22,7 +22,9 @@ vi.mock("@/server/domain/audit/record", () => ({ recordAudit: mockRecordAudit })
 
 const mockSendEmail = vi.fn().mockResolvedValue({ provider: "console-email", delivered: true });
 const mockSendSms = vi.fn().mockResolvedValue({ provider: "console-sms", delivered: true });
-const mockSendWhatsApp = vi.fn().mockResolvedValue({ provider: "console-whatsapp", delivered: true });
+const mockSendWhatsApp = vi
+  .fn()
+  .mockResolvedValue({ provider: "console-whatsapp", delivered: true });
 vi.mock("@/server/lib/notification-providers", () => ({
   sendEmail: mockSendEmail,
   sendSms: mockSendSms,
@@ -38,7 +40,11 @@ const mockGenerateLink = vi.fn().mockResolvedValue({
 vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: vi.fn(() => ({
     auth: {
-      admin: { createUser: mockCreateUser, deleteUser: mockDeleteUser, generateLink: mockGenerateLink },
+      admin: {
+        createUser: mockCreateUser,
+        deleteUser: mockDeleteUser,
+        generateLink: mockGenerateLink,
+      },
     },
   })),
 }));
@@ -261,19 +267,31 @@ describe("confirmRegistrationAction", () => {
       referralCode: "JR-000001",
     });
 
-    await confirmRegistrationAction(undefined, formData({ userId: "11111111-1111-4111-8111-111111111111", code: "123456" }));
+    await confirmRegistrationAction(
+      undefined,
+      formData({ userId: "11111111-1111-4111-8111-111111111111", code: "123456" }),
+    );
 
     expect(mockConsumeOtp).toHaveBeenCalledWith("otp-1");
     expect(prismaMock.user.update).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: "11111111-1111-4111-8111-111111111111" }, data: expect.objectContaining({ status: "ACTIVE" }) }),
+      expect.objectContaining({
+        where: { id: "11111111-1111-4111-8111-111111111111" },
+        data: expect.objectContaining({ status: "ACTIVE" }),
+      }),
     );
     expect(mockCreateMemberProfile).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ userId: "11111111-1111-4111-8111-111111111111", referredByUserId: null }),
+      expect.objectContaining({
+        userId: "11111111-1111-4111-8111-111111111111",
+        referredByUserId: null,
+      }),
     );
     expect(mockCreateReferralRelationship).not.toHaveBeenCalled();
     expect(mockGenerateLink).toHaveBeenCalledWith({ type: "magiclink", email: "jane@example.com" });
-    expect(mockVerifyOtp).toHaveBeenCalledWith({ token_hash: "hashed-token-123", type: "magiclink" });
+    expect(mockVerifyOtp).toHaveBeenCalledWith({
+      token_hash: "hashed-token-123",
+      type: "magiclink",
+    });
     expect(mockRedirect).toHaveBeenCalledWith("/dashboard");
   });
 
@@ -303,12 +321,19 @@ describe("confirmRegistrationAction", () => {
 
     await confirmRegistrationAction(
       undefined,
-      formData({ userId: "11111111-1111-4111-8111-111111111111", code: "123456", referralCode: "jr-000042" }),
+      formData({
+        userId: "11111111-1111-4111-8111-111111111111",
+        code: "123456",
+        referralCode: "jr-000042",
+      }),
     );
 
     expect(mockCreateMemberProfile).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ userId: "11111111-1111-4111-8111-111111111111", referredByUserId: "referrer-user-1" }),
+      expect.objectContaining({
+        userId: "11111111-1111-4111-8111-111111111111",
+        referredByUserId: "referrer-user-1",
+      }),
     );
     expect(mockCreateReferralRelationship).toHaveBeenCalledWith(
       expect.anything(),

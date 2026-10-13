@@ -19,7 +19,11 @@ import {
   listRecentOrders,
   type OrderListQuery,
 } from "@/server/repositories/dashboard/dashboard-repository";
-import { enumerateDayBuckets, resolveDateRange, type DateRangePreset } from "@/server/domain/dashboard/date-range";
+import {
+  enumerateDayBuckets,
+  resolveDateRange,
+  type DateRangePreset,
+} from "@/server/domain/dashboard/date-range";
 
 export async function getAdminDashboardData(preset: DateRangePreset, orderQuery: OrderListQuery) {
   const range = resolveDateRange(preset);

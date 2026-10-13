@@ -26,6 +26,12 @@ vi.mock("@/server/domain/audit/record", () => ({ recordAudit: mockRecordAudit })
 const mockAuthorize = vi.fn();
 vi.mock("@/server/auth/authorize", () => ({ authorize: mockAuthorize }));
 
+const mockSubmitChange = vi.fn();
+vi.mock("@/server/domain/approvals/change-service", () => ({
+  submitChange: mockSubmitChange,
+  reviewChange: vi.fn(),
+}));
+
 const mockUploadCatalogImage = vi.fn();
 const mockDeleteCatalogImage = vi.fn();
 vi.mock("@/server/lib/image-upload", () => ({
@@ -275,15 +281,15 @@ describe("updateListingAction — cross-vendor access (Phase 3 brief)", () => {
     );
   });
 
-  it("staff (admin) can update any vendor's listing", async () => {
+  it("an Admin's edit to a vendor's listing becomes a request: the live listing is not touched", async () => {
     mockAuthorize.mockResolvedValue(adminSession());
     repoMock.getById.mockResolvedValue({
       id: LISTING_ID,
       vendorId: "vendor-b-profile",
       title: "Old title",
-      approvalStatus: "PENDING",
+      approvalStatus: "APPROVED",
     });
-    repoMock.update.mockResolvedValue({ id: LISTING_ID });
+    mockSubmitChange.mockResolvedValue({ mode: "SUBMITTED", requestId: "req-1" });
 
     const result = await updateListingAction(
       undefined,
@@ -297,6 +303,51 @@ describe("updateListingAction — cross-vendor access (Phase 3 brief)", () => {
     );
 
     expect(result.success).toBe(true);
+    if (result.success) expect(result.data).toEqual({ pendingApproval: true });
+    expect(repoMock.update).not.toHaveBeenCalled();
+    expect(mockSubmitChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entityType: "PRODUCT",
+        entityId: LISTING_ID,
+        actorId: "admin-1",
+        canApplyDirect: false,
+        proposed: expect.objectContaining({ title: "New title", price: "100000" }),
+      }),
+    );
+  });
+
+  it("a Super Admin's edit is applied through the same path with direct rights", async () => {
+    mockAuthorize.mockResolvedValue(
+      adminSession({
+        userId: "super-1",
+        roles: ["SUPER_ADMIN"],
+        permissions: new Set<Permission>(["product:update", "change:apply_direct"]),
+      }),
+    );
+    repoMock.getById.mockResolvedValue({
+      id: LISTING_ID,
+      vendorId: "vendor-b-profile",
+      title: "Old title",
+      approvalStatus: "APPROVED",
+    });
+    mockSubmitChange.mockResolvedValue({ mode: "APPLIED" });
+
+    const result = await updateListingAction(
+      undefined,
+      formData({
+        kind: "PRODUCT",
+        id: LISTING_ID,
+        categoryId: CAT_ID,
+        title: "New title",
+        price: "1000",
+      }),
+    );
+
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data).toBeNull();
+    expect(mockSubmitChange).toHaveBeenCalledWith(
+      expect.objectContaining({ actorId: "super-1", canApplyDirect: true }),
+    );
   });
 });
 

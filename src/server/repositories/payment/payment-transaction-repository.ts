@@ -18,5 +18,8 @@ export async function createPaymentTransaction(
 }
 
 export async function listTransactionsForPayment(paymentId: string) {
-  return prisma.paymentTransaction.findMany({ where: { paymentId }, orderBy: { createdAt: "asc" } });
+  return prisma.paymentTransaction.findMany({
+    where: { paymentId },
+    orderBy: { createdAt: "asc" },
+  });
 }

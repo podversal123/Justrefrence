@@ -1,9 +1,10 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { updateMemberDetailsAction } from "@/server/services/member-actions";
+import { FULL_ROW, FormGrid } from "@/components/ui/form-grid";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,6 +36,7 @@ export function MemberDetailsForm({
   gstin,
   websiteUrl,
   socialLinks,
+  telephone,
 }: {
   fullName: string | null;
   dob: Date | null;
@@ -42,6 +44,7 @@ export function MemberDetailsForm({
   gstin: string | null;
   websiteUrl: string | null;
   socialLinks: string | null;
+  telephone: string | null;
 }) {
   const [state, formAction] = useActionState(updateMemberDetailsAction, initialState);
   const submitted = state !== initialState;
@@ -63,43 +66,58 @@ export function MemberDetailsForm({
 
       <input type="hidden" name="fullName" value={fullName ?? ""} />
 
-      <div className="space-y-2">
-        <Label htmlFor="dob">Date of birth</Label>
-        <Input id="dob" name="dob" type="date" defaultValue={toDateInputValue(dob)} />
-      </div>
+      <FormGrid>
+        <div className="space-y-2">
+          <Label htmlFor="dob">Date of birth</Label>
+          <Input id="dob" name="dob" type="date" defaultValue={toDateInputValue(dob)} />
+        </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="pan">PAN</Label>
-        <Input id="pan" name="pan" defaultValue={pan ?? ""} placeholder="ABCDE1234F" />
-        {pan ? <p className="text-muted-foreground text-xs">Currently on file: {maskPan(pan)}</p> : null}
-      </div>
+        <div className="space-y-2">
+          <Label htmlFor="pan">PAN</Label>
+          <Input id="pan" name="pan" defaultValue={pan ?? ""} placeholder="ABCDE1234F" />
+          {pan ? (
+            <p className="text-muted-foreground text-xs">Currently on file: {maskPan(pan)}</p>
+          ) : null}
+        </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="gstin">GSTIN</Label>
-        <Input id="gstin" name="gstin" defaultValue={gstin ?? ""} placeholder="29ABCDE1234F1Z5" />
-      </div>
+        <div className="space-y-2">
+          <Label htmlFor="gstin">GSTIN</Label>
+          <Input id="gstin" name="gstin" defaultValue={gstin ?? ""} placeholder="29ABCDE1234F1Z5" />
+        </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="websiteUrl">Website</Label>
-        <Input
-          id="websiteUrl"
-          name="websiteUrl"
-          type="url"
-          defaultValue={websiteUrl ?? ""}
-          placeholder="https://example.com"
-        />
-      </div>
+        <div className="space-y-2">
+          <Label htmlFor="telephone">Telephone (optional)</Label>
+          <Input
+            id="telephone"
+            name="telephone"
+            type="tel"
+            defaultValue={telephone ?? ""}
+            placeholder="011-23456789"
+          />
+        </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="socialLinks">Social links</Label>
-        <Textarea
-          id="socialLinks"
-          name="socialLinks"
-          defaultValue={socialLinks ?? ""}
-          placeholder="One link per line"
-          rows={3}
-        />
-      </div>
+        <div className={`space-y-2 ${FULL_ROW}`}>
+          <Label htmlFor="websiteUrl">Website</Label>
+          <Input
+            id="websiteUrl"
+            name="websiteUrl"
+            type="url"
+            defaultValue={websiteUrl ?? ""}
+            placeholder="https://example.com"
+          />
+        </div>
+
+        <div className={`space-y-2 ${FULL_ROW}`}>
+          <Label htmlFor="socialLinks">Social links</Label>
+          <Textarea
+            id="socialLinks"
+            name="socialLinks"
+            defaultValue={socialLinks ?? ""}
+            placeholder="One link per line"
+            rows={2}
+          />
+        </div>
+      </FormGrid>
 
       <SubmitButton />
     </form>

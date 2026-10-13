@@ -1,6 +1,14 @@
 "use client";
 
-import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatPaise } from "@/lib/money";
 
@@ -15,7 +23,10 @@ function shortDay(day: string): string {
 }
 
 export function RevenueChart({ data }: { data: RevenuePoint[] }) {
-  const chartData = data.map((d) => ({ day: shortDay(d.day), amountRupees: Number(d.amount) / 100 }));
+  const chartData = data.map((d) => ({
+    day: shortDay(d.day),
+    amountRupees: Number(d.amount) / 100,
+  }));
   const hasAnyRevenue = chartData.some((d) => d.amountRupees > 0);
 
   return (
@@ -35,7 +46,13 @@ export function RevenueChart({ data }: { data: RevenuePoint[] }) {
                 </linearGradient>
               </defs>
               <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-border" />
-              <XAxis dataKey="day" tickLine={false} axisLine={false} fontSize={11} minTickGap={24} />
+              <XAxis
+                dataKey="day"
+                tickLine={false}
+                axisLine={false}
+                fontSize={11}
+                minTickGap={24}
+              />
               <YAxis
                 tickLine={false}
                 axisLine={false}

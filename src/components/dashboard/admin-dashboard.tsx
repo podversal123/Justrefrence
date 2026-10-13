@@ -14,6 +14,7 @@ import {
   ClipboardCheck,
 } from "lucide-react";
 import { getAdminDashboardData } from "@/server/domain/dashboard/dashboard-service";
+import { countTicketsByStatus } from "@/server/repositories/support/ticket-repository";
 import { isDateRangePreset, type DateRangePreset } from "@/server/domain/dashboard/date-range";
 import { formatPaise } from "@/lib/money";
 import { StatCard } from "./stat-card";
@@ -44,18 +45,34 @@ const WIDGETS = [
   { id: "wallet-activity-chart", label: "Wallet activity chart" },
 ];
 
-export async function AdminDashboard({ searchParams }: { searchParams: Record<string, string | undefined> }) {
-  const range: DateRangePreset = isDateRangePreset(searchParams["range"]) ? searchParams["range"] : "30D";
+export async function AdminDashboard({
+  searchParams,
+}: {
+  searchParams: Record<string, string | undefined>;
+}) {
+  const range: DateRangePreset = isDateRangePreset(searchParams["range"])
+    ? searchParams["range"]
+    : "30D";
   const search = searchParams["search"];
   const status = searchParams["status"];
   const cursor = searchParams["cursor"];
 
   const data = await getAdminDashboardData(range, { search, status, cursor, limit: 10 });
+  // Support ticket counts are a nice-to-have on this page: never let them break the dashboard.
+  const ticketCounts = await countTicketsByStatus().catch(() => null);
+  const openTickets = ticketCounts
+    ? (ticketCounts.OPEN ?? 0) + (ticketCounts.IN_PROGRESS ?? 0)
+    : null;
 
-  const availableCommission = data.commissionSummary.find((c) => c.status === "AVAILABLE")?.totalAmount ?? 0n;
-  const pendingCommission = data.commissionSummary.find((c) => c.status === "PENDING")?.totalAmount ?? 0n;
+  const availableCommission =
+    data.commissionSummary.find((c) => c.status === "AVAILABLE")?.totalAmount ?? 0n;
+  const pendingCommission =
+    data.commissionSummary.find((c) => c.status === "PENDING")?.totalAmount ?? 0n;
 
-  const revenueSeries = data.revenueSeries.map((d) => ({ day: d.day, amount: d.amount.toString() }));
+  const revenueSeries = data.revenueSeries.map((d) => ({
+    day: d.day,
+    amount: d.amount.toString(),
+  }));
   const walletSeries = data.walletSeries.map((d) => ({
     day: d.day,
     credits: d.credits.toString(),
@@ -78,10 +95,18 @@ export async function AdminDashboard({ searchParams }: { searchParams: Record<st
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           <Widget id="total-members">
-            <StatCard icon={Users} label="Total members" value={data.totalMembers.toLocaleString()} />
+            <StatCard
+              icon={Users}
+              label="Total members"
+              value={data.totalMembers.toLocaleString()}
+            />
           </Widget>
           <Widget id="active-members">
-            <StatCard icon={UserCheck} label="Active members" value={data.activeMembers.toLocaleString()} />
+            <StatCard
+              icon={UserCheck}
+              label="Active members"
+              value={data.activeMembers.toLocaleString()}
+            />
           </Widget>
           <Widget id="vendors">
             <StatCard
@@ -117,10 +142,20 @@ export async function AdminDashboard({ searchParams }: { searchParams: Record<st
             />
           </Widget>
           <Widget id="orders">
-            <StatCard icon={ShoppingCart} label="Orders" value={data.totalOrders.toLocaleString()} sublabel="This period" />
+            <StatCard
+              icon={ShoppingCart}
+              label="Orders"
+              value={data.totalOrders.toLocaleString()}
+              sublabel="This period"
+            />
           </Widget>
           <Widget id="revenue">
-            <StatCard icon={LineChartIcon} label="Revenue" value={formatPaise(data.totalRevenue.toString())} sublabel="This period" />
+            <StatCard
+              icon={LineChartIcon}
+              label="Revenue"
+              value={formatPaise(data.totalRevenue.toString())}
+              sublabel="This period"
+            />
           </Widget>
           <Widget id="pending-payouts">
             <StatCard
@@ -132,7 +167,12 @@ export async function AdminDashboard({ searchParams }: { searchParams: Record<st
             />
           </Widget>
           <Widget id="referral-activity">
-            <StatCard icon={Receipt} label="Referral activity" value={data.referralActivity.toLocaleString()} sublabel="New referrals this period" />
+            <StatCard
+              icon={Receipt}
+              label="Referral activity"
+              value={data.referralActivity.toLocaleString()}
+              sublabel="New referrals this period"
+            />
           </Widget>
           <Widget id="commissions">
             <StatCard
@@ -143,7 +183,13 @@ export async function AdminDashboard({ searchParams }: { searchParams: Record<st
             />
           </Widget>
           <Widget id="support-tickets">
-            <StatCard icon={Headset} label="Support tickets" value="—" sublabel="Not yet built" tone="muted" />
+            <StatCard
+              icon={Headset}
+              label="Support tickets"
+              value={openTickets === null ? "—" : openTickets.toLocaleString()}
+              sublabel={openTickets === null ? "Unavailable right now" : "Open or in progress"}
+              tone={openTickets ? "warning" : "default"}
+            />
           </Widget>
           <Widget id="pending-approvals-stat">
             <StatCard
@@ -168,7 +214,12 @@ export async function AdminDashboard({ searchParams }: { searchParams: Record<st
           <WalletActivityChart data={walletSeries} />
         </Widget>
 
-        <RecentOrdersTable items={data.recentOrders.items} nextCursor={data.recentOrders.nextCursor} search={search} status={status} />
+        <RecentOrdersTable
+          items={data.recentOrders.items}
+          nextCursor={data.recentOrders.nextCursor}
+          search={search}
+          status={status}
+        />
         <PendingApprovalsTable items={data.pendingApprovals} />
       </div>
     </WidgetVisibilityProvider>

@@ -6,7 +6,14 @@ import { useRouter } from "next/navigation";
 import type { Route } from "next";
 import { AlertCircle, Check, ClipboardCheck, Eye, X } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -265,7 +272,9 @@ function BulkRejectAction({
             <DialogTitle>
               Reject {count} item{count === 1 ? "" : "s"}?
             </DialogTitle>
-            <DialogDescription>The same reason is applied to every selected vendor or listing.</DialogDescription>
+            <DialogDescription>
+              The same reason is applied to every selected vendor or listing.
+            </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-2">
@@ -343,7 +352,10 @@ export function PendingApprovalsTable({ items }: { items: PendingApprovalRow[] }
     }
   }
 
-  async function handleRowReject(row: PendingApprovalRow, reason: string): Promise<ApiResult<null>> {
+  async function handleRowReject(
+    row: PendingApprovalRow,
+    reason: string,
+  ): Promise<ApiResult<null>> {
     const key = rowKey(row);
     setBusyKey(key);
     const result = await rejectRow(row, reason);
@@ -370,7 +382,7 @@ export function PendingApprovalsTable({ items }: { items: PendingApprovalRow[] }
     } else {
       toast.warning(
         `Approved ${rows.length - failed} of ${rows.length}`,
-        `${failed} failed — open them individually to see why.`,
+        `${failed} failed. Open them one by one to see why.`,
       );
     }
     clearSelection();
@@ -388,7 +400,7 @@ export function PendingApprovalsTable({ items }: { items: PendingApprovalRow[] }
     } else {
       toast.warning(
         `Rejected ${rows.length - failed} of ${rows.length}`,
-        `${failed} failed — open them individually to see why.`,
+        `${failed} failed. Open them one by one to see why.`,
       );
     }
     clearSelection();
@@ -415,7 +427,11 @@ export function PendingApprovalsTable({ items }: { items: PendingApprovalRow[] }
           />
 
           {items.length === 0 ? (
-            <EmptyState icon={ClipboardCheck} title="All caught up" description="Nothing is waiting for review." />
+            <EmptyState
+              icon={ClipboardCheck}
+              title="All caught up"
+              description="Nothing is waiting for review."
+            />
           ) : (
             <Table>
               <TableHeader>
@@ -455,7 +471,7 @@ export function PendingApprovalsTable({ items }: { items: PendingApprovalRow[] }
                       <TableCell>
                         <button
                           type="button"
-                          className="hover:underline text-left"
+                          className="text-left hover:underline"
                           onClick={() => setDrawerRow(row)}
                         >
                           {row.title}
@@ -468,7 +484,12 @@ export function PendingApprovalsTable({ items }: { items: PendingApprovalRow[] }
                         {row.submittedAt.toLocaleDateString("en-IN")}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="sm" onClick={() => setDrawerRow(row)} disabled={isBusy}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setDrawerRow(row)}
+                          disabled={isBusy}
+                        >
                           <Eye />
                           View
                         </Button>

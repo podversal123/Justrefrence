@@ -42,6 +42,7 @@ export async function createAdminAction(
     email: formData.get("email"),
     fullName: formData.get("fullName"),
     roleId: formData.get("roleId"),
+    phone: formData.get("phone") || undefined,
   });
 
   if (!parsed.success) {
@@ -73,6 +74,16 @@ export async function createAdminAction(
       meta: { requestId: requestId() },
     };
   }
+  if (
+    parsed.data.phone &&
+    (await prisma.user.findUnique({ where: { phone: parsed.data.phone }, select: { id: true } }))
+  ) {
+    return {
+      success: false,
+      error: { code: "CONFLICT", message: "An account with that mobile number already exists." },
+      meta: { requestId: requestId() },
+    };
+  }
 
   const supabaseAdmin = createAdminClient();
   const invited = await supabaseAdmin.auth.admin.inviteUserByEmail(parsed.data.email, {
@@ -100,6 +111,7 @@ export async function createAdminAction(
           id: newUserId,
           email: parsed.data.email,
           fullName: parsed.data.fullName,
+          phone: parsed.data.phone ?? null,
           status: "PENDING_VERIFICATION",
           createdBy: session.userId,
         },

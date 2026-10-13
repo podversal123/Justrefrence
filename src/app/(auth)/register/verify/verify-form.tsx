@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import {
@@ -48,7 +48,10 @@ export function VerifyForm({
   referralCode?: string;
 }) {
   const [state, formAction] = useActionState(confirmRegistrationAction, initialConfirmState);
-  const [resendState, resendAction] = useActionState(resendRegistrationOtpAction, initialResendState);
+  const [resendState, resendAction] = useActionState(
+    resendRegistrationOtpAction,
+    initialResendState,
+  );
 
   return (
     <div className="space-y-4">

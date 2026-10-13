@@ -1,3 +1,4 @@
+import { StatusBadge } from "@/components/ui/status-badge";
 import Link from "next/link";
 import { UserCog } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -19,12 +20,6 @@ export interface AdminRow {
   createdAt: Date;
   userRoles: { id: string; role: { code: string; label: string } }[];
 }
-
-const STATUS_VARIANT = {
-  ACTIVE: "default",
-  PENDING_VERIFICATION: "secondary",
-  BLOCKED: "destructive",
-} as const;
 
 export function AdminsTable({ admins }: { admins: AdminRow[] }) {
   if (admins.length === 0) {
@@ -70,9 +65,7 @@ export function AdminsTable({ admins }: { admins: AdminRow[] }) {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Badge variant={STATUS_VARIANT[admin.status as keyof typeof STATUS_VARIANT]}>
-                    {admin.status}
-                  </Badge>
+                  <StatusBadge status={admin.status} />
                 </TableCell>
                 <TableCell className="text-muted-foreground">
                   {admin.createdAt.toLocaleDateString()}
@@ -95,9 +88,7 @@ export function AdminsTable({ admins }: { admins: AdminRow[] }) {
                 <p className="font-medium">{admin.fullName ?? "—"}</p>
                 <p className="text-muted-foreground text-sm">{admin.email}</p>
               </div>
-              <Badge variant={STATUS_VARIANT[admin.status as keyof typeof STATUS_VARIANT]}>
-                {admin.status}
-              </Badge>
+              <StatusBadge status={admin.status} />
             </div>
             <div className="mt-3 flex flex-wrap gap-1">
               {admin.userRoles.map((ur) => (

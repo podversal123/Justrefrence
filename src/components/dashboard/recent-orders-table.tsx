@@ -1,7 +1,14 @@
 import Link from "next/link";
 import { Download, Receipt } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { SearchInput } from "@/components/ui/search-input";
 import { FilterBar, SelectFilter } from "@/components/ui/filter-bar";
@@ -65,7 +72,11 @@ export function RecentOrdersTable({
         </FilterBar>
 
         {items.length === 0 ? (
-          <EmptyState icon={Receipt} title="No orders" description="No orders match these filters." />
+          <EmptyState
+            icon={Receipt}
+            title="No orders"
+            description="No orders match these filters."
+          />
         ) : (
           <Table>
             <TableHeader>
@@ -86,7 +97,9 @@ export function RecentOrdersTable({
                       {order.orderNumber ?? order.id}
                     </Link>
                   </TableCell>
-                  <TableCell className="text-muted-foreground">{order.vendorBusinessName}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {order.vendorBusinessName}
+                  </TableCell>
                   <TableCell className="text-muted-foreground">{order.buyerEmail}</TableCell>
                   <TableCell>{formatPaise(order.grandTotal.toString())}</TableCell>
                   <TableCell>

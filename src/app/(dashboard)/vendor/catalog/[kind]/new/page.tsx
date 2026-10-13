@@ -35,7 +35,7 @@ export default async function VendorNewListingPage({ params }: PageProps) {
   const labels = CATALOG_LABELS[kind];
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
       <div>
         <h1>New {labels.singular.toLowerCase()}</h1>
         <p className="text-muted-foreground">Starts as Pending until an admin approves it.</p>

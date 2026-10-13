@@ -5,6 +5,8 @@ import type { Route } from "next";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Logo } from "@/components/brand/logo";
+import { cn } from "@/lib/utils";
+import type { Panel } from "@/server/auth/panel";
 import {
   Sidebar,
   SidebarContent,
@@ -29,14 +31,25 @@ interface SidebarNavGroup {
   items: SidebarNavItem[];
 }
 
+const PANEL_STYLES: Record<Panel, string> = {
+  // Light-on-dark: the sidebar background is the dark ink colour.
+  ADMIN: "bg-white/15 text-white",
+  VENDOR: "bg-amber-400/20 text-amber-200",
+  CUSTOMER: "bg-emerald-400/20 text-emerald-200",
+};
+
 export function AppSidebar({
   groups,
   userEmail,
   roleLabel,
+  panel,
+  panelLabel,
 }: {
   groups: SidebarNavGroup[];
   userEmail: string;
   roleLabel: string;
+  panel: Panel;
+  panelLabel: string;
 }) {
   const pathname = usePathname();
 
@@ -49,6 +62,14 @@ export function AppSidebar({
             Justreference
           </span>
         </Link>
+        <p
+          className={cn(
+            "mx-2 w-fit rounded-full px-2.5 py-0.5 text-xs font-semibold group-data-[collapsible=icon]:hidden",
+            PANEL_STYLES[panel],
+          )}
+        >
+          {panelLabel}
+        </p>
       </SidebarHeader>
       <SidebarContent>
         {groups.map((group) => (

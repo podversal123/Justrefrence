@@ -7,7 +7,14 @@
  */
 import { ConflictError } from "@/server/lib/errors";
 
-export const PAYOUT_STATUSES = ["REQUESTED", "APPROVED", "REJECTED", "PROCESSING", "PAID", "FAILED"] as const;
+export const PAYOUT_STATUSES = [
+  "REQUESTED",
+  "APPROVED",
+  "REJECTED",
+  "PROCESSING",
+  "PAID",
+  "FAILED",
+] as const;
 export type PayoutStatus = (typeof PAYOUT_STATUSES)[number];
 
 export type PayoutActorRole = "ADMIN" | "FINANCE";
@@ -32,7 +39,11 @@ const PAYOUT_TRANSITIONS: Record<PayoutStatus, TransitionRule[]> = {
   FAILED: [],
 };
 
-export function canTransitionPayout(from: PayoutStatus, to: PayoutStatus, actorRole: PayoutActorRole): boolean {
+export function canTransitionPayout(
+  from: PayoutStatus,
+  to: PayoutStatus,
+  actorRole: PayoutActorRole,
+): boolean {
   const rule = PAYOUT_TRANSITIONS[from].find((r) => r.to === to);
   return rule !== undefined && rule.roles.includes(actorRole);
 }

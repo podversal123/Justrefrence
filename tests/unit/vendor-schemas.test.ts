@@ -12,8 +12,16 @@ describe("createVendorSchema", () => {
       email: "vendor@example.com",
       businessName: "Acme Co",
       fullName: "Jane Vendor",
+      phone: "+919876543210",
     });
     expect(result.success).toBe(true);
+  });
+
+  it("requires a valid mobile number with country code", () => {
+    const base = { email: "vendor@example.com", businessName: "Acme Co", fullName: "Jane Vendor" };
+    expect(createVendorSchema.safeParse(base).success).toBe(false);
+    expect(createVendorSchema.safeParse({ ...base, phone: "12345" }).success).toBe(false);
+    expect(createVendorSchema.safeParse({ ...base, phone: "+919876543210" }).success).toBe(true);
   });
 
   it("rejects a one-character business name", () => {
@@ -21,6 +29,7 @@ describe("createVendorSchema", () => {
       email: "vendor@example.com",
       businessName: "A",
       fullName: "Jane Vendor",
+      phone: "+919876543210",
     });
     expect(result.success).toBe(false);
   });
@@ -52,9 +61,32 @@ describe("updateVendorStatusSchema", () => {
 });
 
 describe("updateVendorProfileSchema", () => {
+  const base = { businessName: "Acme", phone: "+919876543210" };
+
   it("requires a non-trivial business name", () => {
-    expect(updateVendorProfileSchema.safeParse({ businessName: "" }).success).toBe(false);
-    expect(updateVendorProfileSchema.safeParse({ businessName: "Acme" }).success).toBe(true);
+    expect(updateVendorProfileSchema.safeParse({ ...base, businessName: "" }).success).toBe(false);
+    expect(updateVendorProfileSchema.safeParse(base).success).toBe(true);
+  });
+
+  it("requires the business mobile but keeps telephone, GSTIN and PAN optional", () => {
+    expect(updateVendorProfileSchema.safeParse({ businessName: "Acme" }).success).toBe(false);
+    const ok = updateVendorProfileSchema.safeParse({ ...base, telephone: "", gstin: "", pan: "" });
+    expect(ok.success).toBe(true);
+    if (ok.success) {
+      expect(ok.data.telephone).toBeUndefined();
+      expect(ok.data.gstin).toBeUndefined();
+      expect(ok.data.pan).toBeUndefined();
+    }
+  });
+
+  it("validates telephone, GSTIN and PAN formats", () => {
+    expect(
+      updateVendorProfileSchema.safeParse({ ...base, telephone: "011-2345 6789" }).success,
+    ).toBe(true);
+    expect(updateVendorProfileSchema.safeParse({ ...base, telephone: "abc" }).success).toBe(false);
+    expect(updateVendorProfileSchema.safeParse({ ...base, pan: "abcde1234f" }).success).toBe(true);
+    expect(updateVendorProfileSchema.safeParse({ ...base, pan: "BAD" }).success).toBe(false);
+    expect(updateVendorProfileSchema.safeParse({ ...base, gstin: "12" }).success).toBe(false);
   });
 });
 

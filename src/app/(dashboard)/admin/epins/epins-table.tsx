@@ -15,7 +15,9 @@ export function EpinsTable({ epins, canRevoke }: { epins: EpinRow[]; canRevoke: 
     {
       key: "code",
       header: "Code",
-      cell: (row) => <span className="font-mono text-xs tracking-wide">{maskedCode(row.codeLast4)}</span>,
+      cell: (row) => (
+        <span className="font-mono text-xs tracking-wide">{maskedCode(row.codeLast4)}</span>
+      ),
     },
     {
       key: "plan",

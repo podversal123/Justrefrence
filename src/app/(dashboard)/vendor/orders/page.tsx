@@ -35,7 +35,11 @@ export default async function VendorOrdersPage({ searchParams }: PageProps) {
       </div>
 
       {items.length === 0 ? (
-        <EmptyState icon={Receipt} title="No orders yet" description="Orders you receive will show up here." />
+        <EmptyState
+          icon={Receipt}
+          title="No orders yet"
+          description="Orders you receive will show up here."
+        />
       ) : (
         <div className="flex flex-col gap-3">
           {items.map((order) => (

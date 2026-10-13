@@ -26,12 +26,20 @@ const EPIN_TRANSITIONS: Record<EpinStatus, TransitionRule[]> = {
   REVOKED: [],
 };
 
-export function canTransitionEpin(from: EpinStatus, to: EpinStatus, actorRole: EpinActorRole): boolean {
+export function canTransitionEpin(
+  from: EpinStatus,
+  to: EpinStatus,
+  actorRole: EpinActorRole,
+): boolean {
   const rule = EPIN_TRANSITIONS[from].find((r) => r.to === to);
   return rule !== undefined && rule.roles.includes(actorRole);
 }
 
-export function assertEpinTransition(from: EpinStatus, to: EpinStatus, actorRole: EpinActorRole): EpinStatus {
+export function assertEpinTransition(
+  from: EpinStatus,
+  to: EpinStatus,
+  actorRole: EpinActorRole,
+): EpinStatus {
   if (!canTransitionEpin(from, to, actorRole)) {
     throw new ConflictError(`Cannot move an e-pin from ${from} to ${to}.`);
   }

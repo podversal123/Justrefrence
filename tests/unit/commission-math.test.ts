@@ -40,26 +40,39 @@ describe("computeCommissionAmount", () => {
   });
 
   it("is deterministic — identical inputs always produce the identical output", () => {
-    const rule = { rateBasis: "PERCENT_OF_ORDER" as const, rateValueBps: 333, rateValueFixed: null };
+    const rule = {
+      rateBasis: "PERCENT_OF_ORDER" as const,
+      rateValueBps: 333,
+      rateValueFixed: null,
+    };
     const results = Array.from({ length: 20 }, () => computeCommissionAmount(rule, 123457n));
     expect(new Set(results).size).toBe(1);
   });
 
   it("throws if a PERCENT_* rule has no rateValueBps", () => {
     expect(() =>
-      computeCommissionAmount({ rateBasis: "PERCENT_OF_ORDER", rateValueBps: null, rateValueFixed: null }, 100n),
+      computeCommissionAmount(
+        { rateBasis: "PERCENT_OF_ORDER", rateValueBps: null, rateValueFixed: null },
+        100n,
+      ),
     ).toThrow();
   });
 
   it("throws if a FIXED rule has no rateValueFixed", () => {
     expect(() =>
-      computeCommissionAmount({ rateBasis: "FIXED", rateValueBps: null, rateValueFixed: null }, 100n),
+      computeCommissionAmount(
+        { rateBasis: "FIXED", rateValueBps: null, rateValueFixed: null },
+        100n,
+      ),
     ).toThrow();
   });
 
   it("throws for a negative calculation base", () => {
     expect(() =>
-      computeCommissionAmount({ rateBasis: "PERCENT_OF_ORDER", rateValueBps: 500, rateValueFixed: null }, -1n),
+      computeCommissionAmount(
+        { rateBasis: "PERCENT_OF_ORDER", rateValueBps: 500, rateValueFixed: null },
+        -1n,
+      ),
     ).toThrow();
   });
 

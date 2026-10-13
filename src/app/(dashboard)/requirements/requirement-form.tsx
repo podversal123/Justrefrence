@@ -114,7 +114,7 @@ export function RequirementForm() {
             </FormField>
             <FormField
               htmlFor="rq-budget"
-              label="Maximum budget, total (₹) — optional"
+              label="Maximum budget, total (₹), optional"
               hint="Bids above this total are refused."
               error={errors["maxBudgetRupees"]}
             >

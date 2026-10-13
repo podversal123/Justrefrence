@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
+import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
 import { AlertCircle, Plus } from "lucide-react";
 import { createSubscriptionPlanAction } from "@/server/services/subscription-actions";
@@ -68,9 +69,7 @@ export function CreatePlanDialog() {
         <form action={formAction} className="space-y-4" noValidate>
           <DialogHeader>
             <DialogTitle>Create a subscription plan</DialogTitle>
-            <DialogDescription>
-              Pricing and duration are fully configurable here — nothing is hardcoded elsewhere.
-            </DialogDescription>
+            <DialogDescription>Set the price, duration and type for this plan.</DialogDescription>
           </DialogHeader>
 
           {state !== initialState && !state.success ? (
@@ -87,7 +86,12 @@ export function CreatePlanDialog() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="plan-type">Type</Label>
-              <Select name="type" value={type} onValueChange={(value) => setType(value ?? "YEARLY")} required>
+              <Select
+                name="type"
+                value={type}
+                onValueChange={(value) => setType(value ?? "YEARLY")}
+                required
+              >
                 <SelectTrigger id="plan-type" className="w-full">
                   <SelectValue />
                 </SelectTrigger>

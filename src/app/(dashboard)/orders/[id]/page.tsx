@@ -105,7 +105,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
             <div key={entry.id} className="flex justify-between text-sm">
               <span>
                 {entry.fromStatus ? `${entry.fromStatus} → ${entry.toStatus}` : entry.toStatus}
-                {entry.reason ? ` — ${entry.reason}` : ""}
+                {entry.reason ? `: ${entry.reason}` : ""}
               </span>
               <span className="text-muted-foreground">{entry.createdAt.toLocaleString()}</span>
             </div>

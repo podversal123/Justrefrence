@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
+import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
 import { AlertCircle, Ban, Check, Play, RotateCcw, X } from "lucide-react";
 import { updateListingStatusAction } from "@/server/services/catalog-actions";

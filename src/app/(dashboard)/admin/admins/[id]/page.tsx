@@ -1,3 +1,4 @@
+import { StatusBadge } from "@/components/ui/status-badge";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { getAuthSession } from "@/server/auth/session";
@@ -8,12 +9,6 @@ import { Badge } from "@/components/ui/badge";
 import { RoleManager } from "@/components/admin/role-manager";
 
 export const metadata: Metadata = { title: "Admin details" };
-
-const STATUS_VARIANT = {
-  ACTIVE: "default",
-  PENDING_VERIFICATION: "secondary",
-  BLOCKED: "destructive",
-} as const;
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -37,13 +32,13 @@ export default async function AdminDetailPage({ params }: PageProps) {
           <h1>{admin.fullName ?? admin.email}</h1>
           <p className="text-muted-foreground">{admin.email}</p>
         </div>
-        <Badge variant={STATUS_VARIANT[admin.status]}>{admin.status}</Badge>
+        <StatusBadge status={admin.status} />
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle>Roles</CardTitle>
-          <CardDescription>What this account can do — see docs/rbac.md.</CardDescription>
+          <CardDescription>What this account can do.</CardDescription>
         </CardHeader>
         <CardContent>
           {session.permissions.has("role:assign") ? (

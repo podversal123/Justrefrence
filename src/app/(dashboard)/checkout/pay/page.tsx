@@ -23,8 +23,7 @@ export default async function CheckoutPayPage({ searchParams }: PageProps) {
         <CardHeader>
           <CardTitle>Complete your payment</CardTitle>
           <CardDescription>
-            Your order has been placed — complete payment to confirm it. See
-            docs/adr/0016-razorpay-payment-integration.md.
+            Your order is placed. Complete the payment to confirm it.
           </CardDescription>
         </CardHeader>
         <CardContent>

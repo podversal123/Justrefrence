@@ -40,7 +40,9 @@ export async function startRegistration(
   input: RegisterInput,
   ip: string | null,
 ): Promise<StartRegistrationResult> {
-  const { allowed } = await registrationRateLimiter.consume(`register:${input.email}:${ip ?? "unknown"}`);
+  const { allowed } = await registrationRateLimiter.consume(
+    `register:${input.email}:${ip ?? "unknown"}`,
+  );
   if (!allowed) {
     throw new RateLimitedError("Too many registration attempts. Please try again later.");
   }

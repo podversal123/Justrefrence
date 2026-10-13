@@ -60,7 +60,13 @@ interface MockPayment {
 }
 
 let payments: MockPayment[] = [];
-let orders: { id: string; checkoutId: string; grandTotal: bigint; currency: string; status: string }[] = [];
+let orders: {
+  id: string;
+  checkoutId: string;
+  grandTotal: bigint;
+  currency: string;
+  status: string;
+}[] = [];
 let paymentIdCounter = 0;
 
 function resetState() {
@@ -71,32 +77,42 @@ function resetState() {
 
 const prismaMock = {
   payment: {
-    create: vi.fn(async ({ data }: { data: Omit<MockPayment, "id" | "createdAt" | "providerPaymentId" | "status"> }) => {
-      const created: MockPayment = {
-        id: `payment-${++paymentIdCounter}`,
-        createdAt: new Date(),
-        providerPaymentId: null,
-        status: "CREATED",
-        ...data,
-      };
-      payments.push(created);
-      return created;
-    }),
+    create: vi.fn(
+      async ({
+        data,
+      }: {
+        data: Omit<MockPayment, "id" | "createdAt" | "providerPaymentId" | "status">;
+      }) => {
+        const created: MockPayment = {
+          id: `payment-${++paymentIdCounter}`,
+          createdAt: new Date(),
+          providerPaymentId: null,
+          status: "CREATED",
+          ...data,
+        };
+        payments.push(created);
+        return created;
+      },
+    ),
     findUnique: vi.fn(async ({ where }: { where: { id?: string; idempotencyKey?: string } }) => {
       if (where.id) return payments.find((p) => p.id === where.id) ?? null;
-      if (where.idempotencyKey) return payments.find((p) => p.idempotencyKey === where.idempotencyKey) ?? null;
+      if (where.idempotencyKey)
+        return payments.find((p) => p.idempotencyKey === where.idempotencyKey) ?? null;
       return null;
     }),
     findFirst: vi.fn(async ({ where }: { where: { providerOrderId?: string } }) => {
       return payments.find((p) => p.providerOrderId === where.providerOrderId) ?? null;
     }),
-    findMany: vi.fn(async ({ where }: { where: { status?: string; createdAt?: { lte: Date } } }) => {
-      return payments.filter((p) => {
-        if (where.status && p.status !== where.status) return false;
-        if (where.createdAt?.lte && p.createdAt.getTime() > where.createdAt.lte.getTime()) return false;
-        return true;
-      });
-    }),
+    findMany: vi.fn(
+      async ({ where }: { where: { status?: string; createdAt?: { lte: Date } } }) => {
+        return payments.filter((p) => {
+          if (where.status && p.status !== where.status) return false;
+          if (where.createdAt?.lte && p.createdAt.getTime() > where.createdAt.lte.getTime())
+            return false;
+          return true;
+        });
+      },
+    ),
     updateMany: vi.fn(
       async ({
         where,
@@ -146,7 +162,14 @@ const KEY_SECRET = "test_key_secret";
 const WEBHOOK_SECRET = "test_webhook_secret";
 
 function seedOrder(overrides: Partial<(typeof orders)[number]> = {}) {
-  orders.push({ id: `order-${orders.length + 1}`, checkoutId: CHECKOUT_ID, grandTotal: 10000n, currency: "INR", status: "PLACED", ...overrides });
+  orders.push({
+    id: `order-${orders.length + 1}`,
+    checkoutId: CHECKOUT_ID,
+    grandTotal: 10000n,
+    currency: "INR",
+    status: "PLACED",
+    ...overrides,
+  });
 }
 
 beforeEach(() => {
@@ -263,7 +286,9 @@ describe("verifyCheckoutCallback — invalid signature", () => {
     seedOrder();
     const order = await createPaymentOrderForCheckout(CHECKOUT_ID, PAYER_ID, "idem-1");
     const providerPaymentId = "pay_123";
-    const signature = createHmac("sha256", KEY_SECRET).update(`${order.providerOrderId}|${providerPaymentId}`).digest("hex");
+    const signature = createHmac("sha256", KEY_SECRET)
+      .update(`${order.providerOrderId}|${providerPaymentId}`)
+      .digest("hex");
 
     const result = await verifyCheckoutCallback({
       providerOrderId: order.providerOrderId,
@@ -273,7 +298,11 @@ describe("verifyCheckoutCallback — invalid signature", () => {
 
     expect(result.captured).toBe(true);
     expect(payments[0]!.status).toBe("CAPTURED");
-    expect(mockTransitionOrderStatusBySystem).toHaveBeenCalledWith(orders[0]!.id, "PAID", "Payment captured");
+    expect(mockTransitionOrderStatusBySystem).toHaveBeenCalledWith(
+      orders[0]!.id,
+      "PAID",
+      "Payment captured",
+    );
   });
 
   it("rejects an invalid signature and captures nothing", async () => {
@@ -295,7 +324,9 @@ describe("verifyCheckoutCallback — invalid signature", () => {
   it("rejects a signature computed for a different payment id (tampered callback)", async () => {
     seedOrder();
     const order = await createPaymentOrderForCheckout(CHECKOUT_ID, PAYER_ID, "idem-1");
-    const signature = createHmac("sha256", KEY_SECRET).update(`${order.providerOrderId}|pay_real`).digest("hex");
+    const signature = createHmac("sha256", KEY_SECRET)
+      .update(`${order.providerOrderId}|pay_real`)
+      .digest("hex");
 
     await expect(
       verifyCheckoutCallback({
@@ -327,7 +358,11 @@ describe("processWebhookEvent — duplicate webhook / invalid signature / paymen
 
     expect(result.accepted).toBe(true);
     expect(payments[0]!.status).toBe("CAPTURED");
-    expect(mockTransitionOrderStatusBySystem).toHaveBeenCalledWith(orders[0]!.id, "PAID", "Payment captured");
+    expect(mockTransitionOrderStatusBySystem).toHaveBeenCalledWith(
+      orders[0]!.id,
+      "PAID",
+      "Payment captured",
+    );
   });
 
   it("rejects an invalid webhook signature and captures nothing", async () => {
@@ -388,8 +423,14 @@ describe("processWebhookEvent — duplicate webhook / invalid signature / paymen
     seedOrder();
     const order = await createPaymentOrderForCheckout(CHECKOUT_ID, PAYER_ID, "idem-1");
     const providerPaymentId = "pay_race_1";
-    const callbackSig = createHmac("sha256", KEY_SECRET).update(`${order.providerOrderId}|${providerPaymentId}`).digest("hex");
-    await verifyCheckoutCallback({ providerOrderId: order.providerOrderId, providerPaymentId, signature: callbackSig });
+    const callbackSig = createHmac("sha256", KEY_SECRET)
+      .update(`${order.providerOrderId}|${providerPaymentId}`)
+      .digest("hex");
+    await verifyCheckoutCallback({
+      providerOrderId: order.providerOrderId,
+      providerPaymentId,
+      signature: callbackSig,
+    });
 
     const body = webhookBody("payment.captured", order.providerOrderId, providerPaymentId);
     const webhookSig = createHmac("sha256", WEBHOOK_SECRET).update(body).digest("hex");
@@ -414,8 +455,14 @@ describe("payment failure and timeout", () => {
   it("markPaymentFailed is a no-op against an already-CAPTURED payment", async () => {
     seedOrder();
     const order = await createPaymentOrderForCheckout(CHECKOUT_ID, PAYER_ID, "idem-1");
-    const signature = createHmac("sha256", KEY_SECRET).update(`${order.providerOrderId}|pay_1`).digest("hex");
-    await verifyCheckoutCallback({ providerOrderId: order.providerOrderId, providerPaymentId: "pay_1", signature });
+    const signature = createHmac("sha256", KEY_SECRET)
+      .update(`${order.providerOrderId}|pay_1`)
+      .digest("hex");
+    await verifyCheckoutCallback({
+      providerOrderId: order.providerOrderId,
+      providerPaymentId: "pay_1",
+      signature,
+    });
 
     const applied = await markPaymentFailed(order.paymentId, "Late failure report");
 

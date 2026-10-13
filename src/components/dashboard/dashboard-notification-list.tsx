@@ -1,6 +1,8 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { describeNotification } from "@/lib/notification-labels";
+import { useEffect, useRef } from "react";
+import { useActionState } from "@/lib/use-action-state";
 import { BellOff, Check, CheckCheck } from "lucide-react";
 import {
   markAllNotificationsReadAction,
@@ -25,14 +27,8 @@ export interface DashboardNotification {
   createdAt: Date;
 }
 
-const TYPE_LABELS: Record<string, string> = {
-  WELCOME: "Welcome to Justreference",
-  BIRTHDAY_GREETING: "Happy birthday from Justreference!",
-};
-
-function describe(notification: DashboardNotification): string {
-  return TYPE_LABELS[notification.type] ?? notification.type.replace(/_/g, " ").toLowerCase();
-}
+const describe = (notification: { type: string }): string =>
+  describeNotification(notification.type);
 
 const nullState: ApiResult<null> = { success: true, data: null, meta: { requestId: "" } };
 
@@ -113,17 +109,30 @@ export function DashboardNotificationList({
       ) : null}
       <ul className="flex flex-col divide-y">
         {notifications.map((notification) => (
-          <li key={notification.id} className="flex items-start justify-between gap-3 py-3 first:pt-0">
+          <li
+            key={notification.id}
+            className="flex items-start justify-between gap-3 py-3 first:pt-0"
+          >
             <div className="flex min-w-0 items-start gap-2">
               <span
-                className={notification.readAt ? "mt-1.5 size-1.5 shrink-0" : "bg-primary mt-1.5 size-1.5 shrink-0 rounded-full"}
+                className={
+                  notification.readAt
+                    ? "mt-1.5 size-1.5 shrink-0"
+                    : "bg-primary mt-1.5 size-1.5 shrink-0 rounded-full"
+                }
                 aria-hidden="true"
               />
               <div className="min-w-0">
-                <p className={notification.readAt ? "text-muted-foreground text-sm" : "text-sm font-medium"}>
+                <p
+                  className={
+                    notification.readAt ? "text-muted-foreground text-sm" : "text-sm font-medium"
+                  }
+                >
                   {describe(notification)}
                 </p>
-                <p className="text-muted-foreground text-xs">{notification.createdAt.toLocaleString("en-IN")}</p>
+                <p className="text-muted-foreground text-xs">
+                  {notification.createdAt.toLocaleString("en-IN")}
+                </p>
               </div>
             </div>
             {!notification.readAt ? <MarkReadButton notificationId={notification.id} /> : null}

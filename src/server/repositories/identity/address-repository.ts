@@ -31,6 +31,7 @@ export async function upsertAddress(ownerUserId: string, input: AddressInput) {
         state: input.state,
         postalCode: input.postalCode,
         country: input.country,
+        phone: input.phone ?? null,
       },
     });
   }
@@ -45,6 +46,7 @@ export async function upsertAddress(ownerUserId: string, input: AddressInput) {
       state: input.state,
       postalCode: input.postalCode,
       country: input.country,
+      phone: input.phone ?? null,
     },
   });
 }

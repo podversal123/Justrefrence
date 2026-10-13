@@ -81,6 +81,10 @@ model User {
   ticketMessages             TicketMessage[]
   messagesSent               Message[]                 @relation("MessageSender")
   messagesReceived           Message[]                 @relation("MessageRecipient")
+  kycDocuments               KycDocument[]             @relation("KycDocumentOwner")
+  kycReviews                 KycDocument[]             @relation("KycDocumentReviewer")
+  changeRequests             ChangeRequest[]           @relation("ChangeRequester")
+  changeReviews              ChangeRequest[]           @relation("ChangeReviewer")
   blogPosts                  BlogPost[]                @relation("BlogAuthor")
   feedbacks                  Feedback[]
   requirementsPosted         Requirement[]             @relation("RequirementBuyer")
@@ -222,6 +226,8 @@ model MemberProfile {
   gstin            String?
   websiteUrl       String?   @map("website_url")
   socialLinks      Json?     @map("social_links")
+  /// Landline, in addition to the mobile on User.phone (the workflow doc asks for both).
+  telephone        String?
   kycStatus        KycStatus @default(PENDING) @map("kyc_status")
   createdAt        DateTime  @default(now()) @map("created_at")
   updatedAt        DateTime  @updatedAt @map("updated_at")
@@ -272,6 +278,8 @@ model Address {
   state       String
   postalCode  String      @map("postal_code")
   country     String      @default("IN")
+  /// Contact number for this address (who to call at the residence / office / billing address).
+  phone       String?
   isDefault   Boolean     @default(false) @map("is_default")
   createdAt   DateTime    @default(now()) @map("created_at")
   updatedAt   DateTime    @updatedAt @map("updated_at")
@@ -392,6 +400,12 @@ model VendorProfile {
   /// generator (Q-19: "carrying the vendor's GSTIN when present") needs its
   /// own copy here.
   gstin          String?
+  /// Business PAN, collected with the KYC documents (see KycDocument).
+  pan            String?
+  /// Business contact mobile (E.164) and an optional landline. Kept on the vendor, not
+  /// on User.phone, because that column is unique and tied to OTP login.
+  phone          String?
+  telephone      String?
   createdAt      DateTime             @default(now()) @map("created_at")
   updatedAt      DateTime             @updatedAt @map("updated_at")
 
@@ -1716,4 +1730,156 @@ model BidRevision {
 
   @@index([bidId, createdAt])
   @@map("bid_revisions")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// KYC documents (PAN card, GST certificate). The file itself lives in the private
+// `kyc-private` storage bucket and is only ever opened through a short-lived signed URL;
+// only its path is stored here. One current document per owner and type: uploading again
+// replaces it and sends it back to review.
+// ─────────────────────────────────────────────────────────────────────────
+
+enum KycDocumentType {
+  PAN_CARD
+  GST_CERTIFICATE
+}
+
+enum KycDocumentStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+model KycDocument {
+  id             String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ownerUserId    String            @map("owner_user_id") @db.Uuid
+  type           KycDocumentType
+  status         KycDocumentStatus @default(PENDING)
+  storagePath    String            @map("storage_path")
+  originalName   String            @map("original_name")
+  contentType    String            @map("content_type")
+  sizeBytes      Int               @map("size_bytes")
+  rejectedReason String?           @map("rejected_reason")
+  reviewedBy     String?           @map("reviewed_by") @db.Uuid
+  reviewedAt     DateTime?         @map("reviewed_at")
+  createdAt      DateTime          @default(now()) @map("created_at")
+  updatedAt      DateTime          @updatedAt @map("updated_at")
+
+  owner    User  @relation("KycDocumentOwner", fields: [ownerUserId], references: [id])
+  reviewer User? @relation("KycDocumentReviewer", fields: [reviewedBy], references: [id])
+
+  @@unique([ownerUserId, type])
+  @@index([status, createdAt])
+  @@map("kyc_documents")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Change requests (maker-checker). An Admin's edit to a member, a vendor or a listing is not applied
+// straight away: it is stored here as a before/after diff, and a Super Admin approves it (the change
+// is then applied) or rejects it (nothing changes). Super Admin edits apply immediately and never
+// create a request. The live record is untouched while a request is pending.
+// ─────────────────────────────────────────────────────────────────────────
+
+enum ChangeEntityType {
+  MEMBER_PROFILE
+  VENDOR_PROFILE
+  PRODUCT
+  SERVICE
+  PROJECT
+}
+
+enum ChangeRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model ChangeRequest {
+  id            String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  entityType    ChangeEntityType    @map("entity_type")
+  entityId      String              @map("entity_id") @db.Uuid
+  /// A readable name for the record (member name, business name, listing title) so lists stay clear
+  /// even if the record is later renamed.
+  entityLabel   String              @map("entity_label")
+  status        ChangeRequestStatus @default(PENDING)
+  /// Set to "<entityType>:<entityId>" while PENDING and cleared on a decision. The unique index below
+  /// then guarantees at most one pending request per record, even under concurrent submits.
+  pendingKey    String?             @unique @map("pending_key")
+  /// Only the fields that change, new values as plain JSON (money as a paise string).
+  proposed      Json
+  /// [{ field, label, from, to }] for display to the reviewer. On approval, each `from` must still match
+  /// the record, otherwise someone changed it after the request and approval is refused.
+  diff          Json
+  /// Unused. Kept (optional) only because dropping it needs an explicit go-ahead; safe to remove later.
+  baseUpdatedAt DateTime?           @map("base_updated_at")
+  requestedBy   String              @map("requested_by") @db.Uuid
+  requestNote   String?             @map("request_note")
+  reviewedBy    String?             @map("reviewed_by") @db.Uuid
+  reviewedAt    DateTime?           @map("reviewed_at")
+  reviewNote    String?             @map("review_note")
+  createdAt     DateTime            @default(now()) @map("created_at")
+  updatedAt     DateTime            @updatedAt @map("updated_at")
+
+  requester User  @relation("ChangeRequester", fields: [requestedBy], references: [id])
+  reviewer  User? @relation("ChangeReviewer", fields: [reviewedBy], references: [id])
+
+  @@index([status, createdAt])
+  @@index([entityType, entityId])
+  @@index([requestedBy, createdAt])
+  @@map("change_requests")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Homepage banners (the rotating photo banner). Managed by staff with `banner:manage`; the homepage
+// shows the active ones in `sortOrder`, and falls back to the built-in default slides (src/lib/brand.ts)
+// when none are active, so the front page is never empty. The photo lives in the public
+// `catalog-public` bucket under `banners/`.
+// ─────────────────────────────────────────────────────────────────────────
+
+model Banner {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  headline  String
+  subline   String?
+  ctaLabel  String   @map("cta_label")
+  /// An internal path ("/products") or an https link.
+  ctaHref   String   @map("cta_href")
+  imagePath String   @map("image_path")
+  sortOrder Int      @default(0) @map("sort_order")
+  isActive  Boolean  @default(true) @map("is_active")
+  createdBy String?  @map("created_by") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([isActive, sortOrder])
+  @@map("banners")
+}
+
+/// A notice from the team shown at the top of members' dashboards. An Admin's notice waits for a
+/// Super Admin to publish it; a Super Admin's is published straight away.
+model Announcement {
+  id          String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title       String
+  body        String
+  audience    AnnouncementAudience @default(ALL)
+  status      AnnouncementStatus   @default(PENDING)
+  createdBy   String               @map("created_by") @db.Uuid
+  publishedBy String?              @map("published_by") @db.Uuid
+  publishedAt DateTime?            @map("published_at")
+  createdAt   DateTime             @default(now()) @map("created_at")
+  updatedAt   DateTime             @updatedAt @map("updated_at")
+
+  @@index([status, audience, publishedAt])
+  @@map("announcements")
+}
+
+enum AnnouncementAudience {
+  ALL
+  CUSTOMERS
+  VENDORS
+}
+
+enum AnnouncementStatus {
+  PENDING
+  PUBLISHED
+  ARCHIVED
 }

@@ -9,7 +9,11 @@ import {
   getWalletByOwner,
   setWalletPinHash,
 } from "@/server/repositories/wallet/wallet-repository";
-import { hashWalletPin, isValidPinFormat, verifyWalletPin } from "@/server/domain/wallet/wallet-pin";
+import {
+  hashWalletPin,
+  isValidPinFormat,
+  verifyWalletPin,
+} from "@/server/domain/wallet/wallet-pin";
 import { recordAudit } from "@/server/domain/audit/record";
 import { ConflictError, ValidationError } from "@/server/lib/errors";
 import type { WalletTransactionType } from "@/generated/prisma/enums";
@@ -57,7 +61,10 @@ export async function setWalletPin(userId: string, pin: string): Promise<void> {
 }
 
 /** Throws if a PIN is set and the supplied one doesn't match — callers must still check whether a PIN is required at all. */
-export async function assertWalletPinIfSet(walletId: string, pin: string | undefined): Promise<void> {
+export async function assertWalletPinIfSet(
+  walletId: string,
+  pin: string | undefined,
+): Promise<void> {
   const wallet = await prisma.wallet.findUniqueOrThrow({ where: { id: walletId } });
   if (!wallet.walletPinHash) return; // no PIN configured — nothing to check (Q-13: optional)
   if (!pin || !verifyWalletPin(pin, wallet.walletPinHash)) {

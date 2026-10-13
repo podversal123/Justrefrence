@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
+import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { createCommissionRuleAction } from "@/server/services/commission-actions";
@@ -97,7 +98,13 @@ export function CreateCommissionRuleForm() {
       {rateBasis === "FIXED" ? (
         <div className="space-y-2">
           <Label htmlFor="rateValueFixed">Fixed amount (paise)</Label>
-          <Input id="rateValueFixed" name="rateValueFixed" inputMode="numeric" placeholder="5000" required />
+          <Input
+            id="rateValueFixed"
+            name="rateValueFixed"
+            inputMode="numeric"
+            placeholder="5000"
+            required
+          />
         </div>
       ) : (
         <div className="space-y-2">
@@ -120,11 +127,25 @@ export function CreateCommissionRuleForm() {
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="releaseDelayDays">Release delay (days)</Label>
-          <Input id="releaseDelayDays" name="releaseDelayDays" type="number" min={0} max={365} defaultValue={7} required />
+          <Input
+            id="releaseDelayDays"
+            name="releaseDelayDays"
+            type="number"
+            min={0}
+            max={365}
+            defaultValue={7}
+            required
+          />
         </div>
         <div className="space-y-2">
           <Label htmlFor="minimumActivityCount">Minimum activity (optional)</Label>
-          <Input id="minimumActivityCount" name="minimumActivityCount" type="number" min={0} placeholder="0" />
+          <Input
+            id="minimumActivityCount"
+            name="minimumActivityCount"
+            type="number"
+            min={0}
+            placeholder="0"
+          />
         </div>
       </div>
 

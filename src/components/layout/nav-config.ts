@@ -2,10 +2,13 @@ import type { LucideIcon } from "lucide-react";
 import {
   Banknote,
   Briefcase,
+  ClipboardCheck,
   ClipboardList,
   Gavel,
   CreditCard,
   FileText,
+  ImageIcon,
+  Megaphone,
   LayoutDashboard,
   Landmark,
   LifeBuoy,
@@ -42,6 +45,8 @@ export interface NavItem {
   title: string;
   href: Route;
   icon: LucideIcon;
+  /** Something a buyer or vendor does for themselves (cart, own orders, own wallet). Hidden from staff-only accounts. */
+  memberOnly?: boolean;
   /** Return true if this item should be visible for the given session. */
   visible: (session: Pick<AuthSession, "permissions" | "hasVendorProfile">) => boolean;
 }
@@ -61,18 +66,21 @@ export const NAV_GROUPS: NavGroup[] = [
       { title: "My profile", href: "/profile", icon: User, visible: () => true },
       {
         title: "Cart",
+        memberOnly: true,
         href: "/cart",
         icon: ShoppingCart,
         visible: (s) => s.permissions.has("cart:manage"),
       },
       {
         title: "My orders",
+        memberOnly: true,
         href: "/orders",
         icon: Receipt,
         visible: (s) => s.permissions.has("order:create"),
       },
       {
         title: "Invoices",
+        memberOnly: true,
         href: "/invoices" as Route,
         icon: FileText,
         visible: (s) => s.permissions.has("invoice:read"),
@@ -85,30 +93,35 @@ export const NAV_GROUPS: NavGroup[] = [
       },
       {
         title: "My referrals",
+        memberOnly: true,
         href: "/referrals",
         icon: Users,
         visible: (s) => s.permissions.has("referral:read"),
       },
       {
         title: "My wallet",
+        memberOnly: true,
         href: "/wallet",
         icon: Wallet,
         visible: (s) => s.permissions.has("wallet:read"),
       },
       {
         title: "My coupons",
+        memberOnly: true,
         href: "/coupons" as Route,
         icon: TicketPercent,
         visible: (s) => s.permissions.has("coupon:redeem"),
       },
       {
         title: "My subscription",
+        memberOnly: true,
         href: "/subscription",
         icon: CreditCard,
         visible: (s) => s.permissions.has("subscription:read"),
       },
       {
         title: "My requirements",
+        memberOnly: true,
         href: "/requirements" as Route,
         icon: ClipboardList,
         visible: (s) => s.permissions.has("requirement:create"),
@@ -133,6 +146,7 @@ export const NAV_GROUPS: NavGroup[] = [
       },
       {
         title: "Support",
+        memberOnly: true,
         href: "/support",
         icon: LifeBuoy,
         visible: (s) => s.permissions.has("ticket:read"),
@@ -193,6 +207,12 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "Administration",
     items: [
       {
+        title: "Approvals",
+        href: "/admin/approvals" as Route,
+        icon: ClipboardCheck,
+        visible: (s) => s.permissions.has("change:review") || s.permissions.has("change:request"),
+      },
+      {
         title: "Admins",
         href: "/admin/admins",
         icon: UserCog,
@@ -209,6 +229,12 @@ export const NAV_GROUPS: NavGroup[] = [
         href: "/admin/members" as Route,
         icon: UsersRound,
         visible: (s) => s.permissions.has("member:read:any"),
+      },
+      {
+        title: "KYC review",
+        href: "/admin/kyc" as Route,
+        icon: ShieldCheck,
+        visible: (s) => s.permissions.has("kyc:review"),
       },
       {
         title: "All orders",
@@ -233,6 +259,18 @@ export const NAV_GROUPS: NavGroup[] = [
         href: "/admin/support" as Route,
         icon: LifeBuoy,
         visible: (s) => s.permissions.has("ticket:read:any"),
+      },
+      {
+        title: "Announcements",
+        href: "/admin/announcements" as Route,
+        icon: Megaphone,
+        visible: (s) => s.permissions.has("announcement:manage"),
+      },
+      {
+        title: "Banners",
+        href: "/admin/banners" as Route,
+        icon: ImageIcon,
+        visible: (s) => s.permissions.has("banner:manage"),
       },
       {
         title: "Blog",
@@ -275,6 +313,12 @@ export const NAV_GROUPS: NavGroup[] = [
         href: "/admin/payouts",
         icon: Banknote,
         visible: (s) => s.permissions.has("payout:approve"),
+      },
+      {
+        title: "TDS list",
+        href: "/admin/tds" as Route,
+        icon: Receipt,
+        visible: (s) => s.permissions.has("tds:read:any"),
       },
       {
         title: "Wallets",

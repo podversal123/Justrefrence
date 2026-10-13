@@ -3,6 +3,7 @@ import sharp from "sharp";
 import { randomUUID } from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ValidationError } from "@/server/lib/errors";
+import { MAX_UPLOAD_BYTES, MAX_UPLOAD_LABEL } from "@/lib/upload-limits";
 
 /**
  * Secure catalog image upload — see docs/file-upload.md. Images are never
@@ -13,7 +14,6 @@ import { ValidationError } from "@/server/lib/errors";
  * vectors by construction).
  */
 
-const MAX_UPLOAD_BYTES = 5 * 1024 * 1024; // 5MB — generous pre-optimization ceiling
 const MAX_DIMENSION = 1600; // px, longest edge
 const JPEG_QUALITY = 82;
 const ALLOWED_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -41,7 +41,7 @@ export async function uploadCatalogImage(
     throw new ValidationError("The selected file is empty.");
   }
   if (file.size > MAX_UPLOAD_BYTES) {
-    throw new ValidationError("Images must be 5MB or smaller.");
+    throw new ValidationError(`Images must be ${MAX_UPLOAD_LABEL} or smaller.`);
   }
   if (!ALLOWED_MIME.has(file.type)) {
     throw new ValidationError("Only JPEG, PNG, or WebP images are allowed.");

@@ -31,7 +31,7 @@ export default async function SupportPage() {
         <EmptyState
           icon={LifeBuoy}
           title="No tickets yet"
-          description="If something isn't working — an order, a payment, your account — open a ticket and we'll reply here."
+          description="If something isn't working (an order, a payment, your account), open a ticket and we'll reply here."
           action={canCreate ? <NewTicketDialog /> : undefined}
         />
       ) : (

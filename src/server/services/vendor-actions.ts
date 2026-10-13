@@ -9,12 +9,16 @@ import { recordAudit } from "@/server/domain/audit/record";
 import { logger } from "@/server/lib/logger";
 import { getVendorProfileByUserId } from "@/server/repositories/vendor-repository";
 import {
+  adminUpdateVendorSchema,
   createVendorSchema,
   updateVendorProfileSchema,
   updateVendorStatusSchema,
 } from "@/lib/schemas/vendor";
 import { VendorApprovalStatus } from "@/generated/prisma/enums";
 import type { ApiResult } from "@/lib/api-response";
+import { failureFrom, validationFailure } from "@/server/lib/action-helpers";
+import { submitChange } from "@/server/domain/approvals/change-service";
+import { requestNoteSchema } from "@/lib/schemas/approvals";
 
 function requestId() {
   return crypto.randomUUID();
@@ -57,6 +61,7 @@ export async function createVendorAction(
     email: formData.get("email"),
     businessName: formData.get("businessName"),
     fullName: formData.get("fullName"),
+    phone: formData.get("phone"),
   });
 
   if (!parsed.success) {
@@ -129,6 +134,7 @@ export async function createVendorAction(
         data: {
           userId: newUserId,
           businessName: parsed.data.businessName,
+          phone: parsed.data.phone,
           approvalStatus: VendorApprovalStatus.PENDING,
         },
       });
@@ -280,6 +286,10 @@ export async function updateVendorProfileAction(
 
   const parsed = updateVendorProfileSchema.safeParse({
     businessName: formData.get("businessName"),
+    phone: formData.get("phone"),
+    telephone: formData.get("telephone") || undefined,
+    gstin: formData.get("gstin") || undefined,
+    pan: formData.get("pan") || undefined,
   });
 
   if (!parsed.success) {
@@ -287,7 +297,7 @@ export async function updateVendorProfileAction(
       success: false,
       error: {
         code: "VALIDATION_ERROR",
-        message: "Enter a valid business name.",
+        message: "Check the fields below.",
         details: parsed.error.flatten(),
       },
       meta: { requestId: requestId() },
@@ -303,21 +313,101 @@ export async function updateVendorProfileAction(
     };
   }
 
+  const next = parsed.data;
   await prisma.vendorProfile.update({
     where: { id: vendorProfile.id },
-    data: { businessName: parsed.data.businessName },
+    data: {
+      businessName: next.businessName,
+      phone: next.phone,
+      telephone: next.telephone ?? null,
+      gstin: next.gstin ?? null,
+      pan: next.pan ?? null,
+    },
   });
+
+  // Log which fields changed, never the values (phone numbers and PAN are personal data).
+  const changedFields = (
+    [
+      ["businessName", vendorProfile.businessName, next.businessName],
+      ["phone", vendorProfile.phone, next.phone],
+      ["telephone", vendorProfile.telephone, next.telephone],
+      ["gstin", vendorProfile.gstin, next.gstin],
+      ["pan", vendorProfile.pan, next.pan],
+    ] as const
+  )
+    .filter(([, before, after]) => (before ?? "") !== (after ?? ""))
+    .map(([field]) => field);
 
   await recordAudit({
     actorId: user.id,
     action: "VENDOR_PROFILE_UPDATED",
     entityType: "vendor_profiles",
     entityId: vendorProfile.id,
-    before: { businessName: vendorProfile.businessName },
-    after: { businessName: parsed.data.businessName },
+    after: { changedFields },
   });
 
   revalidatePath("/vendor/profile");
 
   return { success: true, data: null, meta: { requestId: requestId() } };
+}
+
+export interface VendorChangeOutcome {
+  /** APPLIED: live now. SUBMITTED: waiting for a Super Admin to approve it. */
+  mode: "APPLIED" | "SUBMITTED";
+}
+
+/**
+ * An admin editing a vendor's business details. A Super Admin's edit is saved at once; an Admin's
+ * edit becomes a request that a Super Admin approves (see domain/approvals), and the vendor's live
+ * details stay as they are until then.
+ */
+export async function updateVendorByAdminAction(
+  _prevState: unknown,
+  formData: FormData,
+): Promise<ApiResult<VendorChangeOutcome>> {
+  let session;
+  try {
+    session = await authorize("vendor:update:any");
+  } catch (error) {
+    return failureFrom(
+      "admin_update_vendor_denied",
+      error,
+      "You don't have permission to edit vendors.",
+    );
+  }
+
+  const parsed = adminUpdateVendorSchema.safeParse({
+    vendorProfileId: formData.get("vendorProfileId"),
+    businessName: formData.get("businessName"),
+    phone: formData.get("phone"),
+    telephone: formData.get("telephone") || undefined,
+    gstin: formData.get("gstin") || undefined,
+    pan: formData.get("pan") || undefined,
+  });
+  if (!parsed.success) return validationFailure("Check the fields below.", parsed.error);
+  const note = requestNoteSchema.safeParse(formData.get("note") ?? undefined);
+
+  try {
+    const { vendorProfileId, ...details } = parsed.data;
+    const result = await submitChange({
+      entityType: "VENDOR_PROFILE",
+      entityId: vendorProfileId,
+      proposed: {
+        businessName: details.businessName,
+        phone: details.phone,
+        telephone: details.telephone ?? null,
+        gstin: details.gstin ?? null,
+        pan: details.pan ?? null,
+      },
+      actorId: session.userId,
+      canApplyDirect: session.permissions.has("change:apply_direct"),
+      note: note.success ? note.data : undefined,
+    });
+    revalidatePath(`/admin/vendors/${vendorProfileId}`);
+    revalidatePath("/admin/vendors");
+    revalidatePath("/admin/approvals");
+    return { success: true, data: { mode: result.mode }, meta: { requestId: requestId() } };
+  } catch (error) {
+    return failureFrom("admin_update_vendor_failed", error, "Could not update that vendor.");
+  }
 }

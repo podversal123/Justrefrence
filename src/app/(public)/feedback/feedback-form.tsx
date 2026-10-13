@@ -12,7 +12,7 @@ export function FeedbackForm({
   defaultEmail,
   messageLabel = "Your feedback",
   submitLabel = "Send feedback",
-  successMessage = "Thank you — your feedback was sent",
+  successMessage = "Thank you. Your feedback was sent",
   showRating = true,
 }: {
   defaultName: string;
@@ -50,11 +50,11 @@ export function FeedbackForm({
             <FormField htmlFor="fb-rating" label="How would you rate us?" error={errors["rating"]}>
               <NativeSelect id="fb-rating" name="rating" defaultValue="">
                 <option value="">Skip rating</option>
-                <option value="5">5 — Excellent</option>
-                <option value="4">4 — Good</option>
-                <option value="3">3 — Okay</option>
-                <option value="2">2 — Poor</option>
-                <option value="1">1 — Very poor</option>
+                <option value="5">5: Excellent</option>
+                <option value="4">4: Good</option>
+                <option value="3">3: Okay</option>
+                <option value="2">2: Poor</option>
+                <option value="1">1: Very poor</option>
               </NativeSelect>
             </FormField>
           ) : null}

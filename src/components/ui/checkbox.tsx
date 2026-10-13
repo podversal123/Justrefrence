@@ -10,15 +10,12 @@ import { cn } from "cn";
  * session; built to match the sizing/focus/disabled conventions already
  * used by select.tsx and button.tsx.
  */
-function Checkbox({
-  className,
-  ...props
-}: CheckboxPrimitive.Root.Props) {
+function Checkbox({ className, ...props }: CheckboxPrimitive.Root.Props) {
   return (
     <CheckboxPrimitive.Root
       data-slot="checkbox"
       className={cn(
-        "border-input focus-visible:ring-ring/50 data-[checked]:bg-primary data-[checked]:border-primary data-[checked]:text-primary-foreground data-[indeterminate]:bg-primary data-[indeterminate]:border-primary data-[indeterminate]:text-primary-foreground dark:bg-input/30 peer size-4 shrink-0 rounded-[4px] border outline-none transition-colors focus-visible:ring-3 disabled:cursor-not-allowed disabled:opacity-50",
+        "border-input focus-visible:ring-ring/50 data-[checked]:bg-primary data-[checked]:border-primary data-[checked]:text-primary-foreground data-[indeterminate]:bg-primary data-[indeterminate]:border-primary data-[indeterminate]:text-primary-foreground dark:bg-input/30 peer size-4 shrink-0 rounded-[4px] border transition-colors outline-none focus-visible:ring-3 disabled:cursor-not-allowed disabled:opacity-50",
         className,
       )}
       {...props}
@@ -27,7 +24,11 @@ function Checkbox({
         data-slot="checkbox-indicator"
         className="flex items-center justify-center text-current"
       >
-        {props.indeterminate ? <MinusIcon className="size-3.5" /> : <CheckIcon className="size-3.5" />}
+        {props.indeterminate ? (
+          <MinusIcon className="size-3.5" />
+        ) : (
+          <CheckIcon className="size-3.5" />
+        )}
       </CheckboxPrimitive.Indicator>
     </CheckboxPrimitive.Root>
   );

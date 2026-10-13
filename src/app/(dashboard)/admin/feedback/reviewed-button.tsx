@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState } from "@/lib/use-action-state";
 import { Button } from "@/components/ui/button";
 import { markFeedbackReviewedAction } from "@/server/services/content-actions";
 import type { ApiResult } from "@/lib/api-response";

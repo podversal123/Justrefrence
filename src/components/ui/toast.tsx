@@ -58,7 +58,7 @@ function Toaster() {
 
   return (
     <ToastPrimitive.Portal>
-      <ToastPrimitive.Viewport className="fixed bottom-4 left-1/2 z-50 mx-auto flex w-full max-w-sm -translate-x-1/2 flex-col gap-2 px-4 sm:bottom-6 sm:left-auto sm:right-6 sm:translate-x-0">
+      <ToastPrimitive.Viewport className="fixed bottom-4 left-1/2 z-50 mx-auto flex w-full max-w-sm -translate-x-1/2 flex-col gap-2 px-4 sm:right-6 sm:bottom-6 sm:left-auto sm:translate-x-0">
         {toasts.map((toastItem) => {
           const type = (toastItem.type as ToastKind | undefined) ?? "info";
           const Icon = TOAST_ICON[type];
@@ -67,7 +67,7 @@ function Toaster() {
               key={toastItem.id}
               toast={toastItem}
               className={cn(
-                "shadow-overlay-lg data-[swiping]:transition-none data-closed:animate-out data-closed:fade-out-0 data-open:animate-in data-open:fade-in-0 data-open:slide-in-from-bottom-2 relative flex items-start gap-3 rounded-xl border bg-card p-4 transition-[transform,opacity] duration-150",
+                "shadow-overlay-lg data-closed:animate-out data-closed:fade-out-0 data-open:animate-in data-open:fade-in-0 data-open:slide-in-from-bottom-2 bg-card relative flex items-start gap-3 rounded-xl border p-4 transition-[transform,opacity] duration-150 data-[swiping]:transition-none",
               )}
             >
               <Icon className={cn("mt-0.5 size-5 shrink-0", TOAST_TONE[type])} aria-hidden="true" />
@@ -76,7 +76,7 @@ function Toaster() {
                 <ToastPrimitive.Description className="text-muted-foreground text-sm" />
               </div>
               <ToastPrimitive.Close
-                className="text-muted-foreground hover:text-foreground -m-1 flex size-7 shrink-0 items-center justify-center rounded-md focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
+                className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 -m-1 flex size-7 shrink-0 items-center justify-center rounded-md focus-visible:ring-2 focus-visible:outline-none"
                 aria-label="Dismiss notification"
               >
                 <X className="size-4" />

@@ -11,7 +11,8 @@ export interface CreateCommissionInput {
   level: number;
   ruleId: string;
   qualifyingEvent: "ORDER_COMPLETED";
-  calculationBasis: "PERCENT_OF_ORDER" | "PERCENT_OF_VENDOR_SALE" | "PERCENT_OF_PLATFORM_FEE" | "FIXED";
+  calculationBasis:
+    "PERCENT_OF_ORDER" | "PERCENT_OF_VENDOR_SALE" | "PERCENT_OF_PLATFORM_FEE" | "FIXED";
   calculationBaseAmount: bigint;
   rateBpsSnapshot: number | null;
   rateFixedSnapshot: bigint | null;
@@ -19,7 +20,12 @@ export interface CreateCommissionInput {
 }
 
 /** The `@@unique([orderId, beneficiaryMemberId, level])` constraint is the real guard; this is a cheap pre-check to fail fast with a clear message instead of a raw Prisma P2002. */
-export async function findExistingCommission(tx: Tx, orderId: string, beneficiaryMemberId: string, level: number) {
+export async function findExistingCommission(
+  tx: Tx,
+  orderId: string,
+  beneficiaryMemberId: string,
+  level: number,
+) {
   return tx.commission.findUnique({
     where: { orderId_beneficiaryMemberId_level: { orderId, beneficiaryMemberId, level } },
   });
@@ -66,14 +72,19 @@ export interface CommissionListQuery {
   limit: number;
 }
 
-export async function listCommissionsForBeneficiary(beneficiaryMemberId: string, query: CommissionListQuery) {
+export async function listCommissionsForBeneficiary(
+  beneficiaryMemberId: string,
+  query: CommissionListQuery,
+) {
   const rows = await prisma.commission.findMany({
     where: { beneficiaryMemberId, ...(query.status ? { status: query.status } : {}) },
     orderBy: [{ createdAt: "desc" }, { id: "asc" }],
     take: query.limit + 1,
     ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
     include: {
-      order: { select: { id: true, orderNumber: true, vendor: { select: { businessName: true } } } },
+      order: {
+        select: { id: true, orderNumber: true, vendor: { select: { businessName: true } } },
+      },
       rule: { select: { id: true, level: true, rateBasis: true } },
     },
   });

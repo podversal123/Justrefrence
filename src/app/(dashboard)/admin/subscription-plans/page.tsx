@@ -34,8 +34,8 @@ export default async function SubscriptionPlansPage() {
         <div>
           <h1>Subscription plans</h1>
           <p className="text-muted-foreground">
-            Pricing, duration, and type are configured here — e-pin generation depends on at
-            least one active plan.
+            Set the price, duration and type of each plan. E-pins can only be generated for an
+            active plan.
           </p>
         </div>
         <CreatePlanDialog />
@@ -45,7 +45,7 @@ export default async function SubscriptionPlansPage() {
         <EmptyState
           icon={CreditCard}
           title="No subscription plans yet"
-          description="Create a plan to get started — without at least one active plan, e-pins can't be generated for members to redeem."
+          description="Create a plan first. E-pins can only be generated for an active plan."
           action={<CreatePlanDialog />}
         />
       ) : (
@@ -53,8 +53,7 @@ export default async function SubscriptionPlansPage() {
           {!hasAnyActive ? (
             <Card className="border-warning/40 bg-warning/5">
               <CardContent className="text-warning py-3 text-sm">
-                No plan is currently active — e-pin generation will have nothing to select until
-                you activate one.
+                No plan is active. Activate one before you generate e-pins.
               </CardContent>
             </Card>
           ) : null}

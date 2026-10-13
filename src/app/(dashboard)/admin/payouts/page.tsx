@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Hourglass, PiggyBank } from "lucide-react";
 import { getAuthSession } from "@/server/auth/session";
-import { getPayoutRequestById, listAllPayoutRequests } from "@/server/repositories/wallet/payout-repository";
+import {
+  getPayoutRequestById,
+  listAllPayoutRequests,
+} from "@/server/repositories/wallet/payout-repository";
 import { getPendingPayouts } from "@/server/repositories/dashboard/dashboard-repository";
 import { adminPayoutListQuerySchema } from "@/lib/schemas/wallet";
 import { formatPaise } from "@/lib/money";

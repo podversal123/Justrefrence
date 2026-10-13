@@ -1,9 +1,10 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { changePasswordAction } from "@/server/services/admin-actions";
+import { FULL_ROW, FormGrid } from "@/components/ui/form-grid";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,41 +41,44 @@ export function ChangePasswordForm() {
         </Alert>
       ) : null}
 
-      <div className="space-y-2">
-        <Label htmlFor="currentPassword">Current password</Label>
-        <Input
-          id="currentPassword"
-          name="currentPassword"
-          type="password"
-          autoComplete="current-password"
-          required
-        />
-      </div>
+      <FormGrid>
+        <div className={`space-y-2 ${FULL_ROW}`}>
+          <Label htmlFor="currentPassword">Current password</Label>
+          <Input
+            id="currentPassword"
+            name="currentPassword"
+            type="password"
+            autoComplete="current-password"
+            required
+          />
+        </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="newPassword">New password</Label>
-        <Input
-          id="newPassword"
-          name="newPassword"
-          type="password"
-          autoComplete="new-password"
-          required
-        />
-        <p className="text-muted-foreground text-xs">
+        <div className="space-y-2">
+          <Label htmlFor="newPassword">New password</Label>
+          <Input
+            id="newPassword"
+            name="newPassword"
+            type="password"
+            autoComplete="new-password"
+            required
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="confirmNewPassword">Confirm new password</Label>
+          <Input
+            id="confirmNewPassword"
+            name="confirmNewPassword"
+            type="password"
+            autoComplete="new-password"
+            required
+          />
+        </div>
+
+        <p className={`text-muted-foreground text-xs ${FULL_ROW}`}>
           At least 10 characters, with an uppercase letter, a lowercase letter, and a number.
         </p>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="confirmNewPassword">Confirm new password</Label>
-        <Input
-          id="confirmNewPassword"
-          name="confirmNewPassword"
-          type="password"
-          autoComplete="new-password"
-          required
-        />
-      </div>
+      </FormGrid>
 
       <SubmitButton />
     </form>

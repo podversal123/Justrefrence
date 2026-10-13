@@ -29,7 +29,7 @@ export default function Error({
       </div>
       <h1>Something went wrong</h1>
       <p className="text-muted-foreground max-w-sm text-sm">
-        We hit an unexpected error. Try again — if this keeps happening, quote this reference:{" "}
+        We hit an unexpected error. Try again. If this keeps happening, quote this reference:{" "}
         <code className="bg-muted rounded px-1 py-0.5">{error.digest ?? "unknown"}</code>
       </p>
       <Button onClick={() => reset()}>Try again</Button>

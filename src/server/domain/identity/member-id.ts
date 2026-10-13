@@ -23,10 +23,7 @@ export function referralPathSegment(memberProfileId: string): string {
 }
 
 /** Root member (no referrer): path is just their own segment. */
-export function buildReferralPath(
-  parentPath: string | null,
-  memberProfileId: string,
-): string {
+export function buildReferralPath(parentPath: string | null, memberProfileId: string): string {
   const segment = referralPathSegment(memberProfileId);
   return parentPath ? `${parentPath}.${segment}` : segment;
 }

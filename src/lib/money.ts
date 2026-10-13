@@ -21,3 +21,16 @@ export function paiseToRupeesInput(paise: string | null | undefined): string {
   const fraction = value % 100n;
   return fraction === 0n ? rupees.toString() : `${rupees}.${fraction.toString().padStart(2, "0")}`;
 }
+
+/**
+ * Integer paise -> a plain two-decimal rupee string for spreadsheets and reports
+ * ("150000" -> "1500.00", "5" -> "0.05", "-150" -> "-1.50"). Exact: no floating point.
+ */
+export function paiseToFixedRupees(paise: bigint | string): string {
+  const value = BigInt(paise);
+  const negative = value < 0n;
+  const abs = negative ? -value : value;
+  const rupees = abs / 100n;
+  const fraction = (abs % 100n).toString().padStart(2, "0");
+  return `${negative ? "-" : ""}${rupees}.${fraction}`;
+}

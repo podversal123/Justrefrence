@@ -10,7 +10,8 @@ export interface PayoutEligibilityContext {
   hasVerifiedBankAccount: boolean;
 }
 
-export type PayoutEligibilityFailure = "EMAIL_NOT_VERIFIED" | "PAN_MISSING" | "BANK_ACCOUNT_NOT_VERIFIED";
+export type PayoutEligibilityFailure =
+  "EMAIL_NOT_VERIFIED" | "PAN_MISSING" | "BANK_ACCOUNT_NOT_VERIFIED";
 
 export interface PayoutEligibilityResult {
   eligible: boolean;
@@ -27,9 +28,12 @@ export function payoutEligibilityMessage(failure: PayoutEligibilityFailure): str
   return FAILURE_MESSAGES[failure];
 }
 
-export function evaluatePayoutEligibility(context: PayoutEligibilityContext): PayoutEligibilityResult {
+export function evaluatePayoutEligibility(
+  context: PayoutEligibilityContext,
+): PayoutEligibilityResult {
   if (!context.emailVerified) return { eligible: false, failure: "EMAIL_NOT_VERIFIED" };
   if (!context.hasPan) return { eligible: false, failure: "PAN_MISSING" };
-  if (!context.hasVerifiedBankAccount) return { eligible: false, failure: "BANK_ACCOUNT_NOT_VERIFIED" };
+  if (!context.hasVerifiedBankAccount)
+    return { eligible: false, failure: "BANK_ACCOUNT_NOT_VERIFIED" };
   return { eligible: true };
 }

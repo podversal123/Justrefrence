@@ -167,7 +167,7 @@ export async function CustomerDashboard({ session }: { session: AuthSession }) {
           <div>
             <h2 className="text-base font-semibold">Your referral link</h2>
             <p className="text-muted-foreground text-sm">
-              Share it — anyone who signs up through it becomes your direct referral.
+              Share it. Anyone who signs up through it becomes your direct referral.
             </p>
           </div>
           <Gift className="text-muted-foreground hidden size-5 sm:block" aria-hidden="true" />

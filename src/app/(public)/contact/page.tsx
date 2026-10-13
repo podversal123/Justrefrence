@@ -82,7 +82,7 @@ export default async function ContactPage() {
               defaultEmail={session?.email ?? ""}
               messageLabel="Your message"
               submitLabel="Send message"
-              successMessage="Thank you — we've received your message"
+              successMessage="Thank you. We've received your message"
               showRating={false}
             />
           </CardContent>

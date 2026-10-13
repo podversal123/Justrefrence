@@ -28,12 +28,16 @@ export function WalletTopUpForm({ userId, memberLabel }: { userId: string; membe
 
   const amount = Number(amountRupees);
   const canSubmit = amountRupees.trim().length > 0 && amount > 0 && reference.trim().length >= 2;
-  const amountPaise = Number.isFinite(amount) && amount > 0 ? String(Math.round(amount * 100)) : null;
+  const amountPaise =
+    Number.isFinite(amount) && amount > 0 ? String(Math.round(amount * 100)) : null;
 
   async function handleAction(prevState: unknown, formData: FormData): Promise<ApiResult<null>> {
     const result = await adminCreditWalletAction(prevState, formData);
     if (result.success) {
-      toast.success("Wallet credited", `${memberLabel}'s wallet was credited with ${formatPaise(amountPaise)}.`);
+      toast.success(
+        "Wallet credited",
+        `${memberLabel}'s wallet was credited with ${formatPaise(amountPaise)}.`,
+      );
       setAmountRupees("");
       setReference("");
       setIdempotencyKey(crypto.randomUUID());
@@ -47,8 +51,8 @@ export function WalletTopUpForm({ userId, memberLabel }: { userId: string; membe
       <div>
         <h2 className="text-sm font-medium">Credit this wallet</h2>
         <p className="text-muted-foreground text-xs">
-          Manual reconciliation only — this records a credit you&apos;re asserting already happened (e.g. a
-          bank transfer). It is not verified against a payment gateway.
+          Manual reconciliation only. This records a credit you&apos;re asserting already happened
+          (e.g. a bank transfer). It is not verified against a payment gateway.
         </p>
       </div>
 
@@ -84,7 +88,7 @@ export function WalletTopUpForm({ userId, memberLabel }: { userId: string; membe
           </Button>
         }
         title="Credit this member's wallet?"
-        description={`You're recording a ${amountPaise ? formatPaise(amountPaise) : "₹0"} credit to ${memberLabel} with reference "${reference}". Justreference does not verify this against a bank or payment gateway — only confirm if you've already checked it happened.`}
+        description={`You're recording a ${amountPaise ? formatPaise(amountPaise) : "₹0"} credit to ${memberLabel} with reference "${reference}". Justreference does not check this against a bank or payment gateway, so confirm only if you have already verified it.`}
         hiddenFields={{ userId, amountRupees, reference, idempotencyKey }}
         confirmLabel="Credit wallet"
         action={handleAction}

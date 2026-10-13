@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import type { Route } from "next";
 import { useCallback, useEffect, useState } from "react";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
@@ -45,6 +46,11 @@ export function HeroStage({ slides }: { slides: readonly HeroSlide[] }) {
 
   const slide = slides[index]!;
   const Heading = index === 0 ? "h1" : "h2";
+  const external = /^https?:/i.test(slide.cta.href);
+  const ctaClass = buttonVariants({
+    size: "touch",
+    className: "mt-8 px-6 text-base shadow-lg shadow-black/30",
+  });
   const control =
     "flex size-10 items-center justify-center rounded-full border border-white/25 bg-black/25 text-white backdrop-blur transition-colors hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:outline-none";
 
@@ -96,7 +102,7 @@ export function HeroStage({ slides }: { slides: readonly HeroSlide[] }) {
         <div aria-live={autoplay ? "off" : "polite"} className="max-w-2xl">
           <Heading
             key={slide.id}
-            className="font-display animate-in fade-in slide-in-from-bottom-2 text-4xl leading-[1.1] font-medium tracking-[-0.02em] text-balance duration-700 motion-reduce:animate-none sm:text-5xl lg:text-[3.5rem]"
+            className="font-display animate-in fade-in slide-in-from-bottom-2 text-4xl leading-[1.1] font-bold tracking-[-0.02em] text-balance duration-700 motion-reduce:animate-none sm:text-5xl lg:text-[3.5rem]"
           >
             {slide.headline}
           </Heading>
@@ -108,16 +114,17 @@ export function HeroStage({ slides }: { slides: readonly HeroSlide[] }) {
               {slide.subline}
             </p>
           ) : null}
-          <Link
-            href={slide.cta.href}
-            className={buttonVariants({
-              size: "touch",
-              className: "mt-8 px-6 text-base shadow-lg shadow-black/30",
-            })}
-          >
-            {slide.cta.label}
-            <ArrowRight />
-          </Link>
+          {external ? (
+            <a href={slide.cta.href} target="_blank" rel="noopener noreferrer" className={ctaClass}>
+              {slide.cta.label}
+              <ArrowRight />
+            </a>
+          ) : (
+            <Link href={slide.cta.href as Route} className={ctaClass}>
+              {slide.cta.label}
+              <ArrowRight />
+            </Link>
+          )}
         </div>
       </div>
 

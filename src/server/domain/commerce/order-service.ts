@@ -82,7 +82,11 @@ async function applyTransition(
     if (toStatus === "COMPLETED") {
       await promoteCommissionsForCompletedOrder(orderId);
     } else if (toStatus === "CANCELLED" || toStatus === "REFUNDED") {
-      await reverseOrCancelCommissionsForOrder(orderId, actorId, reason ?? `Order moved to ${toStatus}`);
+      await reverseOrCancelCommissionsForOrder(
+        orderId,
+        actorId,
+        reason ?? `Order moved to ${toStatus}`,
+      );
     }
   } catch (error) {
     logger.error("commission_processing_failed", {
@@ -141,7 +145,8 @@ export function canViewOrder(
   actor: OrderActorContext,
   order: { vendorId: string; buyerId: string },
 ): boolean {
-  if (actor.roles.some((r) => ["SUPER_ADMIN", "ADMIN", "FINANCE", "SUPPORT"].includes(r))) return true;
+  if (actor.roles.some((r) => ["SUPER_ADMIN", "ADMIN", "FINANCE", "SUPPORT"].includes(r)))
+    return true;
   if (actor.vendorProfileId && actor.vendorProfileId === order.vendorId) return true;
   return actor.userId === order.buyerId;
 }

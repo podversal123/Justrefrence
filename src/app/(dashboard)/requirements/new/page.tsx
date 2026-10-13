@@ -13,7 +13,7 @@ export default async function NewRequirementPage() {
   if (!session.permissions.has("requirement:create")) redirect("/unauthorized");
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
       <Link
         href={"/requirements" as Route}
         className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-sm"

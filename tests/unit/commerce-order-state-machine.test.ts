@@ -14,11 +14,15 @@ describe("canTransitionOrder", () => {
   });
 
   it("denies a non-owning vendor the same transition", () => {
-    expect(canTransitionOrder("PAID", "PROCESSING", { role: "VENDOR", isOwner: false })).toBe(false);
+    expect(canTransitionOrder("PAID", "PROCESSING", { role: "VENDOR", isOwner: false })).toBe(
+      false,
+    );
   });
 
   it("denies CUSTOMER from moving PAID -> PROCESSING (vendor-only step)", () => {
-    expect(canTransitionOrder("PAID", "PROCESSING", { role: "CUSTOMER", isOwner: true })).toBe(false);
+    expect(canTransitionOrder("PAID", "PROCESSING", { role: "CUSTOMER", isOwner: true })).toBe(
+      false,
+    );
   });
 
   it("allows the owning customer to confirm DELIVERED -> COMPLETED", () => {

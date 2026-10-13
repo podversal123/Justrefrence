@@ -34,7 +34,11 @@ export default async function OrdersPage({ searchParams }: PageProps) {
       </div>
 
       {items.length === 0 ? (
-        <EmptyState icon={Receipt} title="No orders yet" description="Your orders will show up here." />
+        <EmptyState
+          icon={Receipt}
+          title="No orders yet"
+          description="Your orders will show up here."
+        />
       ) : (
         <div className="flex flex-col gap-3">
           {items.map((order) => (

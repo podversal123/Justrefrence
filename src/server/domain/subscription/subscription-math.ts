@@ -12,7 +12,10 @@ export interface SubscriptionPlanPeriod {
 }
 
 /** LIFETIME -> no expiry. YEARLY/TIME_BOUND -> starts + durationDays. */
-export function computeSubscriptionExpiry(plan: SubscriptionPlanPeriod, startsAt: Date): Date | null {
+export function computeSubscriptionExpiry(
+  plan: SubscriptionPlanPeriod,
+  startsAt: Date,
+): Date | null {
   if (plan.type === "LIFETIME") return null;
   if (plan.durationDays === null) {
     throw new Error(`${plan.type} plans must set durationDays.`);

@@ -24,6 +24,7 @@ export const PERMISSIONS = [
   "vendor:approve",
   "vendor:reject",
   "vendor:suspend",
+  "vendor:update:any",
 
   // Catalog
   "product:create",
@@ -125,12 +126,19 @@ export const PERMISSIONS = [
   "blog:create",
   "blog:publish",
   "banner:manage",
+  "announcement:manage",
   "feedback:submit",
   "feedback:read",
 
   // Members & moderation
   "member:read",
   "member:read:any",
+  "member:update:any",
+  "member:export",
+  "kyc:review",
+  "change:request",
+  "change:review",
+  "change:apply_direct",
   "member:block",
   "member:unblock",
   "member:filter_list",

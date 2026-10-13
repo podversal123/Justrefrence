@@ -91,7 +91,7 @@ export async function PublicCatalogList({
           </nav>
           <div className="flex flex-wrap items-end justify-between gap-6">
             <div className="max-w-xl space-y-2">
-              <h1 className="font-display text-4xl font-semibold tracking-tight sm:text-5xl">
+              <h1 className="font-display text-4xl font-bold tracking-tight sm:text-5xl">
                 {activeCategory ? activeCategory.name : labels.plural}
               </h1>
               <p className="text-ink-foreground/75">

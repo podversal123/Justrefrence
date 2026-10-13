@@ -130,7 +130,12 @@ describe("createCommissionRuleAction", () => {
 
     const result = await createCommissionRuleAction(
       undefined,
-      formData({ ...VALID_PERCENT_RULE, rateBasis: "FIXED", rateValuePercent: "", rateValueFixed: "2500" }),
+      formData({
+        ...VALID_PERCENT_RULE,
+        rateBasis: "FIXED",
+        rateValuePercent: "",
+        rateValueFixed: "2500",
+      }),
     );
 
     expect(result.success).toBe(true);

@@ -1,3 +1,4 @@
+import { PendingChangeBanner } from "@/components/approvals/pending-change-banner";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { getAuthSession } from "@/server/auth/session";
@@ -54,7 +55,9 @@ export default async function AdminListingDetailPage({ params }: PageProps) {
   const canDelete = session.permissions.has(CATALOG_PERMISSIONS[kind].delete);
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
+      <PendingChangeBanner entityType={kind} entityId={listing.id} />
+
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1>{listing.title}</h1>
@@ -105,7 +108,9 @@ export default async function AdminListingDetailPage({ params }: PageProps) {
           <CardHeader>
             <CardTitle>Details</CardTitle>
             <CardDescription>
-              Editing an approved listing sends it back for re-review.
+              {session.permissions.has("change:apply_direct")
+                ? "Changes are saved straight away."
+                : "Your changes go to a Super Admin for approval. The live listing stays as it is until then."}
             </CardDescription>
           </CardHeader>
           <CardContent>

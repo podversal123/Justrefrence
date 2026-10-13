@@ -1,9 +1,10 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
 import { AlertCircle, CheckCircle2, ShieldCheck } from "lucide-react";
 import { upsertBankAccountAction } from "@/server/services/member-actions";
+import { FormGrid } from "@/components/ui/form-grid";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -66,25 +67,27 @@ export function BankAccountForm({ bankAccount }: { bankAccount: BankAccountValue
           </Alert>
         ) : null}
 
-        <div className="space-y-2">
-          <Label htmlFor="accountHolderName">Account holder name</Label>
-          <Input id="accountHolderName" name="accountHolderName" required />
-        </div>
+        <FormGrid>
+          <div className="space-y-2">
+            <Label htmlFor="accountHolderName">Account holder name</Label>
+            <Input id="accountHolderName" name="accountHolderName" required />
+          </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="accountNumber">Account number</Label>
-          <Input id="accountNumber" name="accountNumber" inputMode="numeric" required />
-        </div>
+          <div className="space-y-2">
+            <Label htmlFor="accountNumber">Account number</Label>
+            <Input id="accountNumber" name="accountNumber" inputMode="numeric" required />
+          </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="ifsc">IFSC code</Label>
-          <Input id="ifsc" name="ifsc" placeholder="HDFC0001234" required />
-        </div>
+          <div className="space-y-2">
+            <Label htmlFor="ifsc">IFSC code</Label>
+            <Input id="ifsc" name="ifsc" placeholder="HDFC0001234" required />
+          </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="branchAddress">Branch address</Label>
-          <Input id="branchAddress" name="branchAddress" />
-        </div>
+          <div className="space-y-2">
+            <Label htmlFor="branchAddress">Branch address</Label>
+            <Input id="branchAddress" name="branchAddress" />
+          </div>
+        </FormGrid>
 
         <SubmitButton hasExisting={bankAccount !== null} />
       </form>

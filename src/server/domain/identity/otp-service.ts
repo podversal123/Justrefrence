@@ -37,7 +37,9 @@ export interface RequestOtpResult {
 
 /** Shared by registration (any channel) and mobile-OTP login (SMS) — see docs/adr/0012-otp-session-bridge.md. */
 export async function requestOtp(input: RequestOtpInput): Promise<RequestOtpResult> {
-  const { allowed } = await otpRequestRateLimiter.consume(`otp:${input.channel}:${input.destination}`);
+  const { allowed } = await otpRequestRateLimiter.consume(
+    `otp:${input.channel}:${input.destination}`,
+  );
   if (!allowed) {
     throw new RateLimitedError("Too many code requests. Please wait a few minutes and try again.");
   }

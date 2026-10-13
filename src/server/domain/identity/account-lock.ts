@@ -24,7 +24,9 @@ export function afterFailedAttempt(state: LockState, now: Date = new Date()): Lo
   const shouldLock = attempts >= MAX_FAILED_ATTEMPTS;
   return {
     failedLoginAttempts: attempts,
-    lockedUntil: shouldLock ? new Date(now.getTime() + LOCKOUT_MINUTES * 60 * 1000) : state.lockedUntil,
+    lockedUntil: shouldLock
+      ? new Date(now.getTime() + LOCKOUT_MINUTES * 60 * 1000)
+      : state.lockedUntil,
   };
 }
 

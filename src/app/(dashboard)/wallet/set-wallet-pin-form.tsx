@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useEffect } from "react";
+import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
 import { AlertCircle } from "lucide-react";
 import { setWalletPinAction } from "@/server/services/wallet-actions";
@@ -56,7 +57,14 @@ export function SetWalletPinForm() {
         </div>
         <div className="space-y-2">
           <Label htmlFor="confirmPin">Confirm PIN</Label>
-          <Input id="confirmPin" name="confirmPin" type="password" inputMode="numeric" maxLength={6} required />
+          <Input
+            id="confirmPin"
+            name="confirmPin"
+            type="password"
+            inputMode="numeric"
+            maxLength={6}
+            required
+          />
         </div>
       </div>
 

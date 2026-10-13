@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
+import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
 import { AlertCircle, Plus, X } from "lucide-react";
 import { assignRoleAction, removeRoleAction } from "@/server/services/role-actions";

@@ -6,7 +6,9 @@ import {
 
 describe("computeSubscriptionExpiry", () => {
   it("returns null for a LIFETIME plan", () => {
-    expect(computeSubscriptionExpiry({ type: "LIFETIME", durationDays: null }, new Date())).toBeNull();
+    expect(
+      computeSubscriptionExpiry({ type: "LIFETIME", durationDays: null }, new Date()),
+    ).toBeNull();
   });
 
   it("computes expiry for a YEARLY plan (365 days)", () => {
@@ -22,7 +24,9 @@ describe("computeSubscriptionExpiry", () => {
   });
 
   it("throws if a non-LIFETIME plan has no durationDays configured", () => {
-    expect(() => computeSubscriptionExpiry({ type: "YEARLY", durationDays: null }, new Date())).toThrow();
+    expect(() =>
+      computeSubscriptionExpiry({ type: "YEARLY", durationDays: null }, new Date()),
+    ).toThrow();
   });
 });
 

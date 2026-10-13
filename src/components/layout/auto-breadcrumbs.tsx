@@ -55,6 +55,23 @@ const SEGMENT_LABELS: Record<string, string> = {
   projects: "Projects",
   categories: "Categories",
   new: "New",
+  members: "Members",
+  tds: "TDS list",
+  kyc: "KYC review",
+  approvals: "Approvals",
+  announcements: "Announcements",
+  banners: "Banners",
+  bids: "Bids",
+  "my-bids": "My bids",
+  requirements: "Requirements",
+  messages: "Messages",
+  support: "Support",
+  coupons: "Coupons",
+  invoices: "Invoices",
+  blog: "Blog",
+  feedback: "Feedback",
+  settings: "Settings",
+  epin: "E-pin",
 };
 
 function isIdLike(segment: string): boolean {
@@ -62,9 +79,7 @@ function isIdLike(segment: string): boolean {
 }
 
 function humanize(segment: string): string {
-  return segment
-    .replace(/-/g, " ")
-    .replace(/\b\w/g, (char) => char.toUpperCase());
+  return segment.replace(/-/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 interface Crumb {

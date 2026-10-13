@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
+import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
 import { setSubscriptionPlanActiveAction } from "@/server/services/subscription-actions";
 import { Button } from "@/components/ui/button";

@@ -70,21 +70,21 @@ describe("mobileLoginRequestSchema", () => {
 
 describe("memberDetailsSchema", () => {
   it("accepts a valid PAN and rejects a malformed one", () => {
-    expect(
-      memberDetailsSchema.safeParse({ fullName: "Jane Doe", pan: "ABCDE1234F" }).success,
-    ).toBe(true);
-    expect(
-      memberDetailsSchema.safeParse({ fullName: "Jane Doe", pan: "NOTAPAN" }).success,
-    ).toBe(false);
+    expect(memberDetailsSchema.safeParse({ fullName: "Jane Doe", pan: "ABCDE1234F" }).success).toBe(
+      true,
+    );
+    expect(memberDetailsSchema.safeParse({ fullName: "Jane Doe", pan: "NOTAPAN" }).success).toBe(
+      false,
+    );
   });
 
   it("accepts a valid GSTIN and rejects a malformed one", () => {
     expect(
       memberDetailsSchema.safeParse({ fullName: "Jane Doe", gstin: "29ABCDE1234F1Z5" }).success,
     ).toBe(true);
-    expect(
-      memberDetailsSchema.safeParse({ fullName: "Jane Doe", gstin: "invalid" }).success,
-    ).toBe(false);
+    expect(memberDetailsSchema.safeParse({ fullName: "Jane Doe", gstin: "invalid" }).success).toBe(
+      false,
+    );
   });
 
   it("treats blank optional fields as absent rather than invalid", () => {

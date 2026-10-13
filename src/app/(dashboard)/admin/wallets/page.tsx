@@ -3,7 +3,10 @@ import { redirect } from "next/navigation";
 import { Hourglass, Landmark, Search, UserX, Wallet as WalletIcon } from "lucide-react";
 import { getAuthSession } from "@/server/auth/session";
 import { findMemberByEmail } from "@/server/repositories/identity/member-repository";
-import { getOrCreateWallet, listWalletTransactions } from "@/server/repositories/wallet/wallet-repository";
+import {
+  getOrCreateWallet,
+  listWalletTransactions,
+} from "@/server/repositories/wallet/wallet-repository";
 import { getBankAccount } from "@/server/repositories/identity/bank-repository";
 import { formatPaise } from "@/lib/money";
 import { StatCard } from "@/components/dashboard/stat-card";
@@ -11,7 +14,14 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { WalletTopUpForm } from "./wallet-topup-form";
 import { VerifyBankAccountButton } from "./verify-bank-account-button";
 
@@ -43,7 +53,9 @@ export default async function AdminWalletsPage({ searchParams }: PageProps) {
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
       <div>
         <h1>Wallets</h1>
-        <p className="text-muted-foreground">Look up a member&apos;s wallet and record manual credits.</p>
+        <p className="text-muted-foreground">
+          Look up a member&apos;s wallet and record manual credits.
+        </p>
       </div>
 
       <form method="get" className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -69,7 +81,11 @@ export default async function AdminWalletsPage({ searchParams }: PageProps) {
           description="Enter a member's email above to view their wallet."
         />
       ) : !member ? (
-        <EmptyState icon={UserX} title="No member found" description={`No account matches "${email}".`} />
+        <EmptyState
+          icon={UserX}
+          title="No member found"
+          description={`No account matches "${email}".`}
+        />
       ) : (
         <>
           <div className="bg-surface-sunken rounded-lg border p-4">
@@ -81,7 +97,11 @@ export default async function AdminWalletsPage({ searchParams }: PageProps) {
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <StatCard icon={WalletIcon} label="Balance" value={formatPaise(wallet!.balance.toString())} />
+            <StatCard
+              icon={WalletIcon}
+              label="Balance"
+              value={formatPaise(wallet!.balance.toString())}
+            />
             <StatCard
               icon={Hourglass}
               label="Pending (held for payout)"
@@ -116,13 +136,21 @@ export default async function AdminWalletsPage({ searchParams }: PageProps) {
                           <Badge variant="secondary">{tx.type}</Badge>
                         </TableCell>
                         <TableCell
-                          className={tx.direction === "CREDIT" ? "text-success font-medium" : "text-destructive font-medium"}
+                          className={
+                            tx.direction === "CREDIT"
+                              ? "text-success font-medium"
+                              : "text-destructive font-medium"
+                          }
                         >
                           {tx.direction === "CREDIT" ? "+" : "-"}
                           {formatPaise(tx.amount.toString())}
                         </TableCell>
-                        <TableCell className="text-muted-foreground">{formatPaise(tx.balanceAfter.toString())}</TableCell>
-                        <TableCell className="text-muted-foreground text-xs">{tx.createdAt.toLocaleDateString()}</TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {formatPaise(tx.balanceAfter.toString())}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-xs">
+                          {tx.createdAt.toLocaleDateString()}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -161,7 +189,9 @@ export default async function AdminWalletsPage({ searchParams }: PageProps) {
           {canTopUp ? (
             <WalletTopUpForm userId={member.id} memberLabel={member.fullName ?? member.email} />
           ) : (
-            <p className="text-muted-foreground text-sm">You don&apos;t have permission to credit wallets.</p>
+            <p className="text-muted-foreground text-sm">
+              You don&apos;t have permission to credit wallets.
+            </p>
           )}
         </>
       )}

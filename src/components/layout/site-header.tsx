@@ -33,11 +33,16 @@ export interface BreadcrumbEntry {
 
 export function SiteHeader({
   userEmail,
+  panelLabel,
+  roleLabel,
   breadcrumbs,
   notifications,
   unreadCount,
 }: {
   userEmail: string;
+  /** E.g. "Admin panel" and "Super Admin", shown so it is always clear who is signed in. */
+  panelLabel: string;
+  roleLabel: string;
   /** Overrides the auto-derived (from URL) breadcrumb trail — e.g. a detail
    * page that wants "Order #1234" in place of the generic "Details" crumb. */
   breadcrumbs?: BreadcrumbEntry[];
@@ -87,7 +92,10 @@ export function SiteHeader({
           />
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel className="text-muted-foreground truncate text-xs font-normal">
-              {userEmail}
+              <span className="text-foreground block truncate font-medium">{userEmail}</span>
+              <span className="block">
+                {panelLabel} · {roleLabel}
+              </span>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem

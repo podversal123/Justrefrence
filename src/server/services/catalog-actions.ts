@@ -88,15 +88,20 @@ export async function createListingAction(
 export async function updateListingAction(
   _prevState: unknown,
   formData: FormData,
-): Promise<ApiResult<null>> {
+): Promise<ApiResult<{ pendingApproval: boolean } | null>> {
   const kind = parseKind(formData);
   const id = String(formData.get("id") ?? "");
   if (!kind || !id) return toFailure(new Error("missing kind/id"), "Invalid request.");
 
   try {
-    await updateListing(kind, id, formData);
+    const result = await updateListing(kind, id, formData);
     revalidateCatalogPaths(kind, id);
-    return { success: true, data: null, meta: { requestId: requestId() } };
+    revalidatePath("/admin/approvals");
+    return {
+      success: true,
+      data: result.pendingApproval ? { pendingApproval: true } : null,
+      meta: { requestId: requestId() },
+    };
   } catch (error) {
     return toFailure(error, "Could not update the listing.");
   }

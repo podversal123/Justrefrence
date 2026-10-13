@@ -46,6 +46,11 @@ const cspHeader = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
+  experimental: {
+    // Server actions are capped at 1MB by default, which silently broke photo and document uploads.
+    // Keep this equal to MAX_UPLOAD_BYTES in src/lib/upload-limits.ts and under Vercel's 4.5MB cap.
+    serverActions: { bodySizeLimit: "4mb" },
+  },
   reactStrictMode: true,
   typedRoutes: true,
   images: {

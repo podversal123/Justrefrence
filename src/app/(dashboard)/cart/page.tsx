@@ -39,7 +39,7 @@ export default async function CartPage() {
         <h1>My cart</h1>
         <p className="text-muted-foreground">
           {view.groups.length > 1
-            ? `Items from ${view.groups.length} vendors — these will be split into separate orders at checkout.`
+            ? `Items from ${view.groups.length} vendors will be split into separate orders at checkout.`
             : "Review your items before checkout."}
         </p>
       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import { removeCartItemAction, updateCartItemQtyAction } from "@/server/services/cart-actions";
@@ -9,7 +9,10 @@ import type { ApiResult } from "@/lib/api-response";
 
 const nullState: ApiResult<null> = { success: true, data: null, meta: { requestId: "" } };
 
-function QtyStepButton({ icon, ...props }: React.ComponentProps<"button"> & { icon: React.ReactNode }) {
+function QtyStepButton({
+  icon,
+  ...props
+}: React.ComponentProps<"button"> & { icon: React.ReactNode }) {
   const { pending } = useFormStatus();
   return (
     <button

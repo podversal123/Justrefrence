@@ -39,7 +39,12 @@ export function StatCard({
           <p className={cn("text-2xl font-semibold tracking-tight", TONE_TEXT[tone])}>{value}</p>
           {sublabel ? <p className="text-muted-foreground text-xs">{sublabel}</p> : null}
         </div>
-        <div className={cn("flex size-8 shrink-0 items-center justify-center rounded-lg", TONE_TILE[tone])}>
+        <div
+          className={cn(
+            "flex size-8 shrink-0 items-center justify-center rounded-lg",
+            TONE_TILE[tone],
+          )}
+        >
           <Icon className="size-4" />
         </div>
       </CardContent>

@@ -1,6 +1,6 @@
+import { StatusBadge } from "@/components/ui/status-badge";
 import Link from "next/link";
 import { Store } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -11,13 +11,6 @@ import {
 } from "@/components/ui/table";
 import { EmptyState } from "@/components/ui/empty-state";
 import type { VendorListItem } from "@/server/repositories/vendor-repository";
-
-const STATUS_VARIANT = {
-  APPROVED: "default",
-  PENDING: "secondary",
-  REJECTED: "destructive",
-  SUSPENDED: "destructive",
-} as const;
 
 export function VendorsTable({
   vendors,
@@ -65,11 +58,7 @@ export function VendorsTable({
                   <div className="text-xs">{vendor.email}</div>
                 </TableCell>
                 <TableCell>
-                  <Badge
-                    variant={STATUS_VARIANT[vendor.approvalStatus as keyof typeof STATUS_VARIANT]}
-                  >
-                    {vendor.approvalStatus}
-                  </Badge>
+                  <StatusBadge status={vendor.approvalStatus} />
                 </TableCell>
                 <TableCell className="text-muted-foreground">
                   {vendor.createdAt.toLocaleDateString()}
@@ -92,9 +81,7 @@ export function VendorsTable({
                 <p className="font-medium">{vendor.businessName}</p>
                 <p className="text-muted-foreground text-sm">{vendor.fullName ?? vendor.email}</p>
               </div>
-              <Badge variant={STATUS_VARIANT[vendor.approvalStatus as keyof typeof STATUS_VARIANT]}>
-                {vendor.approvalStatus}
-              </Badge>
+              <StatusBadge status={vendor.approvalStatus} />
             </div>
             <p className="text-muted-foreground mt-2 text-xs">
               Created {vendor.createdAt.toLocaleDateString()}

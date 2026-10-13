@@ -1,3 +1,4 @@
+import { optionalMobileSchema } from "@/lib/schemas/contact";
 import { z } from "zod";
 import { passwordRules } from "@/lib/schemas/auth";
 
@@ -10,6 +11,7 @@ export const createAdminSchema = z.object({
   email: z.string().trim().toLowerCase().email("Enter a valid email address."),
   fullName: z.string().trim().min(2, "Enter a full name.").max(200),
   roleId: z.string().uuid("Choose a role."),
+  phone: optionalMobileSchema,
 });
 export type CreateAdminInput = z.infer<typeof createAdminSchema>;
 

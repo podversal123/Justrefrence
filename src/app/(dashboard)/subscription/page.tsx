@@ -3,7 +3,10 @@ import { redirect } from "next/navigation";
 import { CalendarClock, Crown } from "lucide-react";
 import { getAuthSession } from "@/server/auth/session";
 import { getMemberProfileByUserId } from "@/server/repositories/identity/member-repository";
-import { getActiveSubscriptionForMember, listSubscriptionsForMember } from "@/server/repositories/subscription/subscription-repository";
+import {
+  getActiveSubscriptionForMember,
+  listSubscriptionsForMember,
+} from "@/server/repositories/subscription/subscription-repository";
 import { formatPaise } from "@/lib/money";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -77,12 +80,15 @@ export default async function SubscriptionPage() {
                 <p className="font-medium">{activeSubscription.plan.code}</p>
                 <p className="text-muted-foreground text-sm">
                   {formatLabel(activeSubscription.plan.type)} ·{" "}
-                  {formatPaise(activeSubscription.plan.price.toString(), activeSubscription.plan.currency)}
+                  {formatPaise(
+                    activeSubscription.plan.price.toString(),
+                    activeSubscription.plan.currency,
+                  )}
                 </p>
                 <p className="text-muted-foreground text-sm">
                   {activeSubscription.expiresAt
                     ? `Expires ${activeSubscription.expiresAt.toLocaleDateString()}`
-                    : "Lifetime — never expires"}
+                    : "Lifetime, never expires"}
                 </p>
               </div>
               <StatusBadge status={activeSubscription.status} />

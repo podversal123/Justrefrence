@@ -145,7 +145,12 @@ describe("createPendingCommissionsForOrder — deterministic calculation and ref
       mockFindExistingCommission.mockResolvedValue(null);
       await createPendingCommissionsForOrder(
         prismaMock as never,
-        { id: `order-${i}`, buyerId: BUYER_ID, buyerMemberId: BUYER_MEMBER_ID, platformFeeTotal: 0n },
+        {
+          id: `order-${i}`,
+          buyerId: BUYER_ID,
+          buyerMemberId: BUYER_MEMBER_ID,
+          platformFeeTotal: 0n,
+        },
         [{ itemType: "PRODUCT", lineTotal: 777777n }],
       );
       const lastCall = mockCreateCommission.mock.calls.at(-1)?.[1] as { amount: bigint };
@@ -201,7 +206,9 @@ describe("createPendingCommissionsForOrder — deterministic calculation and ref
 
   it("splits calculation base by catalog kind for a mixed-kind order", async () => {
     mockFindActiveRules.mockImplementation(async (appliesTo: string) =>
-      appliesTo === "PRODUCT" ? [rule({ id: "rule-product", appliesTo: "PRODUCT", rateValueBps: 1000 })] : [],
+      appliesTo === "PRODUCT"
+        ? [rule({ id: "rule-product", appliesTo: "PRODUCT", rateValueBps: 1000 })]
+        : [],
     );
     mockGetAncestorChain.mockResolvedValue([{ level: 1, memberId: REFERRER_L1 }]);
 
@@ -359,10 +366,19 @@ describe("reverseOrCancelCommissionsForOrder — Q-07 refund/cancellation safety
 
     await reverseOrCancelCommissionsForOrder(ORDER_ID, "admin-1", "Order cancelled");
 
-    expect(mockUpdateCommissionStatus).toHaveBeenCalledWith(prismaMock, "commission-1", "CANCELLED", undefined);
+    expect(mockUpdateCommissionStatus).toHaveBeenCalledWith(
+      prismaMock,
+      "commission-1",
+      "CANCELLED",
+      undefined,
+    );
     expect(mockCreateCommissionStatusHistory).toHaveBeenCalledWith(
       prismaMock,
-      expect.objectContaining({ fromStatus: "PENDING", toStatus: "CANCELLED", reason: "Order cancelled" }),
+      expect.objectContaining({
+        fromStatus: "PENDING",
+        toStatus: "CANCELLED",
+        reason: "Order cancelled",
+      }),
     );
   });
 
@@ -371,7 +387,12 @@ describe("reverseOrCancelCommissionsForOrder — Q-07 refund/cancellation safety
 
     await reverseOrCancelCommissionsForOrder(ORDER_ID, "admin-1", "Order refunded");
 
-    expect(mockUpdateCommissionStatus).toHaveBeenCalledWith(prismaMock, "commission-1", "REVERSED", undefined);
+    expect(mockUpdateCommissionStatus).toHaveBeenCalledWith(
+      prismaMock,
+      "commission-1",
+      "REVERSED",
+      undefined,
+    );
   });
 
   it("reverses an AVAILABLE commission and claws back the full amount from the wallet", async () => {
@@ -382,7 +403,12 @@ describe("reverseOrCancelCommissionsForOrder — Q-07 refund/cancellation safety
 
     await reverseOrCancelCommissionsForOrder(ORDER_ID, "admin-1", "Order refunded");
 
-    expect(mockUpdateCommissionStatus).toHaveBeenCalledWith(prismaMock, "commission-1", "REVERSED", undefined);
+    expect(mockUpdateCommissionStatus).toHaveBeenCalledWith(
+      prismaMock,
+      "commission-1",
+      "REVERSED",
+      undefined,
+    );
     expect(mockDebitWalletUpTo).toHaveBeenCalledWith(
       prismaMock,
       expect.objectContaining({
@@ -404,7 +430,12 @@ describe("reverseOrCancelCommissionsForOrder — Q-07 refund/cancellation safety
     ).resolves.not.toThrow();
 
     // The commission itself still moves to REVERSED — the wallet never goes negative (Q-07), it just can't fully recover.
-    expect(mockUpdateCommissionStatus).toHaveBeenCalledWith(prismaMock, "commission-1", "REVERSED", undefined);
+    expect(mockUpdateCommissionStatus).toHaveBeenCalledWith(
+      prismaMock,
+      "commission-1",
+      "REVERSED",
+      undefined,
+    );
   });
 
   it("is idempotent — a commission already REVERSED or CANCELLED is left untouched, not double-processed", async () => {
@@ -445,8 +476,18 @@ describe("releaseEligibleCommissions — cron promotion to AVAILABLE", () => {
     const count = await releaseEligibleCommissions(new Date());
 
     expect(count).toBe(2);
-    expect(mockUpdateCommissionStatus).toHaveBeenCalledWith(prismaMock, "commission-1", "AVAILABLE", undefined);
-    expect(mockUpdateCommissionStatus).toHaveBeenCalledWith(prismaMock, "commission-2", "AVAILABLE", undefined);
+    expect(mockUpdateCommissionStatus).toHaveBeenCalledWith(
+      prismaMock,
+      "commission-1",
+      "AVAILABLE",
+      undefined,
+    );
+    expect(mockUpdateCommissionStatus).toHaveBeenCalledWith(
+      prismaMock,
+      "commission-2",
+      "AVAILABLE",
+      undefined,
+    );
     expect(mockCreditWallet).toHaveBeenCalledWith(
       prismaMock,
       expect.objectContaining({

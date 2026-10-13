@@ -1,6 +1,8 @@
 import "server-only";
 import { prisma } from "@/server/lib/prisma";
+import type { Prisma } from "@/generated/prisma/client";
 import type { UserStatus } from "@/generated/prisma/enums";
+import { dayRangeBounds } from "@/lib/day-range";
 
 /** Roles that mean "this is a staff account" — those are managed under Admins, never as members. */
 export const STAFF_ROLE_CODES = ["SUPER_ADMIN", "ADMIN", "FINANCE", "SUPPORT"] as const;
@@ -16,6 +18,28 @@ export interface MemberListFilter {
   cursor?: string;
 }
 
+/** The one definition of the admin member filters, shared by the list and the report download. */
+function memberWhere(filter: MemberListFilter): Prisma.UserWhereInput {
+  const search = filter.search?.trim();
+  const createdAt = dayRangeBounds(filter.from, filter.to);
+  return {
+    memberProfile: { isNot: null },
+    userRoles: { none: { role: { code: { in: [...STAFF_ROLE_CODES] } }, revokedAt: null } },
+    ...(filter.status ? { status: filter.status } : {}),
+    ...(Object.keys(createdAt).length ? { createdAt } : {}),
+    ...(search
+      ? {
+          OR: [
+            { email: { contains: search, mode: "insensitive" } },
+            { fullName: { contains: search, mode: "insensitive" } },
+            { phone: { contains: search } },
+            { memberProfile: { memberId: { contains: search, mode: "insensitive" } } },
+          ],
+        }
+      : {}),
+  };
+}
+
 /**
  * Admin member list: every non-staff account that has a member profile,
  * date-wise (newest first) with search/status/date filters — the "Date-wise
@@ -23,32 +47,8 @@ export interface MemberListFilter {
  * doc. Keyset-paginated; selects only list columns (no PAN, bank, etc.).
  */
 export async function listMembers(filter: MemberListFilter) {
-  const search = filter.search?.trim();
-  const createdAt: { gte?: Date; lt?: Date } = {};
-  if (filter.from) createdAt.gte = new Date(`${filter.from}T00:00:00.000Z`);
-  if (filter.to) {
-    const end = new Date(`${filter.to}T00:00:00.000Z`);
-    end.setUTCDate(end.getUTCDate() + 1);
-    createdAt.lt = end;
-  }
-
   const rows = await prisma.user.findMany({
-    where: {
-      memberProfile: { isNot: null },
-      userRoles: { none: { role: { code: { in: [...STAFF_ROLE_CODES] } }, revokedAt: null } },
-      ...(filter.status ? { status: filter.status } : {}),
-      ...(Object.keys(createdAt).length ? { createdAt } : {}),
-      ...(search
-        ? {
-            OR: [
-              { email: { contains: search, mode: "insensitive" } },
-              { fullName: { contains: search, mode: "insensitive" } },
-              { phone: { contains: search } },
-              { memberProfile: { memberId: { contains: search, mode: "insensitive" } } },
-            ],
-          }
-        : {}),
-    },
+    where: memberWhere(filter),
     orderBy: [{ createdAt: "desc" }, { id: "asc" }],
     take: PAGE_SIZE + 1,
     ...(filter.cursor ? { cursor: { id: filter.cursor }, skip: 1 } : {}),
@@ -67,6 +67,39 @@ export async function listMembers(filter: MemberListFilter) {
   const hasMore = rows.length > PAGE_SIZE;
   const page = hasMore ? rows.slice(0, PAGE_SIZE) : rows;
   return { members: page, nextCursor: hasMore ? (page.at(-1)?.id ?? null) : null };
+}
+
+/** Hard cap for one downloaded report; the caller is told when the data was cut off. */
+export const MEMBER_REPORT_MAX_ROWS = 10_000;
+
+/**
+ * Everything the "Member Report" download needs, for the same filters as the on-screen list.
+ * No PAN, bank or other KYC document data: those stay on the member's own page.
+ */
+export async function listMembersForReport(filter: Omit<MemberListFilter, "cursor">) {
+  const rows = await prisma.user.findMany({
+    where: memberWhere(filter),
+    orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+    take: MEMBER_REPORT_MAX_ROWS + 1,
+    select: {
+      email: true,
+      phone: true,
+      fullName: true,
+      status: true,
+      createdAt: true,
+      memberProfile: {
+        select: {
+          memberId: true,
+          kycStatus: true,
+          referredByUser: { select: { memberProfile: { select: { memberId: true } } } },
+        },
+      },
+      vendorProfile: { select: { businessName: true } },
+      wallet: { select: { balance: true } },
+    },
+  });
+  const truncated = rows.length > MEMBER_REPORT_MAX_ROWS;
+  return { rows: truncated ? rows.slice(0, MEMBER_REPORT_MAX_ROWS) : rows, truncated };
 }
 
 export async function countMembersByStatus() {
@@ -105,6 +138,9 @@ export async function getMemberDetail(userId: string) {
           dob: true,
           pan: true,
           gstin: true,
+          websiteUrl: true,
+          socialLinks: true,
+          telephone: true,
           referredByUser: { select: { fullName: true, email: true } },
         },
       },

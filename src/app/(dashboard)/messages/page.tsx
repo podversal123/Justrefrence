@@ -52,7 +52,7 @@ export default async function MessagesPage({
   const recipients: Recipient[] | null = candidates
     ? candidates.map((c) => ({
         id: c.id,
-        label: `${c.vendorProfile?.businessName ?? c.fullName ?? c.email}${c.vendorProfile ? " (vendor)" : ""} — ${c.email}`,
+        label: `${c.vendorProfile?.businessName ?? c.fullName ?? c.email}${c.vendorProfile ? " (vendor)" : ""} · ${c.email}`,
       }))
     : null;
   const preselected = params["to"];

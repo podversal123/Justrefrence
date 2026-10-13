@@ -3,7 +3,11 @@ import { redirect } from "next/navigation";
 import { getAuthSession } from "@/server/auth/session";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { getMemberProfileByUserId } from "@/server/repositories/identity/member-repository";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  getMemberProfileByUserId,
+  getUserPhone,
+} from "@/server/repositories/identity/member-repository";
 import { listAddresses } from "@/server/repositories/identity/address-repository";
 import { getBankAccount } from "@/server/repositories/identity/bank-repository";
 import { ProfileForm } from "./profile-form";
@@ -11,106 +15,200 @@ import { ChangePasswordForm } from "./change-password-form";
 import { MemberDetailsForm } from "./member-details-form";
 import { AddressForm } from "./address-form";
 import { BankAccountForm } from "./bank-account-form";
+import { KycDocumentsCard } from "@/components/kyc/kyc-documents-card";
 
 export const metadata: Metadata = { title: "My profile" };
 
-export default async function ProfilePage() {
+const TABS = ["personal", "addresses", "bank", "kyc", "password"] as const;
+type ProfileTab = (typeof TABS)[number];
+
+const TAB_TRIGGER = "flex-none px-3 py-2 sm:px-4";
+
+/**
+ * One screen per topic instead of one very long page: Personal, Addresses, Bank and Password.
+ * `?tab=bank` opens a tab directly, so a notification or a link can point straight at it.
+ */
+export default async function ProfilePage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | undefined>>;
+}) {
   const session = await getAuthSession();
   if (!session) redirect("/login");
 
-  // Member-specific cards (KYC, addresses, bank) only apply to accounts
-  // that actually have a member profile (i.e. registered via Phase 4
-  // self-registration) — a staff-only admin/vendor account has none.
+  // Member-specific parts (details, addresses, bank) only apply to accounts that actually have a
+  // member profile; a staff-only account has none.
   const memberProfile = await getMemberProfileByUserId(session.userId);
 
-  const [addresses, bankAccount] = memberProfile
-    ? await Promise.all([listAddresses(session.userId), getBankAccount(session.userId)])
-    : [[], null];
+  const [addresses, bankAccount, contact] = await Promise.all([
+    memberProfile ? listAddresses(session.userId) : Promise.resolve([]),
+    memberProfile ? getBankAccount(session.userId) : Promise.resolve(null),
+    getUserPhone(session.userId),
+  ]);
 
   const residence = addresses.find((a) => a.type === "RESIDENCE") ?? null;
   const office = addresses.find((a) => a.type === "OFFICE") ?? null;
+  const billing = addresses.find((a) => a.type === "BILLING") ?? null;
+
+  const requested = (await searchParams)["tab"];
+  const available: readonly ProfileTab[] = memberProfile ? TABS : ["personal", "password"];
+  const activeTab = available.find((t) => t === requested) ?? "personal";
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
       <div>
         <h1>My profile</h1>
-        <p className="text-muted-foreground">Manage your account details and password.</p>
+        <p className="text-muted-foreground">Your details, addresses, bank account and password.</p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Profile</CardTitle>
-          <CardDescription>This is how you appear to other admins.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ProfileForm email={session.email} fullName={session.fullName} />
-        </CardContent>
-      </Card>
+      <Tabs defaultValue={activeTab} className="gap-6">
+        <TabsList className="h-auto w-full justify-start overflow-x-auto sm:w-fit">
+          <TabsTrigger value="personal" className={TAB_TRIGGER}>
+            Personal
+          </TabsTrigger>
+          {memberProfile ? (
+            <TabsTrigger value="addresses" className={TAB_TRIGGER}>
+              Addresses
+            </TabsTrigger>
+          ) : null}
+          {memberProfile ? (
+            <TabsTrigger value="bank" className={TAB_TRIGGER}>
+              Bank
+            </TabsTrigger>
+          ) : null}
+          {memberProfile ? (
+            <TabsTrigger value="kyc" className={TAB_TRIGGER}>
+              KYC
+            </TabsTrigger>
+          ) : null}
+          <TabsTrigger value="password" className={TAB_TRIGGER}>
+            Password
+          </TabsTrigger>
+        </TabsList>
 
-      {memberProfile ? (
-        <>
-          <Card>
+        <TabsContent value="personal">
+          <div className="grid items-start gap-6 lg:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Account</CardTitle>
+                <CardDescription>How you sign in and appear to others.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ProfileForm
+                  email={session.email}
+                  fullName={session.fullName}
+                  mobile={contact.phone}
+                  mobileVerified={Boolean(contact.phoneVerifiedAt)}
+                />
+              </CardContent>
+            </Card>
+
+            {memberProfile ? (
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between gap-3">
+                    <CardTitle>Member details</CardTitle>
+                    <StatusBadge status={memberProfile.kycStatus} />
+                  </div>
+                  <CardDescription>
+                    Member ID <span className="font-mono">{memberProfile.memberId}</span> · Referral
+                    code <span className="font-mono">{memberProfile.referralCode}</span>
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <a
+                    href="/api/welcome-letter"
+                    className="text-primary mb-4 inline-block text-sm font-medium underline-offset-4 hover:underline"
+                  >
+                    Download your welcome letter (PDF)
+                  </a>
+                  <MemberDetailsForm
+                    fullName={session.fullName}
+                    dob={memberProfile.dob}
+                    pan={memberProfile.pan}
+                    gstin={memberProfile.gstin}
+                    websiteUrl={memberProfile.websiteUrl}
+                    socialLinks={
+                      typeof memberProfile.socialLinks === "string"
+                        ? memberProfile.socialLinks
+                        : null
+                    }
+                    telephone={memberProfile.telephone}
+                  />
+                </CardContent>
+              </Card>
+            ) : null}
+          </div>
+        </TabsContent>
+
+        {memberProfile ? (
+          <TabsContent value="addresses">
+            <div className="grid items-start gap-6 lg:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Residence address</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <AddressForm type="RESIDENCE" address={residence} />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Office / business address</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <AddressForm type="OFFICE" address={office} />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Billing address</CardTitle>
+                  <CardDescription>Shown on your invoices.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <AddressForm type="BILLING" address={billing} />
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+        ) : null}
+
+        {memberProfile ? (
+          <TabsContent value="bank">
+            <Card className="max-w-3xl">
+              <CardHeader>
+                <CardTitle>Bank details</CardTitle>
+                <CardDescription>
+                  Used for payouts. Your account number is stored encrypted.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <BankAccountForm bankAccount={bankAccount} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        ) : null}
+
+        {memberProfile ? (
+          <TabsContent value="kyc">
+            <KycDocumentsCard ownerUserId={session.userId} isVendor={session.hasVendorProfile} />
+          </TabsContent>
+        ) : null}
+
+        <TabsContent value="password">
+          <Card className="max-w-3xl">
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Member details</CardTitle>
-                <StatusBadge status={memberProfile.kycStatus} />
-              </div>
-              <CardDescription>
-                Member ID <span className="font-mono">{memberProfile.memberId}</span> · Referral
-                code <span className="font-mono">{memberProfile.referralCode}</span>
-              </CardDescription>
+              <CardTitle>Change password</CardTitle>
+              <CardDescription>You need your current password to set a new one.</CardDescription>
             </CardHeader>
             <CardContent>
-              <MemberDetailsForm
-                fullName={session.fullName}
-                dob={memberProfile.dob}
-                pan={memberProfile.pan}
-                gstin={memberProfile.gstin}
-                websiteUrl={memberProfile.websiteUrl}
-                socialLinks={typeof memberProfile.socialLinks === "string" ? memberProfile.socialLinks : null}
-              />
+              <ChangePasswordForm />
             </CardContent>
           </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Residence address</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <AddressForm type="RESIDENCE" address={residence} />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Office / business address</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <AddressForm type="OFFICE" address={office} />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Bank details</CardTitle>
-              <CardDescription>Used for payouts. Account number is encrypted at rest.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <BankAccountForm bankAccount={bankAccount} />
-            </CardContent>
-          </Card>
-        </>
-      ) : null}
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Change password</CardTitle>
-          <CardDescription>Requires your current password.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ChangePasswordForm />
-        </CardContent>
-      </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
+import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
 import { AlertCircle } from "lucide-react";
 import {
@@ -41,7 +42,10 @@ export function MobileLoginForm() {
     },
     initialRequestState,
   );
-  const [verifyState, verifyAction] = useActionState(confirmMobileLoginOtpAction, initialVerifyState);
+  const [verifyState, verifyAction] = useActionState(
+    confirmMobileLoginOtpAction,
+    initialVerifyState,
+  );
 
   if (step === "phone") {
     return (
@@ -102,7 +106,13 @@ export function MobileLoginForm() {
 
       <SubmitButton label="Sign in" pendingLabel="Signing in…" />
 
-      <Button type="button" variant="link" size="sm" className="px-0" onClick={() => setStep("phone")}>
+      <Button
+        type="button"
+        variant="link"
+        size="sm"
+        className="px-0"
+        onClick={() => setStep("phone")}
+      >
         Use a different number
       </Button>
     </form>

@@ -1,14 +1,15 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { updateVendorProfileAction } from "@/server/services/vendor-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { FormField } from "@/components/ui/form-field";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import type { ApiResult } from "@/lib/api-response";
+import type { FieldErrors } from "@/components/ui/action-form";
 
 const initialState: ApiResult<null> = { success: true, data: null, meta: { requestId: "" } };
 
@@ -21,9 +22,21 @@ function SubmitButton() {
   );
 }
 
-export function VendorProfileForm({ businessName }: { businessName: string }) {
+export interface VendorProfileValues {
+  businessName: string;
+  phone: string | null;
+  telephone: string | null;
+  gstin: string | null;
+  pan: string | null;
+}
+
+export function VendorProfileForm({ values }: { values: VendorProfileValues }) {
   const [state, formAction] = useActionState(updateVendorProfileAction, initialState);
   const submitted = state !== initialState;
+  const errors: FieldErrors =
+    submitted && !state.success
+      ? ((state.error.details as { fieldErrors?: FieldErrors } | undefined)?.fieldErrors ?? {})
+      : {};
 
   return (
     <form action={formAction} className="space-y-4" noValidate>
@@ -36,13 +49,53 @@ export function VendorProfileForm({ businessName }: { businessName: string }) {
       {submitted && state.success ? (
         <Alert>
           <CheckCircle2 className="size-4" />
-          <AlertDescription>Business profile updated.</AlertDescription>
+          <AlertDescription>Business profile saved.</AlertDescription>
         </Alert>
       ) : null}
 
-      <div className="space-y-2">
-        <Label htmlFor="businessName">Business name</Label>
-        <Input id="businessName" name="businessName" defaultValue={businessName} required />
+      <FormField htmlFor="businessName" label="Business name" error={errors["businessName"]}>
+        <Input id="businessName" name="businessName" defaultValue={values.businessName} required />
+      </FormField>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <FormField
+          htmlFor="vp-phone"
+          label="Business mobile"
+          hint="With country code. Buyers and our team reach you here."
+          error={errors["phone"]}
+        >
+          <Input
+            id="vp-phone"
+            name="phone"
+            type="tel"
+            defaultValue={values.phone ?? ""}
+            placeholder="+919876543210"
+            required
+          />
+        </FormField>
+        <FormField htmlFor="vp-telephone" label="Telephone (optional)" error={errors["telephone"]}>
+          <Input
+            id="vp-telephone"
+            name="telephone"
+            type="tel"
+            defaultValue={values.telephone ?? ""}
+            placeholder="011-23456789"
+          />
+        </FormField>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <FormField htmlFor="vp-gstin" label="GSTIN (optional)" error={errors["gstin"]}>
+          <Input
+            id="vp-gstin"
+            name="gstin"
+            defaultValue={values.gstin ?? ""}
+            placeholder="29ABCDE1234F1Z5"
+          />
+        </FormField>
+        <FormField htmlFor="vp-pan" label="Business PAN (optional)" error={errors["pan"]}>
+          <Input id="vp-pan" name="pan" defaultValue={values.pan ?? ""} placeholder="ABCDE1234F" />
+        </FormField>
       </div>
 
       <SubmitButton />

@@ -1,9 +1,11 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
+import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
 import { AlertCircle, Plus } from "lucide-react";
 import { createVendorAction } from "@/server/services/vendor-actions";
+import { FULL_ROW, FormGrid } from "@/components/ui/form-grid";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -48,7 +50,7 @@ export function CreateVendorDialog() {
           </Button>
         }
       />
-      <DialogContent>
+      <DialogContent className="sm:max-w-xl">
         <form action={formAction} className="space-y-4" noValidate>
           <DialogHeader>
             <DialogTitle>Create vendor account</DialogTitle>
@@ -65,20 +67,36 @@ export function CreateVendorDialog() {
             </Alert>
           ) : null}
 
-          <div className="space-y-2">
-            <Label htmlFor="vendor-businessName">Business name</Label>
-            <Input id="vendor-businessName" name="businessName" required />
-          </div>
+          <FormGrid>
+            <div className={`space-y-2 ${FULL_ROW}`}>
+              <Label htmlFor="vendor-businessName">Business name</Label>
+              <Input id="vendor-businessName" name="businessName" required />
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="vendor-fullName">Contact name</Label>
-            <Input id="vendor-fullName" name="fullName" required />
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="vendor-fullName">Contact name</Label>
+              <Input id="vendor-fullName" name="fullName" required />
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="vendor-email">Contact email</Label>
-            <Input id="vendor-email" name="email" type="email" required />
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="vendor-phone">Contact mobile</Label>
+              <Input
+                id="vendor-phone"
+                name="phone"
+                type="tel"
+                placeholder="+919876543210"
+                required
+              />
+            </div>
+
+            <div className={`space-y-2 ${FULL_ROW}`}>
+              <Label htmlFor="vendor-email">Contact email</Label>
+              <Input id="vendor-email" name="email" type="email" required />
+              <p className="text-muted-foreground text-xs">
+                We send the invite here. The mobile number needs the country code.
+              </p>
+            </div>
+          </FormGrid>
 
           <DialogFooter>
             <SubmitButton />

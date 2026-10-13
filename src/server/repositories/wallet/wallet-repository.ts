@@ -66,7 +66,9 @@ export async function recordLedgerEntry(
     throw new Error("Ledger entry amount must be positive.");
   }
 
-  const existing = await tx.walletTransaction.findUnique({ where: { idempotencyKey: input.idempotencyKey } });
+  const existing = await tx.walletTransaction.findUnique({
+    where: { idempotencyKey: input.idempotencyKey },
+  });
   if (existing) {
     return { applied: false, existing: { id: existing.id, balanceAfter: existing.balanceAfter } };
   }
@@ -85,7 +87,10 @@ export async function recordLedgerEntry(
     },
   });
 
-  return { applied: true, transaction: { id: transaction.id, balanceAfter: transaction.balanceAfter } };
+  return {
+    applied: true,
+    transaction: { id: transaction.id, balanceAfter: transaction.balanceAfter },
+  };
 }
 
 /**
@@ -99,7 +104,9 @@ export async function creditWallet(tx: Tx, input: LedgerEntryInput): Promise<Led
     throw new Error("Credit amount must be positive.");
   }
 
-  const existing = await tx.walletTransaction.findUnique({ where: { idempotencyKey: input.idempotencyKey } });
+  const existing = await tx.walletTransaction.findUnique({
+    where: { idempotencyKey: input.idempotencyKey },
+  });
   if (existing) {
     return { applied: false, existing: { id: existing.id, balanceAfter: existing.balanceAfter } };
   }
@@ -122,7 +129,10 @@ export async function creditWallet(tx: Tx, input: LedgerEntryInput): Promise<Led
     },
   });
 
-  return { applied: true, transaction: { id: transaction.id, balanceAfter: transaction.balanceAfter } };
+  return {
+    applied: true,
+    transaction: { id: transaction.id, balanceAfter: transaction.balanceAfter },
+  };
 }
 
 /**
@@ -138,7 +148,9 @@ export async function debitWallet(tx: Tx, input: LedgerEntryInput): Promise<Ledg
     throw new Error("Debit amount must be positive.");
   }
 
-  const existing = await tx.walletTransaction.findUnique({ where: { idempotencyKey: input.idempotencyKey } });
+  const existing = await tx.walletTransaction.findUnique({
+    where: { idempotencyKey: input.idempotencyKey },
+  });
   if (existing) {
     return { applied: false, existing: { id: existing.id, balanceAfter: existing.balanceAfter } };
   }
@@ -167,7 +179,10 @@ export async function debitWallet(tx: Tx, input: LedgerEntryInput): Promise<Ledg
     },
   });
 
-  return { applied: true, transaction: { id: transaction.id, balanceAfter: transaction.balanceAfter } };
+  return {
+    applied: true,
+    transaction: { id: transaction.id, balanceAfter: transaction.balanceAfter },
+  };
 }
 
 /**
@@ -241,11 +256,18 @@ export async function holdForPayout(tx: Tx, walletId: string, amount: bigint): P
 
 /** Finalizes a hold as PAID — funds leave `pendingBalance` for good, never return to `balance`. */
 export async function releaseHoldAsPaid(tx: Tx, walletId: string, amount: bigint): Promise<void> {
-  await tx.wallet.update({ where: { id: walletId }, data: { pendingBalance: { decrement: amount } } });
+  await tx.wallet.update({
+    where: { id: walletId },
+    data: { pendingBalance: { decrement: amount } },
+  });
 }
 
 /** Reverses a hold — funds move back from `pendingBalance` into spendable `balance` (payout rejected). */
-export async function releaseHoldToBalance(tx: Tx, walletId: string, amount: bigint): Promise<void> {
+export async function releaseHoldToBalance(
+  tx: Tx,
+  walletId: string,
+  amount: bigint,
+): Promise<void> {
   await tx.wallet.update({
     where: { id: walletId },
     data: { pendingBalance: { decrement: amount }, balance: { increment: amount } },

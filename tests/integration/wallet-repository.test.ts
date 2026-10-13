@@ -15,9 +15,8 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@/server/lib/prisma", () => ({ prisma: {} }));
 
-const { creditWallet, debitWallet, recordLedgerEntry } = await import(
-  "@/server/repositories/wallet/wallet-repository"
-);
+const { creditWallet, debitWallet, recordLedgerEntry } =
+  await import("@/server/repositories/wallet/wallet-repository");
 
 interface MockWallet {
   id: string;
@@ -37,24 +36,38 @@ function createStatefulTx(initialBalance: bigint) {
         if (balanceOp?.increment !== undefined) wallet.balance += balanceOp.increment;
         return { ...wallet };
       }),
-      updateMany: vi.fn(async ({ where, data }: { where: Record<string, unknown>; data: Record<string, unknown> }) => {
-        const gte = (where["balance"] as { gte: bigint }).gte;
-        if (wallet.balance < gte) return { count: 0 };
-        const decrement = (data["balance"] as { decrement: bigint }).decrement;
-        wallet.balance -= decrement;
-        return { count: 1 };
-      }),
+      updateMany: vi.fn(
+        async ({
+          where,
+          data,
+        }: {
+          where: Record<string, unknown>;
+          data: Record<string, unknown>;
+        }) => {
+          const gte = (where["balance"] as { gte: bigint }).gte;
+          if (wallet.balance < gte) return { count: 0 };
+          const decrement = (data["balance"] as { decrement: bigint }).decrement;
+          wallet.balance -= decrement;
+          return { count: 1 };
+        },
+      ),
       findUniqueOrThrow: vi.fn(async () => ({ ...wallet })),
     },
     walletTransaction: {
       findUnique: vi.fn(async ({ where }: { where: { idempotencyKey: string } }) => {
         return transactionsByKey.get(where.idempotencyKey) ?? null;
       }),
-      create: vi.fn(async ({ data }: { data: Record<string, unknown> & { idempotencyKey: string; balanceAfter: bigint } }) => {
-        const created = { id: `txn-${nextTxnId++}`, ...data };
-        transactionsByKey.set(data.idempotencyKey, created);
-        return created;
-      }),
+      create: vi.fn(
+        async ({
+          data,
+        }: {
+          data: Record<string, unknown> & { idempotencyKey: string; balanceAfter: bigint };
+        }) => {
+          const created = { id: `txn-${nextTxnId++}`, ...data };
+          transactionsByKey.set(data.idempotencyKey, created);
+          return created;
+        },
+      ),
     },
   };
 

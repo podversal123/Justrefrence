@@ -7,7 +7,13 @@ import { z } from "zod";
  * rate anywhere else — this is the only way a rate enters the system.
  */
 
-export const commissionApplicableToSchema = z.enum(["PRODUCT", "SERVICE", "PROJECT", "EPIN", "SUBSCRIPTION"]);
+export const commissionApplicableToSchema = z.enum([
+  "PRODUCT",
+  "SERVICE",
+  "PROJECT",
+  "EPIN",
+  "SUBSCRIPTION",
+]);
 export const commissionRateBasisSchema = z.enum([
   "PERCENT_OF_ORDER",
   "PERCENT_OF_VENDOR_SALE",
@@ -21,8 +27,8 @@ export const createCommissionRuleSchema = z
     level: z.coerce.number().int().min(1).max(20),
     appliesTo: commissionApplicableToSchema,
     rateBasis: commissionRateBasisSchema,
-    rateValuePercent: z
-      .coerce.number()
+    rateValuePercent: z.coerce
+      .number()
       .min(0)
       .max(100)
       .optional()
@@ -35,8 +41,8 @@ export const createCommissionRuleSchema = z
       .transform((v) => (v ? BigInt(v) : undefined)),
     qualifyingEvent: commissionQualifyingEventSchema,
     requiresActiveSubscription: z.coerce.boolean().default(false),
-    minimumActivityCount: z
-      .coerce.number()
+    minimumActivityCount: z.coerce
+      .number()
       .int()
       .min(0)
       .optional()

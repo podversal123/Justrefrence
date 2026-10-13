@@ -25,8 +25,12 @@ const mockGetAuthSession = vi.fn();
 vi.mock("@/server/auth/session", () => ({ getAuthSession: mockGetAuthSession }));
 
 vi.mock("@/server/lib/rate-limit", () => ({
-  contentRateLimiter: { consume: vi.fn(async () => ({ allowed: true, remaining: 10, resetAt: 0 })) },
-  feedbackRateLimiter: { consume: vi.fn(async () => ({ allowed: true, remaining: 10, resetAt: 0 })) },
+  contentRateLimiter: {
+    consume: vi.fn(async () => ({ allowed: true, remaining: 10, resetAt: 0 })),
+  },
+  feedbackRateLimiter: {
+    consume: vi.fn(async () => ({ allowed: true, remaining: 10, resetAt: 0 })),
+  },
 }));
 
 const mockCreateNotification = vi.fn().mockResolvedValue(undefined);
@@ -56,8 +60,10 @@ vi.mock("@/server/repositories/identity/member-admin-repository", () => memberAd
 const prismaMock = { user: { findUnique: vi.fn() } };
 vi.mock("@/server/lib/prisma", () => ({ prisma: prismaMock }));
 
-const { replyToTicketAction, updateTicketStatusAction } = await import("@/server/services/support-actions");
-const { sendMessageAction, markMessageReadAction } = await import("@/server/services/message-actions");
+const { replyToTicketAction, updateTicketStatusAction } =
+  await import("@/server/services/support-actions");
+const { sendMessageAction, markMessageReadAction } =
+  await import("@/server/services/message-actions");
 const { moderateMemberAction } = await import("@/server/services/member-moderation-actions");
 
 const TICKET_ID = "11111111-1111-4111-8111-111111111111";
@@ -113,10 +119,15 @@ describe("replyToTicketAction", () => {
     mockGetAuthSession.mockResolvedValue(session(OWNER, MEMBER_PERMS));
     ticketRepo.getTicketWithMessages.mockResolvedValue(openTicket());
 
-    const result = await replyToTicketAction(undefined, formData({ ticketId: TICKET_ID, body: "Any update?" }));
+    const result = await replyToTicketAction(
+      undefined,
+      formData({ ticketId: TICKET_ID, body: "Any update?" }),
+    );
 
     expect(result.success).toBe(true);
-    expect(ticketRepo.addReply).toHaveBeenCalledWith(expect.objectContaining({ isStaffReply: false, authorId: OWNER }));
+    expect(ticketRepo.addReply).toHaveBeenCalledWith(
+      expect.objectContaining({ isStaffReply: false, authorId: OWNER }),
+    );
     expect(mockCreateNotification).not.toHaveBeenCalled();
   });
 
@@ -124,7 +135,10 @@ describe("replyToTicketAction", () => {
     mockGetAuthSession.mockResolvedValue(session(OTHER, MEMBER_PERMS));
     ticketRepo.getTicketWithMessages.mockResolvedValue(openTicket());
 
-    const result = await replyToTicketAction(undefined, formData({ ticketId: TICKET_ID, body: "hi" }));
+    const result = await replyToTicketAction(
+      undefined,
+      formData({ ticketId: TICKET_ID, body: "hi" }),
+    );
 
     expect(result.success).toBe(false);
     if (!result.success) expect(result.error.code).toBe("NOT_FOUND");
@@ -135,18 +149,28 @@ describe("replyToTicketAction", () => {
     mockGetAuthSession.mockResolvedValue(session(STAFF, STAFF_PERMS));
     ticketRepo.getTicketWithMessages.mockResolvedValue(openTicket());
 
-    const result = await replyToTicketAction(undefined, formData({ ticketId: TICKET_ID, body: "On it." }));
+    const result = await replyToTicketAction(
+      undefined,
+      formData({ ticketId: TICKET_ID, body: "On it." }),
+    );
 
     expect(result.success).toBe(true);
-    expect(ticketRepo.addReply).toHaveBeenCalledWith(expect.objectContaining({ isStaffReply: true }));
-    expect(mockCreateNotification).toHaveBeenCalledWith(expect.objectContaining({ userId: OWNER, type: "TICKET_REPLY" }));
+    expect(ticketRepo.addReply).toHaveBeenCalledWith(
+      expect.objectContaining({ isStaffReply: true }),
+    );
+    expect(mockCreateNotification).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: OWNER, type: "TICKET_REPLY" }),
+    );
   });
 
   it("refuses a reply on a closed ticket", async () => {
     mockGetAuthSession.mockResolvedValue(session(OWNER, MEMBER_PERMS));
     ticketRepo.getTicketWithMessages.mockResolvedValue(openTicket({ status: "CLOSED" }));
 
-    const result = await replyToTicketAction(undefined, formData({ ticketId: TICKET_ID, body: "hello?" }));
+    const result = await replyToTicketAction(
+      undefined,
+      formData({ ticketId: TICKET_ID, body: "hello?" }),
+    );
 
     expect(result.success).toBe(false);
     if (!result.success) expect(result.error.code).toBe("CONFLICT");
@@ -158,7 +182,10 @@ describe("replyToTicketAction", () => {
     ticketRepo.getTicketWithMessages.mockResolvedValue(openTicket());
     ticketRepo.addReply.mockResolvedValue(false);
 
-    const result = await replyToTicketAction(undefined, formData({ ticketId: TICKET_ID, body: "late" }));
+    const result = await replyToTicketAction(
+      undefined,
+      formData({ ticketId: TICKET_ID, body: "late" }),
+    );
 
     expect(result.success).toBe(false);
     if (!result.success) expect(result.error.code).toBe("CONFLICT");
@@ -170,7 +197,10 @@ describe("updateTicketStatusAction", () => {
     mockGetAuthSession.mockResolvedValue(session(OWNER, MEMBER_PERMS));
     ticketRepo.getTicketWithMessages.mockResolvedValue(openTicket());
 
-    const result = await updateTicketStatusAction(undefined, formData({ ticketId: TICKET_ID, status: "CLOSED" }));
+    const result = await updateTicketStatusAction(
+      undefined,
+      formData({ ticketId: TICKET_ID, status: "CLOSED" }),
+    );
 
     expect(result.success).toBe(true);
     expect(ticketRepo.setTicketStatus).toHaveBeenCalledWith(TICKET_ID, "CLOSED");
@@ -180,7 +210,10 @@ describe("updateTicketStatusAction", () => {
     mockGetAuthSession.mockResolvedValue(session(OWNER, MEMBER_PERMS));
     ticketRepo.getTicketWithMessages.mockResolvedValue(openTicket());
 
-    const result = await updateTicketStatusAction(undefined, formData({ ticketId: TICKET_ID, status: "RESOLVED" }));
+    const result = await updateTicketStatusAction(
+      undefined,
+      formData({ ticketId: TICKET_ID, status: "RESOLVED" }),
+    );
 
     expect(result.success).toBe(false);
     if (!result.success) expect(result.error.code).toBe("FORBIDDEN");
@@ -191,7 +224,10 @@ describe("updateTicketStatusAction", () => {
     mockGetAuthSession.mockResolvedValue(session(OTHER, MEMBER_PERMS));
     ticketRepo.getTicketWithMessages.mockResolvedValue(openTicket());
 
-    const result = await updateTicketStatusAction(undefined, formData({ ticketId: TICKET_ID, status: "CLOSED" }));
+    const result = await updateTicketStatusAction(
+      undefined,
+      formData({ ticketId: TICKET_ID, status: "CLOSED" }),
+    );
 
     expect(result.success).toBe(false);
     expect(ticketRepo.setTicketStatus).not.toHaveBeenCalled();
@@ -201,7 +237,10 @@ describe("updateTicketStatusAction", () => {
     mockGetAuthSession.mockResolvedValue(session(STAFF, STAFF_PERMS));
     ticketRepo.getTicketWithMessages.mockResolvedValue(openTicket());
 
-    const result = await updateTicketStatusAction(undefined, formData({ ticketId: TICKET_ID, status: "RESOLVED" }));
+    const result = await updateTicketStatusAction(
+      undefined,
+      formData({ ticketId: TICKET_ID, status: "RESOLVED" }),
+    );
 
     expect(result.success).toBe(true);
   });
@@ -227,7 +266,10 @@ describe("sendMessageAction", () => {
   it("staff must choose a recipient, and a blocked recipient is refused", async () => {
     mockAuthorize.mockResolvedValue(session(STAFF, STAFF_PERMS));
 
-    const noRecipient = await sendMessageAction(undefined, formData({ subject: "Hi", body: "Hello" }));
+    const noRecipient = await sendMessageAction(
+      undefined,
+      formData({ subject: "Hi", body: "Hello" }),
+    );
     expect(noRecipient.success).toBe(false);
 
     prismaMock.user.findUnique.mockResolvedValue({ id: TARGET, status: "BLOCKED" });
@@ -253,7 +295,9 @@ describe("sendMessageAction", () => {
     expect(messageRepo.createMessage).toHaveBeenCalledWith(
       expect.objectContaining({ toUserId: TARGET, toStaff: false }),
     );
-    expect(mockCreateNotification).toHaveBeenCalledWith(expect.objectContaining({ userId: TARGET }));
+    expect(mockCreateNotification).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: TARGET }),
+    );
   });
 
   it("is denied without message:send", async () => {
@@ -322,7 +366,10 @@ describe("moderateMemberAction", () => {
     expect(result.success).toBe(true);
     expect(memberAdminRepo.setUserStatus).toHaveBeenCalledWith(TARGET, "BLOCKED");
     expect(mockRecordAudit).toHaveBeenCalledWith(
-      expect.objectContaining({ action: "MEMBER_BLOCKED", after: expect.objectContaining({ reason: "Chargeback abuse" }) }),
+      expect.objectContaining({
+        action: "MEMBER_BLOCKED",
+        after: expect.objectContaining({ reason: "Chargeback abuse" }),
+      }),
     );
   });
 

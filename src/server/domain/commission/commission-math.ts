@@ -9,10 +9,7 @@
 import { applyRateBps } from "@/server/domain/commerce/money";
 
 export type CommissionRateBasis =
-  | "PERCENT_OF_ORDER"
-  | "PERCENT_OF_VENDOR_SALE"
-  | "PERCENT_OF_PLATFORM_FEE"
-  | "FIXED";
+  "PERCENT_OF_ORDER" | "PERCENT_OF_VENDOR_SALE" | "PERCENT_OF_PLATFORM_FEE" | "FIXED";
 
 export interface CommissionRateSnapshot {
   rateBasis: CommissionRateBasis;

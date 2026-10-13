@@ -63,6 +63,7 @@ export interface UpdateMemberDetailsInput {
   websiteUrl?: string | undefined;
   /** Free-form text (e.g. newline-separated links); stored as a JSON scalar. */
   socialLinks?: string | undefined;
+  telephone?: string | undefined;
 }
 
 export interface BirthdayMember {
@@ -138,7 +139,17 @@ export async function updateMemberDetails(userId: string, input: UpdateMemberDet
         gstin: input.gstin ?? null,
         websiteUrl: input.websiteUrl ?? null,
         socialLinks: input.socialLinks === undefined ? Prisma.JsonNull : input.socialLinks,
+        telephone: input.telephone ?? null,
       },
     });
   });
+}
+
+/** The account's mobile number (from sign-up) and whether it has been verified; null when none on file. */
+export async function getUserPhone(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { phone: true, phoneVerifiedAt: true },
+  });
+  return user ?? { phone: null, phoneVerifiedAt: null };
 }

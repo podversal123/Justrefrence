@@ -88,9 +88,8 @@ const {
   upsertAddressAction,
   upsertBankAccountAction,
 } = await import("@/server/services/member-actions");
-const { markAllNotificationsReadAction, markNotificationReadAction } = await import(
-  "@/server/services/notification-actions"
-);
+const { markAllNotificationsReadAction, markNotificationReadAction } =
+  await import("@/server/services/notification-actions");
 
 function formData(fields: Record<string, string>) {
   const fd = new FormData();
@@ -202,7 +201,9 @@ describe("confirmMobileLoginOtpAction — account-lock protection", () => {
         data: expect.objectContaining({ failedLoginAttempts: 5, lockedUntil: expect.any(Date) }),
       }),
     );
-    expect(mockRecordAudit).toHaveBeenCalledWith(expect.objectContaining({ action: "LOGIN_FAILED" }));
+    expect(mockRecordAudit).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "LOGIN_FAILED" }),
+    );
   });
 
   it("resets the lock counter and mints a session on a correct code", async () => {
@@ -280,7 +281,10 @@ describe("self-service profile actions — always scoped to the caller's own ses
     );
 
     expect(result.success).toBe(true);
-    expect(mockUpsertAddress).toHaveBeenCalledWith(USER_ID, expect.objectContaining({ city: "Mumbai" }));
+    expect(mockUpsertAddress).toHaveBeenCalledWith(
+      USER_ID,
+      expect.objectContaining({ city: "Mumbai" }),
+    );
   });
 
   it("upsertBankAccountAction encrypts the account number and only stores the masked form", async () => {

@@ -55,7 +55,7 @@ export default function AboutPage() {
         />
         <div className="mx-auto w-full max-w-5xl px-4 py-20 sm:py-28">
           <p className="text-marigold mb-3 text-sm font-medium">{BRAND.domain}</p>
-          <h1 className="font-display max-w-2xl text-4xl leading-[1.08] font-semibold tracking-tight text-balance sm:text-6xl">
+          <h1 className="font-display max-w-2xl text-4xl leading-[1.08] font-bold tracking-tight text-balance sm:text-6xl">
             About {BRAND.name}
           </h1>
           <p className="text-ink-foreground/85 mt-5 max-w-xl text-xl text-pretty">
@@ -98,9 +98,7 @@ export default function AboutPage() {
 
         <div className="from-primary mt-14 flex flex-col items-start gap-4 rounded-3xl bg-gradient-to-br to-[oklch(0.42_0.2_20)] p-8 text-white sm:flex-row sm:items-center sm:justify-between sm:p-10">
           <div className="space-y-1">
-            <h2 className="font-display text-2xl font-semibold sm:text-3xl">
-              Ready to get started?
-            </h2>
+            <h2 className="font-display text-2xl font-bold sm:text-3xl">Ready to get started?</h2>
             <p className="text-white/85">Create an account to buy, sell or start referring.</p>
           </div>
           <div className="flex flex-wrap gap-2">

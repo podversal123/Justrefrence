@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
 import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -44,6 +45,7 @@ export function ConfirmationDialog({
   confirmLabel = "Confirm",
   variant = "default",
   successMessage,
+  children,
 }: {
   trigger: React.ReactElement;
   title: string;
@@ -54,6 +56,8 @@ export function ConfirmationDialog({
   variant?: "default" | "destructive";
   /** Optional toast on success (callers that raise their own toast leave this out). */
   successMessage?: string;
+  /** Extra fields shown inside the form (for example a reason box). */
+  children?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const [state, formAction] = useActionState(action, nullState);
@@ -93,6 +97,8 @@ export function ConfirmationDialog({
           {Object.entries(hiddenFields).map(([key, value]) => (
             <input key={key} type="hidden" name={key} value={value} />
           ))}
+
+          {children}
 
           {state !== nullState && !state.success ? (
             <Alert variant="destructive">

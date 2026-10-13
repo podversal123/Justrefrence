@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { hashWalletPin, isValidPinFormat, verifyWalletPin } from "@/server/domain/wallet/wallet-pin";
+import {
+  hashWalletPin,
+  isValidPinFormat,
+  verifyWalletPin,
+} from "@/server/domain/wallet/wallet-pin";
 
 describe("hashWalletPin / verifyWalletPin", () => {
   it("round-trips a correct PIN", () => {

@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { passwordRules } from "@/lib/schemas/auth";
+import { mobileSchema, optionalLandlineSchema, optionalMobileSchema } from "@/lib/schemas/contact";
+import { optionalGstinSchema, optionalPanSchema } from "@/lib/schemas/tax-ids";
 
 /**
  * Member registration/profile validation — see docs/database-tables.md §1
@@ -7,10 +9,7 @@ import { passwordRules } from "@/lib/schemas/auth";
  * convention as src/lib/schemas/auth.ts.
  */
 
-const phoneSchema = z
-  .string()
-  .trim()
-  .regex(/^\+?[1-9]\d{9,14}$/, "Enter a valid mobile number, e.g. +919876543210.");
+const phoneSchema = mobileSchema;
 
 export const otpChannelSchema = z.enum(["EMAIL", "SMS", "WHATSAPP"]);
 export type OtpChannelInput = z.infer<typeof otpChannelSchema>;
@@ -39,7 +38,10 @@ export type RegisterInput = z.infer<typeof registerSchema>;
 
 export const verifyRegistrationSchema = z.object({
   userId: z.string().uuid(),
-  code: z.string().trim().regex(/^\d{6}$/, "Enter the 6-digit code."),
+  code: z
+    .string()
+    .trim()
+    .regex(/^\d{6}$/, "Enter the 6-digit code."),
   referralCode: z
     .string()
     .trim()
@@ -57,7 +59,10 @@ export type MobileLoginRequestInput = z.infer<typeof mobileLoginRequestSchema>;
 
 export const mobileLoginVerifySchema = z.object({
   phone: phoneSchema,
-  code: z.string().trim().regex(/^\d{6}$/, "Enter the 6-digit code."),
+  code: z
+    .string()
+    .trim()
+    .regex(/^\d{6}$/, "Enter the 6-digit code."),
 });
 export type MobileLoginVerifyInput = z.infer<typeof mobileLoginVerifySchema>;
 
@@ -69,23 +74,8 @@ export const memberDetailsSchema = z.object({
     .optional()
     .transform((v) => (v ? v : undefined))
     .refine((v) => !v || !Number.isNaN(Date.parse(v)), "Enter a valid date."),
-  pan: z
-    .string()
-    .trim()
-    .toUpperCase()
-    .optional()
-    .transform((v) => (v ? v : undefined))
-    .refine((v) => !v || /^[A-Z]{5}\d{4}[A-Z]$/.test(v), "Enter a valid PAN, e.g. ABCDE1234F."),
-  gstin: z
-    .string()
-    .trim()
-    .toUpperCase()
-    .optional()
-    .transform((v) => (v ? v : undefined))
-    .refine(
-      (v) => !v || /^\d{2}[A-Z]{5}\d{4}[A-Z][0-9A-Z]Z[0-9A-Z]$/.test(v),
-      "Enter a valid 15-character GSTIN.",
-    ),
+  pan: optionalPanSchema,
+  gstin: optionalGstinSchema,
   websiteUrl: z
     .string()
     .trim()
@@ -97,6 +87,7 @@ export const memberDetailsSchema = z.object({
     .trim()
     .optional()
     .transform((v) => (v ? v : undefined)),
+  telephone: optionalLandlineSchema,
 });
 export type MemberDetailsInput = z.infer<typeof memberDetailsSchema>;
 
@@ -118,6 +109,7 @@ export const addressSchema = z.object({
     .trim()
     .regex(/^\d{6}$/, "Enter a valid 6-digit PIN code."),
   country: z.string().trim().length(2).default("IN"),
+  phone: optionalMobileSchema,
 });
 export type AddressInput = z.infer<typeof addressSchema>;
 
@@ -140,3 +132,24 @@ export const bankAccountSchema = z.object({
     .transform((v) => (v ? v : undefined)),
 });
 export type BankAccountInput = z.infer<typeof bankAccountSchema>;
+
+/** Admin "New registration": the admin enters the basics; the member signs in with a temporary password. */
+export const adminCreateMemberSchema = z.object({
+  fullName: z.string().trim().min(2, "Enter the member's full name.").max(200),
+  email: z.string().trim().toLowerCase().email("Enter a valid email address."),
+  phone: optionalMobileSchema,
+  referralCode: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .max(20)
+    .optional()
+    .transform((v) => (v ? v : undefined)),
+});
+export type AdminCreateMemberInput = z.infer<typeof adminCreateMemberSchema>;
+
+/** Admin edit of a member's profile: same fields the member can edit themselves, plus which member. */
+export const adminUpdateMemberSchema = memberDetailsSchema.extend({
+  userId: z.string().uuid(),
+});
+export type AdminUpdateMemberInput = z.infer<typeof adminUpdateMemberSchema>;

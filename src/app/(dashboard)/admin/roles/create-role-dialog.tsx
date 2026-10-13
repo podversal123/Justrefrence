@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
+import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
 import { AlertCircle, Plus } from "lucide-react";
 import { createRoleAction } from "@/server/services/role-actions";
@@ -64,7 +65,7 @@ export function CreateRoleDialog() {
           <DialogHeader>
             <DialogTitle>Create a custom role</DialogTitle>
             <DialogDescription>
-              Composed only from existing permissions — see docs/adr/0010.
+              Build a role from the permissions that already exist.
             </DialogDescription>
           </DialogHeader>
 

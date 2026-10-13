@@ -23,11 +23,13 @@ import {
   getServiceCategoriesWithCounts,
   type CategoryWithCount,
 } from "@/server/repositories/marketplace-stats";
-import { BRAND, HERO_SLIDES } from "@/lib/brand";
+import { BRAND, HERO_SLIDES, type HeroSlide } from "@/lib/brand";
+import { catalogImagePublicUrlClient } from "@/lib/catalog-image-url";
+import { listActiveBanners } from "@/server/repositories/content/banner-repository";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
-  title: `${BRAND.name} — ${BRAND.tagline}`,
+  title: `${BRAND.name}: ${BRAND.tagline}`,
   description: BRAND.description,
 };
 
@@ -38,10 +40,33 @@ const FEATURED_LIMIT = 4;
  * try/catch + its own Suspense fallback), so a slow or failing query for, say,
  * projects never blocks or crashes the hero or the sections around it.
  */
+/**
+ * The rotating banner. Staff manage it under Admin, Banners; if none is showing (or the lookup fails)
+ * the standard slides are used, so the front page is never empty.
+ */
+async function HomeHero() {
+  let slides: readonly HeroSlide[] = HERO_SLIDES;
+  try {
+    const banners = await listActiveBanners();
+    if (banners.length > 0) {
+      slides = banners.map((b) => ({
+        id: b.id,
+        headline: b.headline,
+        ...(b.subline ? { subline: b.subline } : {}),
+        image: catalogImagePublicUrlClient(b.imagePath),
+        cta: { label: b.ctaLabel, href: b.ctaHref },
+      }));
+    }
+  } catch (error) {
+    console.error("[home] failed to load banners", error);
+  }
+  return <HeroStage slides={slides} />;
+}
+
 export default function HomePage() {
   return (
     <>
-      <HeroStage slides={HERO_SLIDES} />
+      <HomeHero />
 
       <Suspense fallback={null}>
         <LiveBidsSection />
@@ -100,7 +125,7 @@ function SectionHeading({
   return (
     <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
       <div className="space-y-1.5">
-        <h2 className="font-display flex items-center gap-3 text-3xl font-medium tracking-tight sm:text-4xl">
+        <h2 className="font-display flex items-center gap-3 text-3xl font-bold tracking-tight sm:text-4xl">
           {title}
           {live ? (
             <span className="bg-success/10 text-success inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-sans text-xs font-medium">
@@ -296,7 +321,7 @@ function GetStartedBand() {
             className="bg-marigold/30 absolute -right-10 -bottom-16 size-56 rounded-full blur-3xl"
           />
           <p className="text-marigold text-sm font-medium">For vendors</p>
-          <h2 className="font-display mt-2 max-w-md text-3xl font-medium tracking-tight sm:text-4xl">
+          <h2 className="font-display mt-2 max-w-md text-3xl font-bold tracking-tight sm:text-4xl">
             Start your own business here.
           </h2>
           <p className="mt-3 max-w-md text-white/85">
@@ -332,7 +357,7 @@ function GetStartedBand() {
             className="bg-primary/30 absolute -top-16 -right-10 size-56 rounded-full blur-3xl"
           />
           <p className="text-marigold text-sm font-medium">Refer and earn</p>
-          <h2 className="font-display mt-2 max-w-md text-3xl font-medium tracking-tight sm:text-4xl">
+          <h2 className="font-display mt-2 max-w-md text-3xl font-bold tracking-tight sm:text-4xl">
             Earn by introducing buyers and vendors.
           </h2>
           <p className="text-ink-foreground/80 mt-3 max-w-md">

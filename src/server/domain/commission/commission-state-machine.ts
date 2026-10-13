@@ -9,7 +9,13 @@
  */
 import { ConflictError } from "@/server/lib/errors";
 
-export const COMMISSION_STATUSES = ["PENDING", "ELIGIBLE", "AVAILABLE", "REVERSED", "CANCELLED"] as const;
+export const COMMISSION_STATUSES = [
+  "PENDING",
+  "ELIGIBLE",
+  "AVAILABLE",
+  "REVERSED",
+  "CANCELLED",
+] as const;
 export type CommissionStatus = (typeof COMMISSION_STATUSES)[number];
 
 export type CommissionActorRole = "SYSTEM" | "ADMIN" | "FINANCE";

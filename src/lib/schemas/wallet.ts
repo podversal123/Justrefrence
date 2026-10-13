@@ -6,13 +6,18 @@ import { z } from "zod";
  * client+server source of truth, same convention as every other schema file.
  */
 
-export const walletPinSchema = z.object({
-  pin: z.string().trim().regex(/^\d{6}$/, "Enter a 6-digit PIN."),
-  confirmPin: z.string().trim(),
-}).refine((data) => data.pin === data.confirmPin, {
-  message: "PINs do not match.",
-  path: ["confirmPin"],
-});
+export const walletPinSchema = z
+  .object({
+    pin: z
+      .string()
+      .trim()
+      .regex(/^\d{6}$/, "Enter a 6-digit PIN."),
+    confirmPin: z.string().trim(),
+  })
+  .refine((data) => data.pin === data.confirmPin, {
+    message: "PINs do not match.",
+    path: ["confirmPin"],
+  });
 export type WalletPinInput = z.infer<typeof walletPinSchema>;
 
 export const requestPayoutSchema = z.object({
@@ -28,7 +33,14 @@ export const requestPayoutSchema = z.object({
 });
 export type RequestPayoutInput = z.infer<typeof requestPayoutSchema>;
 
-export const payoutStatusSchema = z.enum(["REQUESTED", "APPROVED", "REJECTED", "PROCESSING", "PAID", "FAILED"]);
+export const payoutStatusSchema = z.enum([
+  "REQUESTED",
+  "APPROVED",
+  "REJECTED",
+  "PROCESSING",
+  "PAID",
+  "FAILED",
+]);
 
 export const updatePayoutStatusSchema = z
   .object({
@@ -57,7 +69,11 @@ export type UpdatePayoutStatusInput = z.infer<typeof updatePayoutStatusSchema>;
 export const adminCreditWalletSchema = z.object({
   userId: z.string().uuid(),
   amountRupees: z.coerce.number().positive("Enter an amount greater than zero."),
-  reference: z.string().trim().min(2, "Enter a reference, e.g. a bank UTR or receipt number.").max(200),
+  reference: z
+    .string()
+    .trim()
+    .min(2, "Enter a reference, e.g. a bank UTR or receipt number.")
+    .max(200),
   idempotencyKey: z.string().uuid(),
 });
 export type AdminCreditWalletInput = z.infer<typeof adminCreditWalletSchema>;
@@ -77,8 +93,8 @@ export const createSubscriptionPlanSchema = z
     code: z.string().trim().toUpperCase().min(2).max(40),
     type: subscriptionPlanTypeSchema,
     priceRupees: z.coerce.number().positive("Enter a price greater than zero."),
-    durationDays: z
-      .coerce.number()
+    durationDays: z.coerce
+      .number()
       .int()
       .positive()
       .optional()
@@ -97,8 +113,8 @@ export type CreateSubscriptionPlanInput = z.infer<typeof createSubscriptionPlanS
 
 export const generateEpinSchema = z.object({
   planId: z.string().uuid(),
-  expiresInDays: z
-    .coerce.number()
+  expiresInDays: z.coerce
+    .number()
     .int()
     .positive()
     .optional()

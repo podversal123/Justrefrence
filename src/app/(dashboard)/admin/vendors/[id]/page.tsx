@@ -1,8 +1,19 @@
+import { EditVendorDialog } from "./edit-vendor-dialog";
+import { PendingChangeBanner } from "@/components/approvals/pending-change-banner";
+import { StatusBadge } from "@/components/ui/status-badge";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { Package, Briefcase, Wrench } from "lucide-react";
 import { getAuthSession } from "@/server/auth/session";
-import { getVendorDetail } from "@/server/repositories/vendor-repository";
+import Link from "next/link";
+import type { Route } from "next";
+import {
+  getVendorDetail,
+  listVendorListingSummaries,
+  type VendorListingSummary,
+} from "@/server/repositories/vendor-repository";
+import { formatPaise } from "@/lib/money";
+import { maskPan } from "@/server/domain/identity/masking";
 import { listRoles } from "@/server/repositories/role-repository";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,13 +23,6 @@ import { RoleManager } from "@/components/admin/role-manager";
 import { VendorStatusActions } from "./vendor-status-actions";
 
 export const metadata: Metadata = { title: "Vendor details" };
-
-const STATUS_VARIANT = {
-  APPROVED: "default",
-  PENDING: "secondary",
-  REJECTED: "destructive",
-  SUSPENDED: "destructive",
-} as const;
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -33,10 +37,12 @@ export default async function VendorDetailPage({ params }: PageProps) {
   const vendor = await getVendorDetail(id);
   if (!vendor) notFound();
 
-  const roles = await listRoles();
+  const [roles, listings] = await Promise.all([listRoles(), listVendorListingSummaries(id)]);
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
+      <PendingChangeBanner entityType="VENDOR_PROFILE" entityId={vendor.id} />
+
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1>{vendor.businessName}</h1>
@@ -44,21 +50,28 @@ export default async function VendorDetailPage({ params }: PageProps) {
             {vendor.user.fullName ?? "—"} · {vendor.user.email}
           </p>
         </div>
-        <Badge variant={STATUS_VARIANT[vendor.approvalStatus]} className="text-sm">
-          {vendor.approvalStatus}
-        </Badge>
+        <div className="flex flex-wrap items-center gap-3">
+          <StatusBadge status={vendor.approvalStatus} className="text-sm" />
+          {session.permissions.has("vendor:update:any") ? (
+            <EditVendorDialog
+              needsApproval={!session.permissions.has("change:apply_direct")}
+              vendor={{
+                vendorProfileId: vendor.id,
+                businessName: vendor.businessName,
+                phone: vendor.phone ?? "",
+                telephone: vendor.telephone ?? "",
+                gstin: vendor.gstin ?? "",
+                pan: vendor.pan ?? "",
+              }}
+            />
+          ) : null}
+        </div>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle>Status</CardTitle>
-          <CardDescription>
-            {vendor.approvalStatus === "REJECTED" && vendor.rejectedReason
-              ? `Rejected: ${vendor.rejectedReason}`
-              : vendor.approver
-                ? `Last changed by ${vendor.approver.fullName ?? vendor.approver.email}`
-                : "Awaiting review."}
-          </CardDescription>
+          <CardDescription>{statusNote(vendor)}</CardDescription>
         </CardHeader>
         <CardContent>
           <VendorStatusActions
@@ -73,8 +86,25 @@ export default async function VendorDetailPage({ params }: PageProps) {
 
       <Card>
         <CardHeader>
+          <CardTitle>Contact and tax details</CardTitle>
+          <CardDescription>As entered by the vendor.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <dl className="grid gap-x-8 gap-y-3 text-sm sm:grid-cols-2">
+            <ContactRow label="Contact person" value={vendor.user.fullName} />
+            <ContactRow label="Email" value={vendor.user.email} />
+            <ContactRow label="Business mobile" value={vendor.phone} />
+            <ContactRow label="Telephone" value={vendor.telephone} />
+            <ContactRow label="GSTIN" value={vendor.gstin} />
+            <ContactRow label="Business PAN" value={vendor.pan ? maskPan(vendor.pan) : null} />
+          </dl>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Roles</CardTitle>
-          <CardDescription>What this vendor account can do — see docs/rbac.md.</CardDescription>
+          <CardDescription>What this vendor account can do.</CardDescription>
         </CardHeader>
         <CardContent>
           {session.permissions.has("role:assign") ? (
@@ -102,27 +132,94 @@ export default async function VendorDetailPage({ params }: PageProps) {
           <TabsTrigger value="projects">Projects</TabsTrigger>
         </TabsList>
         <TabsContent value="products">
-          <EmptyState
-            icon={Package}
-            title="No products yet"
-            description="Product listings ship in Phase 3 (Product/Project/Service masters) — this tab is wired up and ready for that data."
-          />
+          <ListingList kind="products" items={listings.products} icon={Package} noun="products" />
         </TabsContent>
         <TabsContent value="services">
-          <EmptyState
-            icon={Wrench}
-            title="No services yet"
-            description="Service listings ship in Phase 3 (Product/Project/Service masters) — this tab is wired up and ready for that data."
-          />
+          <ListingList kind="services" items={listings.services} icon={Wrench} noun="services" />
         </TabsContent>
         <TabsContent value="projects">
-          <EmptyState
-            icon={Briefcase}
-            title="No projects yet"
-            description="Project listings ship in Phase 3 (Product/Project/Service masters) — this tab is wired up and ready for that data."
-          />
+          <ListingList kind="projects" items={listings.projects} icon={Briefcase} noun="projects" />
         </TabsContent>
       </Tabs>
     </div>
   );
+}
+
+function ListingList({
+  kind,
+  items,
+  icon,
+  noun,
+}: {
+  kind: "products" | "services" | "projects";
+  items: VendorListingSummary[];
+  icon: typeof Package;
+  noun: string;
+}) {
+  if (items.length === 0) {
+    return (
+      <EmptyState
+        icon={icon}
+        title={`No ${noun} yet`}
+        description={`This vendor hasn't listed any ${noun}.`}
+      />
+    );
+  }
+  return (
+    <ul className="surface-card divide-y">
+      {items.map((item) => (
+        <li key={item.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+          <Link
+            href={`/admin/catalog/${kind}/${item.id}` as Route}
+            className="min-w-0 truncate text-sm font-medium hover:underline"
+          >
+            {item.title}
+          </Link>
+          <div className="flex items-center gap-3 text-sm">
+            <span className="text-muted-foreground tabular-nums">
+              {item.price === null ? "Quote on request" : formatPaise(item.price)}
+            </span>
+            <Badge variant="outline">
+              {item.isActive ? item.approvalStatus.toLowerCase() : "inactive"}
+            </Badge>
+          </div>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function ContactRow({ label, value }: { label: string; value: string | null | undefined }) {
+  return (
+    <div>
+      <dt className="text-muted-foreground text-xs">{label}</dt>
+      <dd className="font-medium">
+        {value || <span className="text-muted-foreground">Not added</span>}
+      </dd>
+    </div>
+  );
+}
+
+/** One plain sentence about where this vendor stands. */
+function statusNote(vendor: {
+  approvalStatus: string;
+  rejectedReason: string | null;
+  approver: { fullName: string | null; email: string } | null;
+}): string {
+  if (vendor.approvalStatus === "REJECTED" && vendor.rejectedReason) {
+    return `Rejected: ${vendor.rejectedReason}`;
+  }
+  if (vendor.approver) {
+    return `Last changed by ${vendor.approver.fullName ?? vendor.approver.email}.`;
+  }
+  switch (vendor.approvalStatus) {
+    case "PENDING":
+      return "Waiting for review.";
+    case "APPROVED":
+      return "Approved.";
+    case "SUSPENDED":
+      return "Suspended.";
+    default:
+      return "Rejected.";
+  }
 }

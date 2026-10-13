@@ -46,8 +46,16 @@ export async function createRazorpayOrder(input: {
 
   if (!credentials) {
     const fallbackId = `order_dev_${input.receipt}`;
-    logger.info("razorpay_dev_fallback_create_order", { receipt: input.receipt, amount: input.amountPaise.toString() });
-    return { id: fallbackId, amount: Number(input.amountPaise), currency: input.currency, status: "created" };
+    logger.info("razorpay_dev_fallback_create_order", {
+      receipt: input.receipt,
+      amount: input.amountPaise.toString(),
+    });
+    return {
+      id: fallbackId,
+      amount: Number(input.amountPaise),
+      currency: input.currency,
+      status: "created",
+    };
   }
 
   const response = await fetch(`${RAZORPAY_API_BASE}/orders`, {

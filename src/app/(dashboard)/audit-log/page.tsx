@@ -40,15 +40,12 @@ export default async function AuditLogPage() {
         <CardHeader>
           <CardTitle>Recent activity</CardTitle>
           <CardDescription>
-            Immutable — every row here was written once and is never edited or deleted. See
-            docs/audit-logging.md.
+            Every entry is written once and can never be edited or deleted.
           </CardDescription>
         </CardHeader>
         <CardContent>
           {entries.length === 0 ? (
-            <p className="text-muted-foreground py-8 text-center text-sm">
-              No audit entries yet. Sign in or out a few times to generate some.
-            </p>
+            <p className="text-muted-foreground py-8 text-center text-sm">No entries yet.</p>
           ) : (
             <div className="divide-y">
               {entries.map((entry) => (

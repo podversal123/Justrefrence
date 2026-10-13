@@ -16,8 +16,8 @@ export default async function RegisterPage({ searchParams }: PageProps) {
       <CardHeader>
         <CardTitle>Create your account</CardTitle>
         <CardDescription>
-          Register with your email and mobile number — we&apos;ll send a verification code to
-          confirm it&apos;s you.
+          Register with your email and mobile number. We&apos;ll send a verification code to confirm
+          it&apos;s you.
         </CardDescription>
       </CardHeader>
       <CardContent>

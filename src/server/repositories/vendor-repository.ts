@@ -102,3 +102,56 @@ export async function listApprovedVendors() {
     select: { id: true, businessName: true },
   });
 }
+
+export interface VendorListingSummary {
+  id: string;
+  title: string;
+  /** Price in paise as a string, or null for "quote on request". */
+  price: string | null;
+  approvalStatus: string;
+  isActive: boolean;
+}
+
+const LISTING_SUMMARY_SELECT = {
+  id: true,
+  title: true,
+  price: true,
+  approvalStatus: true,
+  isActive: true,
+} as const;
+
+function summarize(row: {
+  id: string;
+  title: string;
+  price: bigint | null;
+  approvalStatus: string;
+  isActive: boolean;
+}): VendorListingSummary {
+  return {
+    id: row.id,
+    title: row.title,
+    price: row.price === null ? null : row.price.toString(),
+    approvalStatus: row.approvalStatus,
+    isActive: row.isActive,
+  };
+}
+
+/** A vendor's products, services and projects (newest first, capped) for the admin vendor page. */
+export async function listVendorListingSummaries(vendorProfileId: string) {
+  const args = {
+    where: { vendorId: vendorProfileId },
+    select: LISTING_SUMMARY_SELECT,
+    orderBy: { createdAt: "desc" },
+    take: 50,
+  } as const;
+  const [products, services, projects] = await Promise.all([
+    prisma.product.findMany(args),
+    prisma.service.findMany(args),
+    prisma.project.findMany(args),
+  ]);
+  return {
+    products: products.map(summarize),
+    services: services.map(summarize),
+    projects: projects.map(summarize),
+  };
+}

@@ -42,7 +42,7 @@
 
 @theme inline {
   --font-heading: var(--font-sans);
-  --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
+  --font-display: var(--font-sans);
   --color-ink: var(--ink);
   --color-ink-foreground: var(--ink-foreground);
   --color-ink-soft: var(--ink-soft);
@@ -215,10 +215,10 @@
     @apply font-sans antialiased;
   }
   h1 {
-    @apply text-2xl font-semibold tracking-tight text-balance;
+    @apply text-2xl font-bold tracking-tight text-balance;
   }
   h2 {
-    @apply text-xl font-semibold tracking-tight;
+    @apply text-xl font-bold tracking-tight;
   }
   h3 {
     @apply text-lg font-semibold tracking-tight;
@@ -253,20 +253,26 @@
   }
 }
 
-
 /* ---- Portal design utilities ------------------------------------------------ */
 @utility surface-card {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius-xl);
-  box-shadow: 0 1px 2px oklch(0.2 0.05 257 / 0.05), 0 12px 28px -18px oklch(0.2 0.05 257 / 0.25);
+  box-shadow:
+    0 1px 2px oklch(0.2 0.05 257 / 0.05),
+    0 12px 28px -18px oklch(0.2 0.05 257 / 0.25);
 }
 
 @utility surface-lift {
-  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease;
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 2px 4px oklch(0.2 0.05 257 / 0.06), 0 22px 40px -22px oklch(0.2 0.05 257 / 0.38);
+    box-shadow:
+      0 2px 4px oklch(0.2 0.05 257 / 0.06),
+      0 22px 40px -22px oklch(0.2 0.05 257 / 0.38);
     border-color: color-mix(in oklch, var(--primary) 35%, var(--border));
   }
   @media (prefers-reduced-motion: reduce) {
@@ -282,7 +288,6 @@
   background-image: radial-gradient(oklch(1 0 0 / 0.09) 1px, transparent 1px);
   background-size: 22px 22px;
 }
-
 
 /* Hero banner: slow "Ken Burns" push-in on the active photo, and a progress bar that fills while a slide is showing. */
 @keyframes hero-zoom {

@@ -11,7 +11,10 @@ interface WalletPoint {
 }
 
 function shortDay(day: string): string {
-  return new Date(`${day}T00:00:00Z`).toLocaleDateString("en-IN", { month: "short", day: "numeric" });
+  return new Date(`${day}T00:00:00Z`).toLocaleDateString("en-IN", {
+    month: "short",
+    day: "numeric",
+  });
 }
 
 export function WalletActivityChart({ data }: { data: WalletPoint[] }) {
@@ -32,7 +35,13 @@ export function WalletActivityChart({ data }: { data: WalletPoint[] }) {
         {hasActivity ? (
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-              <XAxis dataKey="day" tickLine={false} axisLine={false} fontSize={10} minTickGap={32} />
+              <XAxis
+                dataKey="day"
+                tickLine={false}
+                axisLine={false}
+                fontSize={10}
+                minTickGap={32}
+              />
               <Tooltip
                 formatter={(value) => formatPaise(String(Math.round(Number(value) * 100)))}
                 contentStyle={{ fontSize: 12, borderRadius: 8 }}

@@ -46,7 +46,13 @@ export interface CartView {
 export async function buildCartView(userId: string): Promise<CartView> {
   const cart = await getOpenCartWithItems(userId);
   if (!cart || cart.items.length === 0) {
-    return { cartId: cart?.id ?? null, groups: [], subtotal: 0n, hasUnavailableItems: false, isEmpty: true };
+    return {
+      cartId: cart?.id ?? null,
+      groups: [],
+      subtotal: 0n,
+      hasUnavailableItems: false,
+      isEmpty: true,
+    };
   }
 
   const lines: CartLineView[] = [];

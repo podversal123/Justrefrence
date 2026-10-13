@@ -1,0 +1,84 @@
+"use client";
+
+import { Check, X } from "lucide-react";
+import { reviewKycDocumentAction } from "@/server/services/kyc-actions";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "@/components/ui/toast";
+import type { ApiResult } from "@/lib/api-response";
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
+
+/**
+ * Runs the review and raises the confirmation the moment the server answers. Doing it here, not in an
+ * effect, matters: a reviewed document leaves the "to review" list straight away, so the buttons are
+ * gone before an effect would run and the admin would get no sign that it worked.
+ */
+function reviewWithToast(message: string) {
+  return async (previous: unknown, formData: FormData): Promise<ApiResult<null>> => {
+    const result = await reviewKycDocumentAction(previous, formData);
+    if (result.success) toast.success(message);
+    return result;
+  };
+}
+
+/** Verify or reject one pending document. Rejecting asks for the reason, which the person sees. */
+export function KycReviewActions({
+  documentId,
+  documentLabel,
+  personName,
+  panOnFile,
+}: {
+  documentId: string;
+  documentLabel: string;
+  personName: string;
+  panOnFile: string | null;
+}) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      <ConfirmationDialog
+        trigger={
+          <Button size="sm">
+            <Check />
+            Verify
+          </Button>
+        }
+        title={`Verify ${personName}'s ${documentLabel}?`}
+        description={
+          panOnFile
+            ? `Check that the card shows the same PAN number as on file: ${panOnFile}.`
+            : "Check the document carefully before you verify it."
+        }
+        action={reviewWithToast("Document verified")}
+        hiddenFields={{ documentId, decision: "VERIFY" }}
+        confirmLabel="Yes, verify"
+      />
+      <ConfirmationDialog
+        trigger={
+          <Button size="sm" variant="outline">
+            <X />
+            Reject
+          </Button>
+        }
+        title={`Reject ${personName}'s ${documentLabel}?`}
+        description="They will be told to upload it again, along with your note."
+        action={reviewWithToast("Document rejected")}
+        hiddenFields={{ documentId, decision: "REJECT" }}
+        confirmLabel="Reject"
+        variant="destructive"
+      >
+        <div className="space-y-2">
+          <Label htmlFor={`reject-reason-${documentId}`}>What should they fix?</Label>
+          <Textarea
+            id={`reject-reason-${documentId}`}
+            name="reason"
+            rows={3}
+            maxLength={500}
+            required
+            placeholder="For example: the photo is blurry, please upload a clear one."
+          />
+        </div>
+      </ConfirmationDialog>
+    </div>
+  );
+}

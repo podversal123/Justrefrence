@@ -29,6 +29,7 @@ import {
 } from "@/lib/schemas/catalog";
 import { ConflictError, NotFoundError, ValidationError } from "@/server/lib/errors";
 import { randomUUID } from "node:crypto";
+import { submitChange } from "@/server/domain/approvals/change-service";
 
 /**
  * The one real implementation behind every catalog Server Action — see
@@ -142,8 +143,24 @@ export async function updateListing(kind: CatalogKind, id: string, formData: For
     updateData["price"] = data.price;
   }
 
-  // Editing an already-approved listing sends it back for re-review — see
-  // docs/server/domain/catalog/state-machine.ts.
+  // Staff (no vendor profile of their own) edit another vendor's listing through the approval flow: a
+  // Super Admin's change is applied at once, an Admin's becomes a request and the live listing is left
+  // alone, still visible to buyers, until a Super Admin approves it.
+  if (session.vendorProfileId === null) {
+    const asText = (value: unknown) =>
+      value === null || value === undefined ? null : String(value);
+    const result = await submitChange({
+      entityType: kind,
+      entityId: id,
+      proposed: Object.fromEntries(Object.entries(updateData).map(([k, v]) => [k, asText(v)])),
+      actorId: session.userId,
+      canApplyDirect: session.permissions.has("change:apply_direct"),
+    });
+    return { pendingApproval: result.mode === "SUBMITTED" };
+  }
+
+  // A vendor editing their own approved listing sends it back for re-review — see
+  // src/server/domain/catalog/state-machine.ts.
   if (editRequiresReapproval(existing.approvalStatus)) {
     updateData["approvalStatus"] = "PENDING";
     updateData["approvedBy"] = null;
@@ -151,7 +168,7 @@ export async function updateListing(kind: CatalogKind, id: string, formData: For
   }
 
   const repo = getCatalogRepository(kind);
-  const updated = await repo.update(id, updateData);
+  await repo.update(id, updateData);
 
   await recordAudit({
     actorId: session.userId,
@@ -162,7 +179,7 @@ export async function updateListing(kind: CatalogKind, id: string, formData: For
     after: { title: data.title },
   });
 
-  return updated;
+  return { pendingApproval: false };
 }
 
 export async function deleteListing(kind: CatalogKind, id: string) {

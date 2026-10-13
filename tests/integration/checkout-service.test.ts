@@ -37,7 +37,9 @@ vi.mock("@/server/repositories/commerce/cart-repository", () => ({
 }));
 
 const mockFindCouponByCode = vi.fn();
-const mockGetCouponUsage = vi.fn().mockResolvedValue({ globalRedemptions: 0, memberRedemptions: 0 });
+const mockGetCouponUsage = vi
+  .fn()
+  .mockResolvedValue({ globalRedemptions: 0, memberRedemptions: 0 });
 const mockCreateCouponRedemption = vi.fn();
 vi.mock("@/server/repositories/commerce/coupon-repository", () => ({
   findCouponByCode: mockFindCouponByCode,
@@ -196,8 +198,8 @@ describe("placeOrder — stock race", () => {
         : listing({ id: "product-b", vendorId: VENDOR_B, stock: 5 }),
     );
     // Vendor A's item succeeds, vendor B's fails.
-    mockDecrementProductStock.mockImplementation(async (_tx: unknown, productId: string) =>
-      productId !== "product-b",
+    mockDecrementProductStock.mockImplementation(
+      async (_tx: unknown, productId: string) => productId !== "product-b",
     );
 
     await expect(placeOrder(BUYER_ID, MEMBER_ID, { idempotencyKey: "idem-5" })).rejects.toThrow();

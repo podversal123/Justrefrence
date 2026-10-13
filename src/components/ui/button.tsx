@@ -29,7 +29,8 @@ const buttonVariants = cva(
          * nav/CTAs and primary customer/vendor actions, not dense admin
          * tables (those keep `default`/`sm` deliberately, see globals.css).
          */
-        touch: "h-11 gap-2 px-4 text-sm has-data-[icon=inline-end]:pr-3.5 has-data-[icon=inline-start]:pl-3.5",
+        touch:
+          "h-11 gap-2 px-4 text-sm has-data-[icon=inline-end]:pr-3.5 has-data-[icon=inline-start]:pl-3.5",
         icon: "size-8",
         "icon-xs":
           "size-6 rounded-[min(var(--radius-md),10px)] in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-3",

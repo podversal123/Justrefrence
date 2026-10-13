@@ -91,7 +91,11 @@ export function getAvailableTransitions(from: OrderStatus, actor: OrderActor): O
     .map((rule) => rule.to);
 }
 
-export function assertOrderTransition(from: OrderStatus, to: OrderStatus, actor: OrderActor): OrderStatus {
+export function assertOrderTransition(
+  from: OrderStatus,
+  to: OrderStatus,
+  actor: OrderActor,
+): OrderStatus {
   if (!canTransitionOrder(from, to, actor)) {
     throw new ConflictError(`Cannot move an order from ${from} to ${to}.`);
   }

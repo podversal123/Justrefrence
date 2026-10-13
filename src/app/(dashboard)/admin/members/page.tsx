@@ -1,13 +1,14 @@
 import type { Metadata, Route } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Users } from "lucide-react";
+import { Download, Users } from "lucide-react";
 import { getAuthSession } from "@/server/auth/session";
 import {
   countMembersByStatus,
   listMembers,
 } from "@/server/repositories/identity/member-admin-repository";
 import { Button } from "@/components/ui/button";
+import { NewMemberDialog } from "./new-member-dialog";
 import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/ui/empty-state";
 import { NativeSelect } from "@/components/ui/native-select";
@@ -49,15 +50,38 @@ export default async function AdminMembersPage({
     countMembersByStatus(),
   ]);
   const filtered = Boolean(search || status || from || to);
+  const exportParams = new URLSearchParams();
+  if (search) exportParams.set("search", search);
+  if (status) exportParams.set("status", status);
+  if (from) exportParams.set("from", from);
+  if (to) exportParams.set("to", to);
+  const exportHref = `/api/admin/members/export${exportParams.size ? `?${exportParams}` : ""}`;
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-      <div>
-        <h1>Members</h1>
-        <p className="text-muted-foreground">
-          {counts.ACTIVE ?? 0} active · {counts.PENDING_VERIFICATION ?? 0} pending ·{" "}
-          {counts.BLOCKED ?? 0} blocked
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1>Members</h1>
+          <p className="text-muted-foreground">
+            {counts.ACTIVE ?? 0} active · {counts.PENDING_VERIFICATION ?? 0} pending ·{" "}
+            {counts.BLOCKED ?? 0} blocked
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {session.permissions.has("member:export") ? (
+            <Button
+              variant="outline"
+              nativeButton={false}
+              render={
+                <a href={exportHref} download>
+                  <Download />
+                  Member report (CSV)
+                </a>
+              }
+            />
+          ) : null}
+          {session.permissions.has("user:create") ? <NewMemberDialog /> : null}
+        </div>
       </div>
 
       {/* Plain GET form: filters live in the URL, results are a server fetch. */}

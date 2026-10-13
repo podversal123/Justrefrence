@@ -5,14 +5,25 @@ import { listRules } from "@/server/repositories/commission/commission-rule-repo
 import { formatPaise } from "@/lib/money";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Percent } from "lucide-react";
 import { CreateCommissionRuleForm } from "./create-commission-rule-form";
 
 export const metadata: Metadata = { title: "Commission rules" };
 
-function describeRate(rule: { rateBasis: string; rateValueBps: number | null; rateValueFixed: bigint | null }) {
+function describeRate(rule: {
+  rateBasis: string;
+  rateValueBps: number | null;
+  rateValueFixed: bigint | null;
+}) {
   if (rule.rateBasis === "FIXED") return formatPaise(rule.rateValueFixed?.toString() ?? "0");
   return `${((rule.rateValueBps ?? 0) / 100).toFixed(2)}%`;
 }
@@ -30,8 +41,8 @@ export default async function CommissionRulesPage() {
       <div>
         <h1>Commission rules</h1>
         <p className="text-muted-foreground">
-          Every rate is configured here — nothing is hardcoded. Activating a new version closes out the
-          previous one automatically.
+          Set the commission rate for each referral level here. A new version replaces the current
+          one as soon as you activate it.
         </p>
       </div>
 
@@ -39,9 +50,7 @@ export default async function CommissionRulesPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Create a new rule version</CardTitle>
-            <CardDescription>
-              Only SUPER_ADMIN may activate a rule — see docs/rbac.md.
-            </CardDescription>
+            <CardDescription>Only a Super Admin can activate a rule.</CardDescription>
           </CardHeader>
           <CardContent>
             <CreateCommissionRuleForm />
@@ -58,7 +67,7 @@ export default async function CommissionRulesPage() {
             <EmptyState
               icon={Percent}
               title="No commission rules configured"
-              description="Until a rule is created here, no commission is ever calculated — see docs/business-rules.md Q-02."
+              description="No commission is calculated until a rule is created here."
             />
           ) : (
             <Table>
@@ -78,7 +87,8 @@ export default async function CommissionRulesPage() {
                     <TableCell>{rule.level}</TableCell>
                     <TableCell>{rule.appliesTo}</TableCell>
                     <TableCell>
-                      {describeRate(rule)} <span className="text-muted-foreground text-xs">({rule.rateBasis})</span>
+                      {describeRate(rule)}{" "}
+                      <span className="text-muted-foreground text-xs">({rule.rateBasis})</span>
                     </TableCell>
                     <TableCell>{rule.releaseDelayDays}d</TableCell>
                     <TableCell className="text-muted-foreground text-xs">
@@ -86,7 +96,11 @@ export default async function CommissionRulesPage() {
                       {rule.effectiveTo ? ` – ${rule.effectiveTo.toLocaleDateString()}` : " – now"}
                     </TableCell>
                     <TableCell>
-                      {rule.effectiveTo === null ? <Badge>Active</Badge> : <Badge variant="outline">Superseded</Badge>}
+                      {rule.effectiveTo === null ? (
+                        <Badge>Active</Badge>
+                      ) : (
+                        <Badge variant="outline">Superseded</Badge>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}

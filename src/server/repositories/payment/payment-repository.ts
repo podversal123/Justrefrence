@@ -48,7 +48,11 @@ export async function listPaymentsForCheckout(checkoutId: string) {
  * sees `CAPTURED` already and this returns `false` (a safe no-op), never a
  * second capture. See docs/adr/0016.
  */
-export async function tryCapturePayment(tx: Tx, paymentId: string, providerPaymentId: string): Promise<boolean> {
+export async function tryCapturePayment(
+  tx: Tx,
+  paymentId: string,
+  providerPaymentId: string,
+): Promise<boolean> {
   const result = await tx.payment.updateMany({
     where: { id: paymentId, status: { in: ["CREATED", "AUTHORIZED"] } },
     data: { status: "CAPTURED", providerPaymentId },

@@ -6,7 +6,13 @@
  */
 import { ConflictError } from "@/server/lib/errors";
 
-export const PAYMENT_STATUSES = ["CREATED", "AUTHORIZED", "CAPTURED", "FAILED", "REFUNDED"] as const;
+export const PAYMENT_STATUSES = [
+  "CREATED",
+  "AUTHORIZED",
+  "CAPTURED",
+  "FAILED",
+  "REFUNDED",
+] as const;
 export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
 
 export type PaymentActorRole = "SYSTEM" | "ADMIN" | "FINANCE";
@@ -39,7 +45,11 @@ const PAYMENT_TRANSITIONS: Record<PaymentStatus, TransitionRule[]> = {
   REFUNDED: [],
 };
 
-export function canTransitionPayment(from: PaymentStatus, to: PaymentStatus, actorRole: PaymentActorRole): boolean {
+export function canTransitionPayment(
+  from: PaymentStatus,
+  to: PaymentStatus,
+  actorRole: PaymentActorRole,
+): boolean {
   const rule = PAYMENT_TRANSITIONS[from].find((r) => r.to === to);
   return rule !== undefined && rule.roles.includes(actorRole);
 }

@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
+import { describeNotification } from "@/lib/notification-labels";
+import { useActionState } from "@/lib/use-action-state";
 import { Bell } from "lucide-react";
 import {
   markAllNotificationsReadAction,
@@ -26,22 +27,8 @@ export interface BellNotification {
   createdAt: Date;
 }
 
-const TYPE_LABELS: Record<string, string> = {
-  WELCOME: "Welcome to Justreference",
-  BIRTHDAY_GREETING: "Happy birthday from Justreference!",
-  TICKET_REPLY: "New reply on your support ticket",
-  TICKET_STATUS: "Your support ticket was updated",
-  MESSAGE_RECEIVED: "You have a new message",
-  BID_RECEIVED: "A vendor placed a bid on your requirement",
-  OUTBID: "You were outbid in a reverse auction",
-  BID_AWARDED: "Your bid was awarded",
-  BID_NOT_SELECTED: "Your bid was not selected",
-  REQUIREMENT_CANCELLED: "A requirement you bid on was cancelled",
-};
-
-function describe(notification: BellNotification): string {
-  return TYPE_LABELS[notification.type] ?? notification.type.replace(/_/g, " ").toLowerCase();
-}
+const describe = (notification: { type: string }): string =>
+  describeNotification(notification.type);
 
 const nullState: ApiResult<null> = { success: true, data: null, meta: { requestId: "" } };
 

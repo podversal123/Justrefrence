@@ -33,6 +33,10 @@ export async function findExpiredActiveSubscriptions(now: Date = new Date()) {
   });
 }
 
-export async function updateSubscriptionStatus(tx: Tx, id: string, status: "ACTIVE" | "EXPIRED" | "CANCELLED") {
+export async function updateSubscriptionStatus(
+  tx: Tx,
+  id: string,
+  status: "ACTIVE" | "EXPIRED" | "CANCELLED",
+) {
   return tx.subscription.update({ where: { id }, data: { status } });
 }

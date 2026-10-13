@@ -4,6 +4,7 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { SiteHeader } from "@/components/layout/site-header";
 import { NAV_GROUPS } from "@/components/layout/nav-config";
+import { PANEL_LABELS, describeRoles, getPanel, isStaff } from "@/server/auth/panel";
 import { MaintenanceNotice } from "@/components/portal/maintenance-notice";
 import { canBypassMaintenance, getSiteSettings } from "@/server/lib/site-settings";
 import {
@@ -47,14 +48,22 @@ export default async function DashboardLayout({ children }: { children: React.Re
    * being passed as a component reference — a React element IS
    * serializable, a bare function/component type is not.
    */
+  const panel = getPanel(session);
+  // A staff-only account (Super Admin, Admin, Finance...) has no cart, orders or wallet of its own,
+  // so those links stay out of its menu. Anyone who is also a buyer or vendor keeps them.
+  const staffOnly =
+    isStaff(session) && !session.roles.some((r) => r === "CUSTOMER" || r === "VENDOR");
+
   const visibleGroups = NAV_GROUPS.map((group) => ({
     label: group.label,
     items: group.items
+      .filter((item) => !(staffOnly && item.memberOnly))
       .filter((item) => item.visible(session))
       .map((item) => ({ title: item.title, href: item.href, icon: <item.icon /> })),
   })).filter((group) => group.items.length > 0);
 
-  const roleLabel = session.roles.length > 0 ? session.roles.join(", ") : "No role assigned";
+  const roleLabel = describeRoles(session.roles);
+  const panelLabel = PANEL_LABELS[panel];
 
   const [notifications, unreadCount] = await Promise.all([
     listRecentNotifications(session.userId),
@@ -63,10 +72,18 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <SidebarProvider>
-      <AppSidebar groups={visibleGroups} userEmail={session.email} roleLabel={roleLabel} />
+      <AppSidebar
+        groups={visibleGroups}
+        userEmail={session.email}
+        roleLabel={roleLabel}
+        panel={panel}
+        panelLabel={panelLabel}
+      />
       <SidebarInset>
         <SiteHeader
           userEmail={session.email}
+          panelLabel={panelLabel}
+          roleLabel={roleLabel}
           notifications={notifications}
           unreadCount={unreadCount}
         />

@@ -1,5 +1,6 @@
 "use client";
 
+import { MAX_UPLOAD_BYTES, MAX_UPLOAD_LABEL } from "@/lib/upload-limits";
 import { useRef, useState, useTransition } from "react";
 import Image from "next/image";
 import { AlertCircle, ImagePlus, Loader2, X } from "lucide-react";
@@ -48,8 +49,8 @@ export function ImageUploader({
 
     setError(null);
 
-    if (file.size > 5 * 1024 * 1024) {
-      setError("Images must be 5MB or smaller.");
+    if (file.size > MAX_UPLOAD_BYTES) {
+      setError(`Images must be ${MAX_UPLOAD_LABEL} or smaller.`);
       return;
     }
     if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
@@ -145,7 +146,7 @@ export function ImageUploader({
       />
 
       <p className="text-muted-foreground text-xs">
-        {images.length} / {MAX_IMAGES} images · JPEG, PNG, or WebP, up to 5MB each.
+        {images.length} / {MAX_IMAGES} images · JPEG, PNG, or WebP, up to {MAX_UPLOAD_LABEL} each.
       </p>
     </div>
   );

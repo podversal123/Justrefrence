@@ -37,7 +37,9 @@ export default async function ReferralsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Your referral link</CardTitle>
-          <CardDescription>Share this link — anyone who registers through it becomes your direct referral.</CardDescription>
+          <CardDescription>
+            Share this link. Anyone who registers through it becomes your direct referral.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <CopyLinkButton link={dashboard.referralLink} />
@@ -75,7 +77,9 @@ export default async function ReferralsPage() {
               {dashboard.commissionSummary.map((row) => (
                 <div key={row.status} className="rounded-lg border p-3">
                   <StatusBadge status={row.status} />
-                  <p className="mt-2 text-lg font-semibold">{formatPaise(row.totalAmount.toString())}</p>
+                  <p className="mt-2 text-lg font-semibold">
+                    {formatPaise(row.totalAmount.toString())}
+                  </p>
                   <p className="text-muted-foreground text-xs">
                     {row.count} commission{row.count === 1 ? "" : "s"}
                   </p>
@@ -92,7 +96,11 @@ export default async function ReferralsPage() {
         </CardHeader>
         <CardContent>
           {dashboard.directReferrals.length === 0 ? (
-            <EmptyState icon={Users} title="No direct referrals yet" description="Share your link to get started." />
+            <EmptyState
+              icon={Users}
+              title="No direct referrals yet"
+              description="Share your link to get started."
+            />
           ) : (
             <div className="flex flex-col gap-2">
               {dashboard.directReferrals.map((r) => (
@@ -141,7 +149,9 @@ export default async function ReferralsPage() {
               {dashboard.history.map((h) => (
                 <div key={h.id} className="flex items-center justify-between text-sm">
                   <span>{h.member.user.fullName ?? h.member.user.email} joined your referral</span>
-                  <span className="text-muted-foreground text-xs">{h.changedAt?.toLocaleString()}</span>
+                  <span className="text-muted-foreground text-xs">
+                    {h.changedAt?.toLocaleString()}
+                  </span>
                 </div>
               ))}
             </div>

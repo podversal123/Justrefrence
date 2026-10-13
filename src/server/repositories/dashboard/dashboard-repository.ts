@@ -25,7 +25,11 @@ export async function countActiveMembers(): Promise<number> {
 
 // --- Vendors ---
 
-export async function getVendorCounts(): Promise<{ total: number; approved: number; pending: number }> {
+export async function getVendorCounts(): Promise<{
+  total: number;
+  approved: number;
+  pending: number;
+}> {
   const [total, approved, pending] = await Promise.all([
     prisma.vendorProfile.count(),
     prisma.vendorProfile.count({ where: { approvalStatus: "APPROVED" } }),
@@ -41,14 +45,21 @@ export async function getCatalogCounts(): Promise<{
   services: { total: number; active: number };
   projects: { total: number; active: number };
 }> {
-  const [productTotal, productActive, serviceTotal, serviceActive, projectTotal, projectActive] = await Promise.all([
-    prisma.product.count({ where: { deletedAt: null } }),
-    prisma.product.count({ where: { deletedAt: null, approvalStatus: "APPROVED", isActive: true } }),
-    prisma.service.count({ where: { deletedAt: null } }),
-    prisma.service.count({ where: { deletedAt: null, approvalStatus: "APPROVED", isActive: true } }),
-    prisma.project.count({ where: { deletedAt: null } }),
-    prisma.project.count({ where: { deletedAt: null, approvalStatus: "APPROVED", isActive: true } }),
-  ]);
+  const [productTotal, productActive, serviceTotal, serviceActive, projectTotal, projectActive] =
+    await Promise.all([
+      prisma.product.count({ where: { deletedAt: null } }),
+      prisma.product.count({
+        where: { deletedAt: null, approvalStatus: "APPROVED", isActive: true },
+      }),
+      prisma.service.count({ where: { deletedAt: null } }),
+      prisma.service.count({
+        where: { deletedAt: null, approvalStatus: "APPROVED", isActive: true },
+      }),
+      prisma.project.count({ where: { deletedAt: null } }),
+      prisma.project.count({
+        where: { deletedAt: null, approvalStatus: "APPROVED", isActive: true },
+      }),
+    ]);
   return {
     products: { total: productTotal, active: productActive },
     services: { total: serviceTotal, active: serviceActive },
@@ -68,14 +79,24 @@ export async function getVendorCatalogCounts(vendorId: string): Promise<{
   services: { total: number; active: number };
   projects: { total: number; active: number };
 }> {
-  const [productTotal, productActive, serviceTotal, serviceActive, projectTotal, projectActive] = await Promise.all([
-    getCatalogRepository("PRODUCT").count({}, { scopeToVendorId: vendorId }),
-    getCatalogRepository("PRODUCT").count({ approvalStatus: "APPROVED", isActive: true }, { scopeToVendorId: vendorId }),
-    getCatalogRepository("SERVICE").count({}, { scopeToVendorId: vendorId }),
-    getCatalogRepository("SERVICE").count({ approvalStatus: "APPROVED", isActive: true }, { scopeToVendorId: vendorId }),
-    getCatalogRepository("PROJECT").count({}, { scopeToVendorId: vendorId }),
-    getCatalogRepository("PROJECT").count({ approvalStatus: "APPROVED", isActive: true }, { scopeToVendorId: vendorId }),
-  ]);
+  const [productTotal, productActive, serviceTotal, serviceActive, projectTotal, projectActive] =
+    await Promise.all([
+      getCatalogRepository("PRODUCT").count({}, { scopeToVendorId: vendorId }),
+      getCatalogRepository("PRODUCT").count(
+        { approvalStatus: "APPROVED", isActive: true },
+        { scopeToVendorId: vendorId },
+      ),
+      getCatalogRepository("SERVICE").count({}, { scopeToVendorId: vendorId }),
+      getCatalogRepository("SERVICE").count(
+        { approvalStatus: "APPROVED", isActive: true },
+        { scopeToVendorId: vendorId },
+      ),
+      getCatalogRepository("PROJECT").count({}, { scopeToVendorId: vendorId }),
+      getCatalogRepository("PROJECT").count(
+        { approvalStatus: "APPROVED", isActive: true },
+        { scopeToVendorId: vendorId },
+      ),
+    ]);
   return {
     products: { total: productTotal, active: productActive },
     services: { total: serviceTotal, active: serviceActive },
@@ -118,7 +139,9 @@ export async function getTotalRevenue(range: ResolvedDateRange): Promise<bigint>
 }
 
 /** Revenue grouped by UTC day — the revenue-trend chart's series. Raw SQL: Prisma's groupBy can't truncate a timestamp to a day. */
-export async function getDailyRevenue(range: ResolvedDateRange): Promise<{ day: string; amount: bigint }[]> {
+export async function getDailyRevenue(
+  range: ResolvedDateRange,
+): Promise<{ day: string; amount: bigint }[]> {
   const from = range.from ?? new Date(0);
   const rows = await prisma.$queryRaw<{ day: string; amount: bigint }[]>`
     SELECT to_char(date_trunc('day', created_at), 'YYYY-MM-DD') AS day,
@@ -196,7 +219,10 @@ export async function listRecentOrders(query: OrderListQuery) {
 }
 
 /** Every order matching the current filters, unpaginated — for CSV export. Capped so one export can't take down the request. */
-export async function listAllMatchingOrders(query: Pick<OrderListQuery, "search" | "status">, cap = 5000) {
+export async function listAllMatchingOrders(
+  query: Pick<OrderListQuery, "search" | "status">,
+  cap = 5000,
+) {
   const where = {
     ...(query.status ? { status: query.status as never } : {}),
     ...(query.search
@@ -238,7 +264,9 @@ export async function getPendingPayouts(): Promise<{ count: number; amount: bigi
 
 // --- Wallet activity ---
 
-export async function getDailyWalletActivity(range: ResolvedDateRange): Promise<{ day: string; credits: bigint; debits: bigint }[]> {
+export async function getDailyWalletActivity(
+  range: ResolvedDateRange,
+): Promise<{ day: string; credits: bigint; debits: bigint }[]> {
   const from = range.from ?? new Date(0);
   const rows = await prisma.$queryRaw<{ day: string; direction: string; amount: bigint }[]>`
     SELECT to_char(date_trunc('day', created_at), 'YYYY-MM-DD') AS day,
@@ -268,9 +296,19 @@ export async function getReferralActivityCount(range: ResolvedDateRange): Promis
 
 // --- Commissions ---
 
-export async function getGlobalCommissionSummary(): Promise<{ status: string; totalAmount: bigint; count: number }[]> {
-  const grouped = await prisma.commission.groupBy({ by: ["status"], _sum: { amount: true }, _count: true });
-  return grouped.map((g) => ({ status: g.status, totalAmount: g._sum.amount ?? 0n, count: g._count }));
+export async function getGlobalCommissionSummary(): Promise<
+  { status: string; totalAmount: bigint; count: number }[]
+> {
+  const grouped = await prisma.commission.groupBy({
+    by: ["status"],
+    _sum: { amount: true },
+    _count: true,
+  });
+  return grouped.map((g) => ({
+    status: g.status,
+    totalAmount: g._sum.amount ?? 0n,
+    count: g._count,
+  }));
 }
 
 // --- Pending approvals table (vendors + listings combined) ---
@@ -311,10 +349,30 @@ export async function listPendingApprovals(limit = 20): Promise<PendingApprovalR
   ]);
 
   const rows: PendingApprovalRow[] = [
-    ...vendors.map((v) => ({ id: v.id, kind: "VENDOR" as const, title: v.businessName, submittedAt: v.createdAt })),
-    ...products.map((p) => ({ id: p.id, kind: "PRODUCT" as const, title: p.title, submittedAt: p.createdAt })),
-    ...services.map((s) => ({ id: s.id, kind: "SERVICE" as const, title: s.title, submittedAt: s.createdAt })),
-    ...projects.map((p) => ({ id: p.id, kind: "PROJECT" as const, title: p.title, submittedAt: p.createdAt })),
+    ...vendors.map((v) => ({
+      id: v.id,
+      kind: "VENDOR" as const,
+      title: v.businessName,
+      submittedAt: v.createdAt,
+    })),
+    ...products.map((p) => ({
+      id: p.id,
+      kind: "PRODUCT" as const,
+      title: p.title,
+      submittedAt: p.createdAt,
+    })),
+    ...services.map((s) => ({
+      id: s.id,
+      kind: "SERVICE" as const,
+      title: s.title,
+      submittedAt: s.createdAt,
+    })),
+    ...projects.map((p) => ({
+      id: p.id,
+      kind: "PROJECT" as const,
+      title: p.title,
+      submittedAt: p.createdAt,
+    })),
   ];
 
   return rows.sort((a, b) => b.submittedAt.getTime() - a.submittedAt.getTime()).slice(0, limit);

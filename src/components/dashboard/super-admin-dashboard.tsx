@@ -57,7 +57,7 @@ export async function SuperAdminDashboard({
 }) {
   return (
     <div className="flex flex-col gap-8">
-      <div className="bg-surface-sunken flex flex-wrap items-center gap-3 rounded-lg border-l-4 border-primary px-4 py-3">
+      <div className="bg-surface-sunken border-primary flex flex-wrap items-center gap-3 rounded-lg border-l-4 px-4 py-3">
         <Badge variant="outline" className="gap-1.5 py-1 text-xs font-semibold">
           <ShieldCheck className="size-3.5" />
           Super Admin
@@ -71,7 +71,7 @@ export async function SuperAdminDashboard({
         <div>
           <h2 className="text-lg font-semibold">Platform controls</h2>
           <p className="text-muted-foreground text-sm">
-            Authority Admin does not have — role management, vendor approval, and system settings.
+            Controls only a Super Admin has: role management, vendor approval and system settings.
           </p>
         </div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -79,7 +79,7 @@ export async function SuperAdminDashboard({
             <Link
               key={control.href}
               href={control.href}
-              className="hover:bg-muted focus-visible:ring-ring/50 flex min-h-11 items-start gap-3 rounded-lg border bg-background p-4 outline-none transition-colors focus-visible:ring-3"
+              className="hover:bg-muted focus-visible:ring-ring/50 bg-background flex min-h-11 items-start gap-3 rounded-lg border p-4 transition-colors outline-none focus-visible:ring-3"
             >
               <div className="bg-primary/10 text-primary flex size-8 shrink-0 items-center justify-center rounded-lg">
                 <control.icon className="size-4" />
@@ -98,7 +98,7 @@ export async function SuperAdminDashboard({
           <h2 className="text-lg font-semibold">Operational dashboard</h2>
           <p className="text-muted-foreground text-sm">The same platform data Admin sees.</p>
         </div>
-        <div className="border-l-4 border-primary/30 pl-4 sm:pl-6">
+        <div className="border-primary/30 border-l-4 pl-4 sm:pl-6">
           <AdminDashboard searchParams={searchParams} />
         </div>
       </div>

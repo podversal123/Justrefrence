@@ -11,7 +11,10 @@ import {
   listCommissionsForOrder,
   updateCommissionStatus,
 } from "@/server/repositories/commission/commission-repository";
-import { countCompletedOrders, getAncestorChain } from "@/server/repositories/referral/referral-repository";
+import {
+  countCompletedOrders,
+  getAncestorChain,
+} from "@/server/repositories/referral/referral-repository";
 import {
   creditWallet,
   debitWalletUpTo,
@@ -19,7 +22,10 @@ import {
 } from "@/server/repositories/wallet/wallet-repository";
 import { computeCommissionAmount } from "@/server/domain/commission/commission-math";
 import { evaluateEligibility } from "@/server/domain/commission/eligibility";
-import { assertCommissionTransition, type CommissionActorRole } from "@/server/domain/commission/commission-state-machine";
+import {
+  assertCommissionTransition,
+  type CommissionActorRole,
+} from "@/server/domain/commission/commission-state-machine";
 import { recordAudit } from "@/server/domain/audit/record";
 import { logger } from "@/server/lib/logger";
 import type { Prisma } from "@/generated/prisma/client";
@@ -82,7 +88,10 @@ export async function createPendingCommissionsForOrder(
   const rulesByKind = new Map<CatalogItemKind, Awaited<ReturnType<typeof findActiveRules>>>();
   let maxLevel = 0;
   for (const kind of subtotalByKind.keys()) {
-    const rules = await findActiveRules(kind as unknown as CommissionApplicableTo, "ORDER_COMPLETED");
+    const rules = await findActiveRules(
+      kind as unknown as CommissionApplicableTo,
+      "ORDER_COMPLETED",
+    );
     rulesByKind.set(kind, rules);
     for (const rule of rules) maxLevel = Math.max(maxLevel, rule.level);
   }
@@ -107,7 +116,10 @@ export async function createPendingCommissionsForOrder(
       if (!referrer) continue;
 
       const eligibility = evaluateEligibility(
-        { requiresActiveSubscription: rule.requiresActiveSubscription, minimumActivityCount: rule.minimumActivityCount },
+        {
+          requiresActiveSubscription: rule.requiresActiveSubscription,
+          minimumActivityCount: rule.minimumActivityCount,
+        },
         {
           hasActiveSubscription: await hasActiveSubscription(referrer.userId),
           activityCount: await countCompletedOrders(referrer.userId),
@@ -115,9 +127,17 @@ export async function createPendingCommissionsForOrder(
       );
       if (!eligibility.eligible) continue; // Q-04: no retroactive re-check — simply never created
 
-      const calculationBaseAmount = resolveCalculationBase(rule.rateBasis, kindSubtotal, order.platformFeeTotal);
+      const calculationBaseAmount = resolveCalculationBase(
+        rule.rateBasis,
+        kindSubtotal,
+        order.platformFeeTotal,
+      );
       const amount = computeCommissionAmount(
-        { rateBasis: rule.rateBasis, rateValueBps: rule.rateValueBps, rateValueFixed: rule.rateValueFixed },
+        {
+          rateBasis: rule.rateBasis,
+          rateValueBps: rule.rateValueBps,
+          rateValueFixed: rule.rateValueFixed,
+        },
         calculationBaseAmount,
       );
       if (amount <= 0n) continue; // nothing to credit
@@ -157,7 +177,13 @@ async function transitionAndRecord(
 ) {
   assertCommissionTransition(from, to, actorRole);
   await updateCommissionStatus(tx, commissionId, to, releaseAt);
-  await createCommissionStatusHistory(tx, { commissionId, fromStatus: from, toStatus: to, actorId, reason });
+  await createCommissionStatusHistory(tx, {
+    commissionId,
+    fromStatus: from,
+    toStatus: to,
+    actorId,
+    reason,
+  });
 }
 
 /** Called when an order reaches COMPLETED — docs/business-rules.md Q-06. */
@@ -171,7 +197,16 @@ export async function promoteCommissionsForCompletedOrder(orderId: string): Prom
       const rule = await tx.commissionRule.findUnique({ where: { id: commission.ruleId } });
       const releaseDelayDays = rule?.releaseDelayDays ?? 0;
       const releaseAt = new Date(Date.now() + releaseDelayDays * 24 * 60 * 60 * 1000);
-      await transitionAndRecord(tx, commission.id, "PENDING", "ELIGIBLE", "SYSTEM", null, null, releaseAt);
+      await transitionAndRecord(
+        tx,
+        commission.id,
+        "PENDING",
+        "ELIGIBLE",
+        "SYSTEM",
+        null,
+        null,
+        releaseAt,
+      );
     }
   });
 }
@@ -183,14 +218,24 @@ export async function reverseOrCancelCommissionsForOrder(
   reason: string,
 ): Promise<void> {
   const commissions = await listCommissionsForOrder(orderId);
-  const actionable = commissions.filter((c) => c.status === "PENDING" || c.status === "ELIGIBLE" || c.status === "AVAILABLE");
+  const actionable = commissions.filter(
+    (c) => c.status === "PENDING" || c.status === "ELIGIBLE" || c.status === "AVAILABLE",
+  );
   if (actionable.length === 0) return;
 
   await prisma.$transaction(async (tx) => {
     for (const commission of actionable) {
       const wasAvailable = commission.status === "AVAILABLE";
       const to = commission.status === "PENDING" ? "CANCELLED" : "REVERSED";
-      await transitionAndRecord(tx, commission.id, commission.status, to, "SYSTEM", actorId, reason);
+      await transitionAndRecord(
+        tx,
+        commission.id,
+        commission.status,
+        to,
+        "SYSTEM",
+        actorId,
+        reason,
+      );
 
       // Q-07: only an AVAILABLE commission was ever actually credited to the
       // wallet — claw it back. ELIGIBLE/PENDING commissions never touched

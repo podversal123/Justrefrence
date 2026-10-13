@@ -21,7 +21,7 @@ export function RevokeEpinButton({ epinId, codeLast4 }: { epinId: string; codeLa
         </Button>
       }
       title="Revoke this e-pin?"
-      description={`Ending in ${codeLast4}. Once revoked, it can never be redeemed or revived — this cannot be undone.`}
+      description={`Ending in ${codeLast4}. Once revoked, it can never be redeemed or revived. This cannot be undone.`}
       hiddenFields={{ epinId }}
       confirmLabel="Revoke e-pin"
       variant="destructive"

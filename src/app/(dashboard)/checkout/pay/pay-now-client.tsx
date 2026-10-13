@@ -3,7 +3,10 @@
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
-import { createPaymentOrderAction, verifyPaymentCallbackAction } from "@/server/services/payment-actions";
+import {
+  createPaymentOrderAction,
+  verifyPaymentCallbackAction,
+} from "@/server/services/payment-actions";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { formatPaise } from "@/lib/money";
 
@@ -79,7 +82,11 @@ export function PayNowClient({ checkoutId }: { checkoutId: string }) {
           amount: Number(result.data.amountPaise),
           currency: result.data.currency,
           order_id: result.data.providerOrderId,
-          handler: (response: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) => {
+          handler: (response: {
+            razorpay_order_id: string;
+            razorpay_payment_id: string;
+            razorpay_signature: string;
+          }) => {
             startTransition(async () => {
               setPhase("verifying");
               const verifyForm = new FormData();
@@ -117,7 +124,7 @@ export function PayNowClient({ checkoutId }: { checkoutId: string }) {
     return (
       <Alert>
         <CheckCircle2 className="size-4" />
-        <AlertDescription>Payment confirmed — redirecting to your orders…</AlertDescription>
+        <AlertDescription>Payment confirmed. Redirecting to your orders…</AlertDescription>
       </Alert>
     );
   }

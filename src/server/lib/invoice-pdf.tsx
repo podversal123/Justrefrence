@@ -66,7 +66,9 @@ function InvoiceDocument({ data }: { data: InvoicePdfData }) {
           <View style={styles.col}>
             <Text style={styles.sectionTitle}>Sold by</Text>
             <Text>{data.vendor.name}</Text>
-            {data.vendor.gstin ? <Text style={styles.label}>GSTIN: {data.vendor.gstin}</Text> : null}
+            {data.vendor.gstin ? (
+              <Text style={styles.label}>GSTIN: {data.vendor.gstin}</Text>
+            ) : null}
           </View>
         </View>
 

@@ -5,6 +5,8 @@ import { AdminDashboard } from "@/components/dashboard/admin-dashboard";
 import { SuperAdminDashboard } from "@/components/dashboard/super-admin-dashboard";
 import { VendorDashboard } from "@/components/dashboard/vendor-dashboard";
 import { CustomerDashboard } from "@/components/dashboard/customer-dashboard";
+import { AnnouncementsStrip } from "@/components/dashboard/announcements-strip";
+import { getPanel, type Panel } from "@/server/auth/panel";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
@@ -26,17 +28,39 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   const session = await getAuthSession();
   if (!session) redirect("/login");
 
+  const panel: Panel = getPanel(session);
+  const strip = <AnnouncementsStrip panel={panel} />;
   if (session.roles.includes("SUPER_ADMIN")) {
-    return <SuperAdminDashboard searchParams={await searchParams} />;
+    return (
+      <>
+        {strip}
+        <SuperAdminDashboard searchParams={await searchParams} />
+      </>
+    );
   }
 
   if (session.roles.some((role) => STAFF_ROLES.includes(role))) {
-    return <AdminDashboard searchParams={await searchParams} />;
+    return (
+      <>
+        {strip}
+        <AdminDashboard searchParams={await searchParams} />
+      </>
+    );
   }
 
   if (session.hasVendorProfile) {
-    return <VendorDashboard session={session} />;
+    return (
+      <>
+        {strip}
+        <VendorDashboard session={session} />
+      </>
+    );
   }
 
-  return <CustomerDashboard session={session} />;
+  return (
+    <>
+      {strip}
+      <CustomerDashboard session={session} />
+    </>
+  );
 }

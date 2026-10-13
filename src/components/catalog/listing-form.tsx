@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -37,7 +38,8 @@ export interface ListingFormInitialValues {
   pricingType?: "FIXED" | "QUOTE";
 }
 
-type ListingActionResult = ApiResult<{ id: string }> | ApiResult<null>;
+type ListingActionResult =
+  ApiResult<{ id: string }> | ApiResult<{ pendingApproval: boolean } | null> | ApiResult<null>;
 type ListingAction = (prevState: unknown, formData: FormData) => Promise<ListingActionResult>;
 
 const nullState: ApiResult<{ id: string }> = {
@@ -86,7 +88,13 @@ export function ListingForm({
     initialValues?.pricingType ?? "FIXED",
   );
 
+  const waitingForApproval =
+    state !== nullState &&
+    state.success &&
+    Boolean(state.data && typeof state.data === "object" && "pendingApproval" in state.data);
+
   useEffect(() => {
+    if (waitingForApproval) return;
     if (
       state !== nullState &&
       state.success &&
@@ -112,6 +120,15 @@ export function ListingForm({
     <form action={formAction} className="space-y-5" noValidate>
       <input type="hidden" name="kind" value={kind} />
       {initialValues?.id ? <input type="hidden" name="id" value={initialValues.id} /> : null}
+
+      {waitingForApproval ? (
+        <Alert>
+          <CheckCircle2 className="size-4" />
+          <AlertDescription>
+            Sent to a Super Admin for approval. The live listing stays as it is until then.
+          </AlertDescription>
+        </Alert>
+      ) : null}
 
       {state !== nullState && !state.success ? (
         <Alert variant="destructive">
@@ -193,58 +210,60 @@ export function ListingForm({
         />
       </FormField>
 
-      {kind === "SERVICE" ? (
-        <FormField htmlFor="pricingType" label="Pricing">
-          <Select
-            name="pricingType"
-            value={pricingType}
-            onValueChange={(v) => setPricingType((v as "FIXED" | "QUOTE") ?? "FIXED")}
-          >
-            <SelectTrigger id="pricingType" className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="FIXED">Fixed price</SelectItem>
-              <SelectItem value="QUOTE">Quote on request</SelectItem>
-            </SelectContent>
-          </Select>
-        </FormField>
-      ) : null}
-
-      {kind !== "SERVICE" || pricingType === "FIXED" ? (
-        <FormField
-          htmlFor="price"
-          label="Price (₹)"
-          hint="In rupees — e.g. 1500 or 1499.50."
-          error={fieldErrors["price"]}
-        >
-          <Input
-            id="price"
-            name="price"
-            inputMode="decimal"
-            placeholder="1500"
-            defaultValue={paiseToRupeesInput(initialValues?.price)}
-            required={kind !== "SERVICE" || pricingType === "FIXED"}
-          />
-        </FormField>
-      ) : null}
-
-      {kind === "PRODUCT" ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <FormField htmlFor="sku" label="SKU (optional)">
-            <Input id="sku" name="sku" defaultValue={initialValues?.sku ?? ""} />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        {kind === "SERVICE" ? (
+          <FormField htmlFor="pricingType" label="Pricing">
+            <Select
+              name="pricingType"
+              value={pricingType}
+              onValueChange={(v) => setPricingType((v as "FIXED" | "QUOTE") ?? "FIXED")}
+            >
+              <SelectTrigger id="pricingType" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="FIXED">Fixed price</SelectItem>
+                <SelectItem value="QUOTE">Quote on request</SelectItem>
+              </SelectContent>
+            </Select>
           </FormField>
-          <FormField htmlFor="stock" label="Stock">
+        ) : null}
+
+        {kind !== "SERVICE" || pricingType === "FIXED" ? (
+          <FormField
+            htmlFor="price"
+            label="Price (₹)"
+            hint="In rupees, for example 1500 or 1499.50."
+            error={fieldErrors["price"]}
+          >
             <Input
-              id="stock"
-              name="stock"
-              type="number"
-              min={0}
-              defaultValue={initialValues?.stock ?? 0}
+              id="price"
+              name="price"
+              inputMode="decimal"
+              placeholder="1500"
+              defaultValue={paiseToRupeesInput(initialValues?.price)}
+              required={kind !== "SERVICE" || pricingType === "FIXED"}
             />
           </FormField>
-        </div>
-      ) : null}
+        ) : null}
+
+        {kind === "PRODUCT" ? (
+          <>
+            <FormField htmlFor="sku" label="SKU (optional)">
+              <Input id="sku" name="sku" defaultValue={initialValues?.sku ?? ""} />
+            </FormField>
+            <FormField htmlFor="stock" label="Stock">
+              <Input
+                id="stock"
+                name="stock"
+                type="number"
+                min={0}
+                defaultValue={initialValues?.stock ?? 0}
+              />
+            </FormField>
+          </>
+        ) : null}
+      </div>
 
       <SubmitButton label={submitLabel} />
     </form>

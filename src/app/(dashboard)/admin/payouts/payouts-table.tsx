@@ -5,7 +5,14 @@ import type { FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircle, ArrowRight, Banknote, Check, Eye, PiggyBank, X } from "lucide-react";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -150,7 +157,9 @@ function RejectDialog({
         <form onSubmit={submit} className="space-y-4" noValidate>
           <DialogHeader>
             <DialogTitle>Reject this payout request?</DialogTitle>
-            <DialogDescription>The member will see this reason, and the held funds return to their spendable balance.</DialogDescription>
+            <DialogDescription>
+              The member will see this reason, and the held funds return to their spendable balance.
+            </DialogDescription>
           </DialogHeader>
 
           {error ? (
@@ -228,8 +237,8 @@ function MarkPaidDialog({
           <DialogHeader>
             <DialogTitle>Mark this payout as paid</DialogTitle>
             <DialogDescription>
-              Record the bank transfer you&apos;ve already sent. This releases the held funds for good and
-              can&apos;t be undone from here.
+              Record the bank transfer you&apos;ve already sent. This releases the held funds for
+              good and can&apos;t be undone from here.
             </DialogDescription>
           </DialogHeader>
 
@@ -313,9 +322,9 @@ function MarkFailedDialog({
         <DialogHeader>
           <DialogTitle>Mark this transfer as failed?</DialogTitle>
           <DialogDescription>
-            Use this if the bank transfer bounced or couldn&apos;t be completed. This only marks the request
-            FAILED — it does not currently move the held funds back to the member&apos;s spendable balance, so
-            follow up on that reconciliation separately.
+            Use this if the bank transfer bounced or couldn&apos;t be completed. This only marks the
+            request as failed. It does not move the held funds back to the member&apos;s spendable
+            balance, so follow up on that separately.
           </DialogDescription>
         </DialogHeader>
 
@@ -339,7 +348,13 @@ function MarkFailedDialog({
   );
 }
 
-function BulkApproveAction({ count, onConfirm }: { count: number; onConfirm: () => Promise<void> }) {
+function BulkApproveAction({
+  count,
+  onConfirm,
+}: {
+  count: number;
+  onConfirm: () => Promise<void>;
+}) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -365,7 +380,9 @@ function BulkApproveAction({ count, onConfirm }: { count: number; onConfirm: () 
           <DialogTitle>
             Approve {count} payout request{count === 1 ? "" : "s"}?
           </DialogTitle>
-          <DialogDescription>Each request is approved individually, the same as approving one at a time.</DialogDescription>
+          <DialogDescription>
+            Each request is approved individually, the same as approving one at a time.
+          </DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={busy}>
@@ -416,7 +433,10 @@ function BulkRejectAction({
             <DialogTitle>
               Reject {count} payout request{count === 1 ? "" : "s"}?
             </DialogTitle>
-            <DialogDescription>The same reason is applied to every selected request, and each one&apos;s held funds return to the member&apos;s balance.</DialogDescription>
+            <DialogDescription>
+              The same reason is applied to every selected request, and each one&apos;s held funds
+              return to the member&apos;s balance.
+            </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-2">
@@ -490,7 +510,11 @@ function PayoutRowFooter({
       </div>
     );
   }
-  return <p className="text-muted-foreground w-full text-right text-sm">This request is in a final state.</p>;
+  return (
+    <p className="text-muted-foreground w-full text-right text-sm">
+      This request is in a final state.
+    </p>
+  );
 }
 
 export function PayoutsTable({ items }: { items: PayoutDetailRow[] }) {
@@ -533,7 +557,11 @@ export function PayoutsTable({ items }: { items: PayoutDetailRow[] }) {
     });
   }
 
-  async function runRowAction(id: string, run: () => Promise<ApiResult<null>>, successMessage: string) {
+  async function runRowAction(
+    id: string,
+    run: () => Promise<ApiResult<null>>,
+    successMessage: string,
+  ) {
     setBusyId(id);
     const result = await run();
     setBusyId(null);
@@ -554,9 +582,15 @@ export function PayoutsTable({ items }: { items: PayoutDetailRow[] }) {
     if (failed === 0) {
       toast.success(`${pastTense} ${total} request${total === 1 ? "" : "s"}`);
     } else if (failed === total) {
-      toast.error(`Bulk ${verbLower} failed`, `None of the selected requests could be ${verbLower}ed.`);
+      toast.error(
+        `Bulk ${verbLower} failed`,
+        `None of the selected requests could be ${verbLower}ed.`,
+      );
     } else {
-      toast.warning(`${pastTense} ${total - failed} of ${total}`, `${failed} failed — open them individually to see why.`);
+      toast.warning(
+        `${pastTense} ${total - failed} of ${total}`,
+        `${failed} failed. Open them one by one to see why.`,
+      );
     }
   }
 
@@ -634,10 +668,18 @@ export function PayoutsTable({ items }: { items: PayoutDetailRow[] }) {
                         ) : null}
                       </TableCell>
                       <TableCell>
-                        <button type="button" className="text-left hover:underline" onClick={() => setDrawerId(row.id)}>
-                          <div className="font-medium">{row.requester.fullName ?? row.requester.email}</div>
+                        <button
+                          type="button"
+                          className="text-left hover:underline"
+                          onClick={() => setDrawerId(row.id)}
+                        >
+                          <div className="font-medium">
+                            {row.requester.fullName ?? row.requester.email}
+                          </div>
                           {row.requester.fullName ? (
-                            <div className="text-muted-foreground text-xs">{row.requester.email}</div>
+                            <div className="text-muted-foreground text-xs">
+                              {row.requester.email}
+                            </div>
                           ) : null}
                         </button>
                       </TableCell>
@@ -648,9 +690,16 @@ export function PayoutsTable({ items }: { items: PayoutDetailRow[] }) {
                       <TableCell>
                         <StatusBadge status={row.status} />
                       </TableCell>
-                      <TableCell className="text-muted-foreground text-xs">{row.createdAt.toLocaleDateString("en-IN")}</TableCell>
+                      <TableCell className="text-muted-foreground text-xs">
+                        {row.createdAt.toLocaleDateString("en-IN")}
+                      </TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="sm" onClick={() => setDrawerId(row.id)} disabled={isBusy}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setDrawerId(row.id)}
+                          disabled={isBusy}
+                        >
                           <Eye />
                           View
                         </Button>
@@ -680,7 +729,9 @@ export function PayoutsTable({ items }: { items: PayoutDetailRow[] }) {
                 <p className="text-muted-foreground mt-2 text-xs">
                   {row.bankAccount.accountNoMasked} · {row.bankAccount.ifsc}
                 </p>
-                <p className="text-muted-foreground mt-1 text-xs">Requested {row.createdAt.toLocaleDateString("en-IN")}</p>
+                <p className="text-muted-foreground mt-1 text-xs">
+                  Requested {row.createdAt.toLocaleDateString("en-IN")}
+                </p>
               </button>
             ))}
           </div>
@@ -692,19 +743,25 @@ export function PayoutsTable({ items }: { items: PayoutDetailRow[] }) {
         onOpenChange={(open) => {
           if (!open) setDrawerId(null);
         }}
-        title={drawerRow ? drawerRow.requester.fullName ?? drawerRow.requester.email : ""}
+        title={drawerRow ? (drawerRow.requester.fullName ?? drawerRow.requester.email) : ""}
         description={drawerRow ? `Payout request · ${formatPaise(drawerRow.amount)}` : undefined}
         footer={
           drawerRow ? (
             <PayoutRowFooter
               row={drawerRow}
               busy={busyId === drawerRow.id}
-              onApprove={() => void runRowAction(drawerRow.id, () => approveRow(drawerRow.id), "Payout approved")}
+              onApprove={() =>
+                void runRowAction(drawerRow.id, () => approveRow(drawerRow.id), "Payout approved")
+              }
               onReject={(reason) =>
                 runRowAction(drawerRow.id, () => rejectRow(drawerRow.id, reason), "Payout rejected")
               }
               onAdvance={() =>
-                void runRowAction(drawerRow.id, () => advanceToProcessing(drawerRow.id), "Moved to processing")
+                void runRowAction(
+                  drawerRow.id,
+                  () => advanceToProcessing(drawerRow.id),
+                  "Moved to processing",
+                )
               }
               onMarkPaid={(transferReference, tdsDeductedRupees) =>
                 runRowAction(
@@ -713,7 +770,13 @@ export function PayoutsTable({ items }: { items: PayoutDetailRow[] }) {
                   "Payout marked paid",
                 )
               }
-              onMarkFailed={() => runRowAction(drawerRow.id, () => markFailedRow(drawerRow.id), "Payout marked failed")}
+              onMarkFailed={() =>
+                runRowAction(
+                  drawerRow.id,
+                  () => markFailedRow(drawerRow.id),
+                  "Payout marked failed",
+                )
+              }
             />
           ) : null
         }
@@ -743,7 +806,9 @@ export function PayoutsTable({ items }: { items: PayoutDetailRow[] }) {
             </div>
 
             <div className="border-border space-y-2 border-t pt-4">
-              <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">Bank account</p>
+              <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                Bank account
+              </p>
               <div className="flex items-center justify-between gap-3">
                 <dt className="text-muted-foreground">Holder</dt>
                 <dd>{drawerRow.bankAccount.accountHolderName || "—"}</dd>
@@ -766,14 +831,18 @@ export function PayoutsTable({ items }: { items: PayoutDetailRow[] }) {
 
             {drawerRow.rejectedReason ? (
               <div className="border-border space-y-1 border-t pt-4">
-                <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">Rejection reason</p>
+                <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                  Rejection reason
+                </p>
                 <p>{drawerRow.rejectedReason}</p>
               </div>
             ) : null}
 
             {drawerRow.transaction ? (
               <div className="border-border space-y-2 border-t pt-4">
-                <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">Transfer record</p>
+                <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                  Transfer record
+                </p>
                 <div className="flex items-center justify-between gap-3">
                   <dt className="text-muted-foreground">Reference</dt>
                   <dd>{drawerRow.transaction.transferReference ?? "—"}</dd>

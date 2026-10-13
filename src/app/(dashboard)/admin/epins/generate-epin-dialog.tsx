@@ -116,9 +116,7 @@ export function GenerateEpinDialog({ plans }: { plans: GenerateEpinPlanOption[] 
           <div className="space-y-4">
             <DialogHeader>
               <DialogTitle>E-pin generated</DialogTitle>
-              <DialogDescription>
-                Copy this code now — it cannot be shown again.
-              </DialogDescription>
+              <DialogDescription>Copy this code now. It cannot be shown again.</DialogDescription>
             </DialogHeader>
 
             <div className="bg-surface-sunken flex flex-col items-center gap-2 rounded-lg p-4">
@@ -135,7 +133,7 @@ export function GenerateEpinDialog({ plans }: { plans: GenerateEpinPlanOption[] 
               <TriangleAlert className="size-4" />
               <AlertDescription>
                 This is the only time this code will be shown. Store it securely and hand it off
-                now — Justreference cannot retrieve or redisplay it later.
+                now. Justreference cannot retrieve or redisplay it later.
               </AlertDescription>
             </Alert>
 
@@ -167,8 +165,8 @@ export function GenerateEpinDialog({ plans }: { plans: GenerateEpinPlanOption[] 
                 <TriangleAlert className="size-4" />
                 <AlertDescription>
                   No active subscription plans exist yet. Create one first at{" "}
-                  <Link href="/admin/subscription-plans">Subscription plans</Link> before
-                  generating an e-pin.
+                  <Link href="/admin/subscription-plans">Subscription plans</Link> before generating
+                  an e-pin.
                 </AlertDescription>
               </Alert>
             ) : (

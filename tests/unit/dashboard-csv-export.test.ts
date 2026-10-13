@@ -3,7 +3,13 @@ import { toCsv } from "@/server/domain/dashboard/csv-export";
 
 describe("toCsv", () => {
   it("formats a header row and data rows with CRLF line endings", () => {
-    const csv = toCsv(["id", "amount"], [["1", "100"], ["2", "200"]]);
+    const csv = toCsv(
+      ["id", "amount"],
+      [
+        ["1", "100"],
+        ["2", "200"],
+      ],
+    );
     expect(csv).toBe("id,amount\r\n1,100\r\n2,200");
   });
 
@@ -29,5 +35,29 @@ describe("toCsv", () => {
 
   it("handles no rows (header only)", () => {
     expect(toCsv(["a"], [])).toBe("a");
+  });
+});
+
+describe("toCsv formula neutralizing", () => {
+  it("leaves cells alone by default, so negative numbers stay numbers", () => {
+    expect(toCsv(["n"], [["-5"], ["=1+1"]])).toBe("n\r\n-5\r\n=1+1");
+  });
+
+  it("prefixes an apostrophe to cells a spreadsheet would run as a formula", () => {
+    const csv = toCsv(["name"], [['=HYPERLINK("x")'], ["+91 98"], ["-cmd"], ["@sum"], ["Asha"]], {
+      neutralizeFormulas: true,
+    });
+    expect(csv.split("\r\n")).toEqual([
+      "name",
+      '"\'=HYPERLINK(""x"")"',
+      "'+91 98",
+      "'-cmd",
+      "'@sum",
+      "Asha",
+    ]);
+  });
+
+  it("never alters the header row", () => {
+    expect(toCsv(["=a"], [], { neutralizeFormulas: true })).toBe("=a");
   });
 });

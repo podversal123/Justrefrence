@@ -5,7 +5,13 @@ import { Download } from "lucide-react";
 import { getInvoiceDownloadUrlAction } from "@/server/services/order-actions";
 import { Button } from "@/components/ui/button";
 
-export function InvoiceDownloadButton({ orderId, hasInvoice }: { orderId: string; hasInvoice: boolean }) {
+export function InvoiceDownloadButton({
+  orderId,
+  hasInvoice,
+}: {
+  orderId: string;
+  hasInvoice: boolean;
+}) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 

@@ -25,7 +25,7 @@ export function RolesTable({ roles }: { roles: RoleRow[] }) {
       <EmptyState
         icon={ShieldCheck}
         title="No roles"
-        description="This shouldn't happen — the seed script creates 6 system roles."
+        description="There are no roles to show yet."
       />
     );
   }

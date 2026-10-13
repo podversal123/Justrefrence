@@ -24,7 +24,10 @@ export interface EligibilityResult {
   failure?: EligibilityFailureReason;
 }
 
-export function evaluateEligibility(rule: EligibilityRule, context: EligibilityContext): EligibilityResult {
+export function evaluateEligibility(
+  rule: EligibilityRule,
+  context: EligibilityContext,
+): EligibilityResult {
   if (rule.requiresActiveSubscription && !context.hasActiveSubscription) {
     return { eligible: false, failure: "SUBSCRIPTION_REQUIRED" };
   }

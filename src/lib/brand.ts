@@ -14,21 +14,22 @@ export const BRAND = {
   /** Its companion line from the same slide. */
   taglineSecondary: "We help you get what you want.",
   description:
-    "We help you start work with zero investment. Buy products, hire services and take on projects from approved vendors — and earn through referrals.",
+    "We help you start work with zero investment. Buy products, hire services and take on projects from approved vendors, and earn through referrals.",
 } as const;
 
 export type HeroIcon = "home" | "handshake" | "scale" | "target" | "store";
 
 export interface HeroSlide {
   id: string;
-  icon: HeroIcon;
+  icon?: HeroIcon;
   headline: string;
   subline?: string;
-  /** Full-bleed background photo (self-hosted in /public/images/hero, Unsplash License — see docs/IMAGE_CREDITS.md). */
+  /** Full-bleed background photo: a file in /public/images/hero (Unsplash License, see docs/IMAGE_CREDITS.md) or a banner photo uploaded by staff. */
   image: string;
   cta: {
     label: string;
-    href: "/register" | "/products" | "/services" | "/projects" | "/referrals";
+    /** A path on this site or an https link; validated where banners are saved (schemas/banner.ts). */
+    href: string;
   };
 }
 

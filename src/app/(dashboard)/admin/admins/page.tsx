@@ -23,7 +23,7 @@ export default async function AdminsPage() {
         <div>
           <h1>Admins</h1>
           <p className="text-muted-foreground">
-            Staff accounts — Super Admin, Admin, Finance, Support.
+            Staff accounts: Super Admin, Admin, Finance, Support.
           </p>
         </div>
         {canCreate ? <CreateAdminDialog roles={assignableRoles} /> : null}

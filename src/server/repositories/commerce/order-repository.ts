@@ -40,7 +40,11 @@ export async function markCartCheckedOut(tx: Tx, cartId: string) {
  * the second sees the now-lower stock and this returns count 0. No
  * explicit `SELECT ... FOR UPDATE` needed — see docs/adr/0013.
  */
-export async function decrementProductStock(tx: Tx, productId: string, qty: number): Promise<boolean> {
+export async function decrementProductStock(
+  tx: Tx,
+  productId: string,
+  qty: number,
+): Promise<boolean> {
   const result = await tx.product.updateMany({
     where: { id: productId, stock: { gte: qty } },
     data: { stock: { decrement: qty } },
@@ -156,7 +160,13 @@ export async function listOrdersForVendor(vendorId: string, query: OrderListQuer
 // referring member, not the vendor); a vendor's own revenue is simply its
 // own non-cancelled/refunded order value.
 
-const VENDOR_REVENUE_STATUSES: OrderStatus[] = ["PAID", "PROCESSING", "SHIPPED", "DELIVERED", "COMPLETED"];
+const VENDOR_REVENUE_STATUSES: OrderStatus[] = [
+  "PAID",
+  "PROCESSING",
+  "SHIPPED",
+  "DELIVERED",
+  "COMPLETED",
+];
 
 function vendorDateWhere(range: ResolvedDateRange) {
   return range.from ? { gte: range.from, lte: range.to } : { lte: range.to };
@@ -174,11 +184,17 @@ export async function getOrderStatusCountsForVendor(
   return grouped.map((g) => ({ status: g.status, count: g._count }));
 }
 
-export async function getTotalOrdersForVendor(vendorId: string, range: ResolvedDateRange): Promise<number> {
+export async function getTotalOrdersForVendor(
+  vendorId: string,
+  range: ResolvedDateRange,
+): Promise<number> {
   return prisma.order.count({ where: { vendorId, createdAt: vendorDateWhere(range) } });
 }
 
-export async function getTotalRevenueForVendor(vendorId: string, range: ResolvedDateRange): Promise<bigint> {
+export async function getTotalRevenueForVendor(
+  vendorId: string,
+  range: ResolvedDateRange,
+): Promise<bigint> {
   const result = await prisma.order.aggregate({
     where: { vendorId, createdAt: vendorDateWhere(range), status: { in: VENDOR_REVENUE_STATUSES } },
     _sum: { grandTotal: true },

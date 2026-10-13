@@ -78,7 +78,9 @@ export function WidgetVisibilityProvider({ children }: { children: ReactNode }) 
     [hidden],
   );
 
-  return <WidgetVisibilityContext.Provider value={value}>{children}</WidgetVisibilityContext.Provider>;
+  return (
+    <WidgetVisibilityContext.Provider value={value}>{children}</WidgetVisibilityContext.Provider>
+  );
 }
 
 function useWidgetVisibility(): WidgetVisibilityValue {

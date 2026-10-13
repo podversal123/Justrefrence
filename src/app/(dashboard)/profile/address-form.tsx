@@ -1,9 +1,10 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { upsertAddressAction } from "@/server/services/member-actions";
+import { FULL_ROW, FormGrid } from "@/components/ui/form-grid";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,6 +20,7 @@ interface AddressValue {
   state: string;
   postalCode: string;
   country: string;
+  phone: string | null;
 }
 
 function SubmitButton() {
@@ -34,7 +36,7 @@ export function AddressForm({
   type,
   address,
 }: {
-  type: "RESIDENCE" | "OFFICE";
+  type: "RESIDENCE" | "OFFICE" | "BILLING";
   address: AddressValue | null;
 }) {
   const [state, formAction] = useActionState(upsertAddressAction, initialState);
@@ -57,17 +59,17 @@ export function AddressForm({
         </Alert>
       ) : null}
 
-      <div className="space-y-2">
-        <Label htmlFor={`${type}-line1`}>Address line 1</Label>
-        <Input id={`${type}-line1`} name="line1" defaultValue={address?.line1 ?? ""} required />
-      </div>
+      <FormGrid>
+        <div className={`space-y-2 ${FULL_ROW}`}>
+          <Label htmlFor={`${type}-line1`}>Address line 1</Label>
+          <Input id={`${type}-line1`} name="line1" defaultValue={address?.line1 ?? ""} required />
+        </div>
 
-      <div className="space-y-2">
-        <Label htmlFor={`${type}-line2`}>Address line 2</Label>
-        <Input id={`${type}-line2`} name="line2" defaultValue={address?.line2 ?? ""} />
-      </div>
+        <div className={`space-y-2 ${FULL_ROW}`}>
+          <Label htmlFor={`${type}-line2`}>Address line 2</Label>
+          <Input id={`${type}-line2`} name="line2" defaultValue={address?.line2 ?? ""} />
+        </div>
 
-      <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor={`${type}-city`}>City</Label>
           <Input id={`${type}-city`} name="city" defaultValue={address?.city ?? ""} required />
@@ -76,14 +78,13 @@ export function AddressForm({
           <Label htmlFor={`${type}-state`}>State</Label>
           <Input id={`${type}-state`} name="state" defaultValue={address?.state ?? ""} required />
         </div>
-      </div>
 
-      <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor={`${type}-postalCode`}>PIN code</Label>
           <Input
             id={`${type}-postalCode`}
             name="postalCode"
+            inputMode="numeric"
             defaultValue={address?.postalCode ?? ""}
             required
           />
@@ -98,7 +99,21 @@ export function AddressForm({
             required
           />
         </div>
-      </div>
+
+        <div className={`space-y-2 ${FULL_ROW}`}>
+          <Label htmlFor={`${type}-phone`}>Contact number (optional)</Label>
+          <Input
+            id={`${type}-phone`}
+            name="phone"
+            type="tel"
+            defaultValue={address?.phone ?? ""}
+            placeholder="+919876543210"
+          />
+          <p className="text-muted-foreground text-xs">
+            Who to call at this address, with country code.
+          </p>
+        </div>
+      </FormGrid>
 
       <SubmitButton />
     </form>

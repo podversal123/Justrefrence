@@ -65,7 +65,13 @@ export function PayoutRequestForm({
         icon={Landmark}
         title="Add a bank account to request a payout"
         description="Your payout destination is managed from your profile."
-        action={<Button size="touch" nativeButton={false} render={<Link href="/profile">Go to profile</Link>} />}
+        action={
+          <Button
+            size="touch"
+            nativeButton={false}
+            render={<Link href="/profile">Go to profile</Link>}
+          />
+        }
       />
     );
   }
@@ -169,8 +175,8 @@ export function PayoutRequestForm({
           <DialogHeader>
             <DialogTitle>Request this payout?</DialogTitle>
             <DialogDescription>
-              ₹{amountRupees} will be transferred to {account.accountNoMasked}. This moves money out of your
-              wallet balance and can&apos;t be undone once an admin approves it.
+              ₹{amountRupees} will be transferred to {account.accountNoMasked}. This moves money out
+              of your wallet balance and can&apos;t be undone once an admin approves it.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

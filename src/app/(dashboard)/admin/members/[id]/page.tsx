@@ -1,15 +1,19 @@
 import type { Metadata, Route } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ArrowLeft, Mail } from "lucide-react";
+import { ArrowLeft, FileText, Mail } from "lucide-react";
 import { getAuthSession } from "@/server/auth/session";
 import { getMemberDetail } from "@/server/repositories/identity/member-admin-repository";
+import { listDocumentsForOwner } from "@/server/repositories/kyc/kyc-repository";
+import { DOCUMENT_LABELS } from "@/server/domain/kyc/rules";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatDate } from "@/lib/format";
 import { formatPaise } from "@/lib/money";
 import { ModerationButton } from "./moderation-button";
+import { EditMemberDialog } from "./edit-member-dialog";
+import { PendingChangeBanner } from "@/components/approvals/pending-change-banner";
 
 export const metadata: Metadata = { title: "Member" };
 
@@ -34,6 +38,7 @@ export default async function AdminMemberPage({ params }: { params: Promise<{ id
   const detail = await getMemberDetail(id).catch(() => null);
   if (!detail) notFound();
   const { user, directReferrals } = detail;
+  const kycDocuments = await listDocumentsForOwner(user.id);
   const profile = user.memberProfile!;
   const blocked = user.status === "BLOCKED";
   const bank = user.bankAccounts[0];
@@ -50,6 +55,8 @@ export default async function AdminMemberPage({ params }: { params: Promise<{ id
         <ArrowLeft className="size-4" />
         All members
       </Link>
+
+      <PendingChangeBanner entityType="MEMBER_PROFILE" entityId={user.id} />
 
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="space-y-1">
@@ -74,6 +81,31 @@ export default async function AdminMemberPage({ params }: { params: Promise<{ id
               }
             />
           ) : null}
+          <Button
+            variant="outline"
+            nativeButton={false}
+            render={
+              <a href={`/api/welcome-letter?member=${user.id}`}>
+                <FileText />
+                Welcome letter
+              </a>
+            }
+          />
+          {session.permissions.has("member:update:any") && !isSelf ? (
+            <EditMemberDialog
+              needsApproval={!session.permissions.has("change:apply_direct")}
+              member={{
+                userId: user.id,
+                fullName: user.fullName ?? "",
+                dob: profile.dob ? profile.dob.toISOString().slice(0, 10) : "",
+                pan: profile.pan ?? "",
+                gstin: profile.gstin ?? "",
+                websiteUrl: profile.websiteUrl ?? "",
+                socialLinks: typeof profile.socialLinks === "string" ? profile.socialLinks : "",
+                telephone: profile.telephone ?? "",
+              }}
+            />
+          ) : null}
           {canModerate ? <ModerationButton userId={user.id} blocked={blocked} /> : null}
         </div>
       </div>
@@ -87,6 +119,7 @@ export default async function AdminMemberPage({ params }: { params: Promise<{ id
             <dl>
               <Row label="Email">{user.email}</Row>
               <Row label="Mobile">{user.phone ?? "Not provided"}</Row>
+              <Row label="Telephone">{profile.telephone ?? "Not provided"}</Row>
               <Row label="Email verified">
                 {user.emailVerifiedAt ? formatDate(user.emailVerifiedAt) : "No"}
               </Row>
@@ -158,6 +191,50 @@ export default async function AdminMemberPage({ params }: { params: Promise<{ id
           ) : null}
         </div>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>KYC documents</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {kycDocuments.length === 0 ? (
+            <p className="text-muted-foreground text-sm">No documents uploaded yet.</p>
+          ) : (
+            <ul className="divide-y">
+              {kycDocuments.map((doc) => (
+                <li
+                  key={doc.id}
+                  className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm"
+                >
+                  <span>{DOCUMENT_LABELS[doc.type]}</span>
+                  <span className="flex items-center gap-3">
+                    <StatusBadge status={doc.status} />
+                    {session.permissions.has("kyc:review") ? (
+                      <a
+                        href={`/api/kyc/${doc.id}/file`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary font-medium hover:underline"
+                      >
+                        View
+                      </a>
+                    ) : null}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+          {session.permissions.has("kyc:review") ? (
+            <p className="text-muted-foreground mt-3 text-xs">
+              To verify or reject, open{" "}
+              <Link href={"/admin/kyc" as Route} className="text-primary hover:underline">
+                KYC review
+              </Link>
+              .
+            </p>
+          ) : null}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

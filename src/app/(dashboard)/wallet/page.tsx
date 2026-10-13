@@ -1,8 +1,19 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { ArrowDownLeft, ArrowUpRight, Clock, Landmark, ReceiptText, ShieldCheck, Wallet as WalletIcon } from "lucide-react";
+import {
+  ArrowDownLeft,
+  ArrowUpRight,
+  Clock,
+  Landmark,
+  ReceiptText,
+  ShieldCheck,
+  Wallet as WalletIcon,
+} from "lucide-react";
 import { getAuthSession } from "@/server/auth/session";
-import { getOrCreateWallet, listWalletTransactions } from "@/server/repositories/wallet/wallet-repository";
+import {
+  getOrCreateWallet,
+  listWalletTransactions,
+} from "@/server/repositories/wallet/wallet-repository";
 import { listPayoutRequestsForWallet } from "@/server/repositories/wallet/payout-repository";
 import { getBankAccount } from "@/server/repositories/identity/bank-repository";
 import { formatPaise } from "@/lib/money";
@@ -76,11 +87,17 @@ export default async function WalletPage() {
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 py-8">
       <div>
         <h1>My wallet</h1>
-        <p className="text-muted-foreground">Your balance, payout requests, and transaction history.</p>
+        <p className="text-muted-foreground">
+          Your balance, payout requests, and transaction history.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <StatCard icon={WalletIcon} label="Available balance" value={formatPaise(wallet.balance.toString())} />
+        <StatCard
+          icon={WalletIcon}
+          label="Available balance"
+          value={formatPaise(wallet.balance.toString())}
+        />
         <StatCard
           icon={Clock}
           label="Pending balance"
@@ -93,7 +110,7 @@ export default async function WalletPage() {
       <section className="rounded-xl border p-4 sm:p-5">
         <h2 className="text-base font-semibold">Wallet PIN</h2>
         <p className="text-muted-foreground text-sm">
-          Optional — adds a confirmation step when you request a payout.
+          Optional. Adds a confirmation step when you request a payout.
         </p>
         <div className="mt-4">
           {hasPin ? (
@@ -110,7 +127,8 @@ export default async function WalletPage() {
       <section className="rounded-xl border p-4 sm:p-5">
         <h2 className="text-base font-semibold">Request a payout</h2>
         <p className="text-muted-foreground mb-4 text-sm">
-          Funds move from your available balance into pending until an admin approves or rejects the request.
+          Funds move from your available balance into pending until an admin approves or rejects the
+          request.
         </p>
         {bankAccountError ? (
           <ErrorState title="Couldn't load your bank account" />
@@ -137,7 +155,9 @@ export default async function WalletPage() {
                   <span
                     className={cn(
                       "flex size-8 shrink-0 items-center justify-center rounded-full",
-                      tx.direction === "CREDIT" ? "bg-success/10 text-success" : "bg-muted text-muted-foreground",
+                      tx.direction === "CREDIT"
+                        ? "bg-success/10 text-success"
+                        : "bg-muted text-muted-foreground",
                     )}
                   >
                     {tx.direction === "CREDIT" ? (
@@ -152,11 +172,18 @@ export default async function WalletPage() {
                   </div>
                 </div>
                 <div className="shrink-0 text-right">
-                  <p className={cn("text-sm font-medium", tx.direction === "CREDIT" && "text-success")}>
+                  <p
+                    className={cn(
+                      "text-sm font-medium",
+                      tx.direction === "CREDIT" && "text-success",
+                    )}
+                  >
                     {tx.direction === "CREDIT" ? "+" : "−"}
                     {formatPaise(tx.amount.toString())}
                   </p>
-                  <p className="text-muted-foreground text-xs">Balance {formatPaise(tx.balanceAfter.toString())}</p>
+                  <p className="text-muted-foreground text-xs">
+                    Balance {formatPaise(tx.balanceAfter.toString())}
+                  </p>
                 </div>
               </div>
             ))}
@@ -179,9 +206,13 @@ export default async function WalletPage() {
             {payouts.map((payout) => (
               <div key={payout.id} className="flex flex-col gap-1 px-4 py-3">
                 <div className="flex items-center justify-between gap-3">
-                  <span className="text-sm font-medium">{formatPaise(payout.amount.toString())}</span>
+                  <span className="text-sm font-medium">
+                    {formatPaise(payout.amount.toString())}
+                  </span>
                   <div className="flex items-center gap-3">
-                    <span className="text-muted-foreground text-xs">{payout.createdAt.toLocaleDateString()}</span>
+                    <span className="text-muted-foreground text-xs">
+                      {payout.createdAt.toLocaleDateString()}
+                    </span>
                     <StatusBadge status={payout.status} />
                   </div>
                 </div>
