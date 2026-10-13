@@ -146,17 +146,9 @@ export async function initiateRefundAction(
 ): Promise<ApiResult<null>> {
   let session;
   try {
-    session = await authorize("payment:read"); // baseline gate; refund itself is ADMIN/FINANCE via the UI route, enforced below
+    session = await authorize("payment:refund");
   } catch (error) {
     return failureFrom(error, "You don't have permission to process refunds.");
-  }
-
-  if (!session.roles.some((r) => ["SUPER_ADMIN", "ADMIN", "FINANCE"].includes(r))) {
-    return {
-      success: false,
-      error: { code: "FORBIDDEN", message: "Only admin or finance staff may issue a refund." },
-      meta: { requestId: requestId() },
-    };
   }
 
   const parsed = initiateRefundSchema.safeParse({ paymentId: formData.get("paymentId") });

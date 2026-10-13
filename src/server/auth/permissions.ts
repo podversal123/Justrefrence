@@ -56,6 +56,7 @@ export const PERMISSIONS = [
 
   // Payments
   "payment:read",
+  "payment:refund",
   "payment:webhook_process",
 
   // Referral & commission
