@@ -43,6 +43,7 @@ function superAdminSession(overrides: Partial<AuthSession> = {}): AuthSession {
     roles: ["SUPER_ADMIN"],
     permissions: new Set<Permission>(["role:assign", "permission:update"]),
     hasVendorProfile: false,
+    hasMemberProfile: true,
     vendorProfileId: null,
     ...overrides,
   };

@@ -13,6 +13,7 @@ function makeSession(overrides: Partial<AuthSession> = {}): AuthSession {
     roles: ["CUSTOMER"],
     permissions: new Set<Permission>(["order:read", "wallet:read"]),
     hasVendorProfile: false,
+    hasMemberProfile: true,
     vendorProfileId: null,
     ...overrides,
   };
@@ -99,6 +100,7 @@ describe("evaluateAuthorization", () => {
           "member:read",
         ]),
         hasVendorProfile: true,
+        hasMemberProfile: true,
         vendorProfileId: "vendor-profile-a",
         ...overrides,
       });

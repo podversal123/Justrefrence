@@ -97,6 +97,7 @@ function adminSession(overrides: Partial<AuthSession> = {}): AuthSession {
       "category:manage",
     ]),
     hasVendorProfile: false,
+    hasMemberProfile: true,
     vendorProfileId: null,
     ...overrides,
   };
@@ -116,6 +117,7 @@ function vendorSession(overrides: Partial<AuthSession> = {}): AuthSession {
       "product:delete",
     ]),
     hasVendorProfile: true,
+    hasMemberProfile: true,
     vendorProfileId: "vendor-a-profile",
     ...overrides,
   };

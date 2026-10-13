@@ -81,6 +81,7 @@ function session(userId: string, permissions: Permission[]): AuthSession {
     roles: [],
     permissions: new Set(permissions),
     hasVendorProfile: false,
+    hasMemberProfile: true,
     vendorProfileId: null,
   };
 }

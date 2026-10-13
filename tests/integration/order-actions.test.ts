@@ -60,6 +60,7 @@ function session(overrides: Partial<AuthSession> = {}): AuthSession {
     roles: ["CUSTOMER"],
     permissions: new Set<Permission>(["order:create", "order:cancel"]),
     hasVendorProfile: false,
+    hasMemberProfile: true,
     vendorProfileId: null,
     ...overrides,
   };

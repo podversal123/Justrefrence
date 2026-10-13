@@ -48,7 +48,7 @@ export interface NavItem {
   /** Something a buyer or vendor does for themselves (cart, own orders, own wallet). Hidden from staff-only accounts. */
   memberOnly?: boolean;
   /** Return true if this item should be visible for the given session. */
-  visible: (session: Pick<AuthSession, "permissions" | "hasVendorProfile">) => boolean;
+  visible: (session: Pick<AuthSession, "permissions" | "hasVendorProfile" | "hasMemberProfile">) => boolean;
 }
 
 /**
@@ -96,7 +96,7 @@ export const NAV_GROUPS: NavGroup[] = [
         memberOnly: true,
         href: "/referrals",
         icon: Users,
-        visible: (s) => s.permissions.has("referral:read"),
+        visible: (s) => s.hasMemberProfile && s.permissions.has("referral:read"),
       },
       {
         title: "My wallet",

@@ -79,6 +79,7 @@ function session(overrides: Partial<AuthSession> = {}): AuthSession {
       "vendor:suspend",
     ]),
     hasVendorProfile: false,
+    hasMemberProfile: true,
     vendorProfileId: null,
     ...overrides,
   };

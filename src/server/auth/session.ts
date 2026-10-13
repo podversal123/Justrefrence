@@ -13,6 +13,8 @@ export interface AuthSession {
   permissions: Set<Permission>;
   /** Cheap nav-gating shortcut — avoids every page re-querying for this. */
   hasVendorProfile: boolean;
+  /** False for vendor-only accounts, which have no member ID, referral code or referral tree. */
+  hasMemberProfile: boolean;
   /** Null for non-vendors — used for catalog ownership checks (docs/adr/0011 §ownership). */
   vendorProfileId: string | null;
 }
@@ -50,6 +52,7 @@ export const getAuthSession = cache(async (): Promise<AuthSession | null> => {
         },
       },
       vendorProfile: { select: { id: true } },
+      memberProfile: { select: { id: true } },
     },
   });
 
@@ -73,6 +76,7 @@ export const getAuthSession = cache(async (): Promise<AuthSession | null> => {
     roles,
     permissions,
     hasVendorProfile: dbUser.vendorProfile !== null,
+    hasMemberProfile: dbUser.memberProfile !== null,
     vendorProfileId: dbUser.vendorProfile?.id ?? null,
   };
 });
