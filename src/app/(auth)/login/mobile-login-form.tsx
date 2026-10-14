@@ -1,5 +1,7 @@
 "use client";
 
+import { msg } from "@/i18n/locales";
+import { useT } from "@/i18n/provider";
 import { useState } from "react";
 import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
@@ -22,15 +24,17 @@ const initialRequestState: ApiResult<{ message: string }> = {
 const initialVerifyState: ApiResult<null> = { success: true, data: null, meta: { requestId: "" } };
 
 function SubmitButton({ label, pendingLabel }: { label: string; pendingLabel: string }) {
+  const t = useT();
   const { pending } = useFormStatus();
   return (
     <Button type="submit" className="w-full" disabled={pending}>
-      {pending ? pendingLabel : label}
+      {pending ? t(pendingLabel) : t(label)}
     </Button>
   );
 }
 
-export function MobileLoginForm() {
+export function MobileLoginForm({ next }: { next?: string }) {
+  const t = useT();
   const [phone, setPhone] = useState("");
   const [step, setStep] = useState<"phone" | "code">("phone");
 
@@ -53,12 +57,12 @@ export function MobileLoginForm() {
         {!requestState.success ? (
           <Alert variant="destructive">
             <AlertCircle className="size-4" />
-            <AlertDescription>{requestState.error.message}</AlertDescription>
+            <AlertDescription>{t(requestState.error.message)}</AlertDescription>
           </Alert>
         ) : null}
 
         <div className="space-y-2">
-          <Label htmlFor="mobile-phone">Mobile number</Label>
+          <Label htmlFor="mobile-phone">{t("Mobile number")}</Label>
           <Input
             id="mobile-phone"
             name="phone"
@@ -71,7 +75,7 @@ export function MobileLoginForm() {
           />
         </div>
 
-        <SubmitButton label="Send code" pendingLabel="Sending…" />
+        <SubmitButton label={msg("Send code")} pendingLabel={msg("Sending…")} />
       </form>
     );
   }
@@ -79,20 +83,21 @@ export function MobileLoginForm() {
   return (
     <form action={verifyAction} className="space-y-4" noValidate>
       <input type="hidden" name="phone" value={phone} />
+      {next ? <input type="hidden" name="next" value={next} /> : null}
 
       {!verifyState.success ? (
         <Alert variant="destructive">
           <AlertCircle className="size-4" />
-          <AlertDescription>{verifyState.error.message}</AlertDescription>
+          <AlertDescription>{t(verifyState.error.message)}</AlertDescription>
         </Alert>
       ) : null}
 
       <p className="text-muted-foreground text-sm">
-        If {phone} is registered, we sent it a 6-digit code.
+        {t("If {phone} is registered, we sent it a 6-digit code.", { phone })}
       </p>
 
       <div className="space-y-2">
-        <Label htmlFor="mobile-code">6-digit code</Label>
+        <Label htmlFor="mobile-code">{t("6-digit code")}</Label>
         <Input
           id="mobile-code"
           name="code"
@@ -104,7 +109,7 @@ export function MobileLoginForm() {
         />
       </div>
 
-      <SubmitButton label="Sign in" pendingLabel="Signing in…" />
+      <SubmitButton label={msg("Sign in")} pendingLabel={msg("Signing in…")} />
 
       <Button
         type="button"
@@ -113,7 +118,7 @@ export function MobileLoginForm() {
         className="px-0"
         onClick={() => setStep("phone")}
       >
-        Use a different number
+        {t("Use a different number")}
       </Button>
     </form>
   );

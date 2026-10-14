@@ -5,16 +5,19 @@
  * footer, auth screens and page metadata can never drift apart. Light
  * copy-editing only (typos / missing articles); wording otherwise theirs.
  */
+import { msg } from "@/i18n/locales";
+
 export const BRAND = {
   name: "Justreference",
   domain: "justreference.in",
   headquarters: "New Delhi",
   /** The primary line — used wherever one tagline is shown. */
-  tagline: "We help you start work with zero investment.",
+  tagline: msg("We help you start work with zero investment."),
   /** Its companion line from the same slide. */
-  taglineSecondary: "We help you get what you want.",
-  description:
+  taglineSecondary: msg("We help you get what you want."),
+  description: msg(
     "We help you start work with zero investment. Buy products, hire services and take on projects from approved vendors, and earn through referrals.",
+  ),
 } as const;
 
 export type HeroIcon = "home" | "handshake" | "scale" | "target" | "store";
@@ -39,9 +42,9 @@ export const HERO_SLIDES: readonly HeroSlide[] = [
     id: "work-from-home",
     image: "/images/hero/slide-1.jpg",
     icon: "home",
-    headline: "We help you start work without investment at home.",
-    subline: "Get the solution of financial problems.",
-    cta: { label: "Start earning", href: "/referrals" },
+    headline: msg("We help you start work without investment at home."),
+    subline: msg("Get the solution of financial problems."),
+    cta: { label: msg("Start earning"), href: "/referrals" },
   },
   {
     id: "zero-investment",
@@ -49,30 +52,30 @@ export const HERO_SLIDES: readonly HeroSlide[] = [
     icon: "handshake",
     headline: BRAND.tagline,
     subline: BRAND.taglineSecondary,
-    cta: { label: "Create your account", href: "/register" },
+    cta: { label: msg("Create your account"), href: "/register" },
   },
   {
     id: "justice",
     image: "/images/hero/slide-3.jpg",
     icon: "scale",
-    headline: "Justice for all.",
-    subline: "Every buyer and vendor works under the same rules.",
-    cta: { label: "Browse the marketplace", href: "/products" },
+    headline: msg("Justice for all."),
+    subline: msg("Every buyer and vendor works under the same rules."),
+    cta: { label: msg("Browse the marketplace"), href: "/products" },
   },
   {
     id: "right-place",
     image: "/images/hero/slide-4.jpg",
     icon: "target",
-    headline: "We help you get the right one at the right place.",
-    subline: "We work for all equality and opportunity.",
-    cta: { label: "Explore services", href: "/services" },
+    headline: msg("We help you get the right one at the right place."),
+    subline: msg("We work for all equality and opportunity."),
+    cta: { label: msg("Explore services"), href: "/services" },
   },
   {
     id: "own-business",
     image: "/images/hero/slide-5.jpg",
     icon: "store",
-    headline: "We help you start your own business.",
-    subline: "We help you achieve your life goals.",
-    cta: { label: "Become a vendor", href: "/register" },
+    headline: msg("We help you start your own business."),
+    subline: msg("We help you achieve your life goals."),
+    cta: { label: msg("Become a vendor"), href: "/register" },
   },
 ] as const;

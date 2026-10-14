@@ -1,3 +1,4 @@
+import { getT } from "@/i18n/server";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getAuthSession } from "@/server/auth/session";
@@ -8,7 +9,10 @@ import { CustomerDashboard } from "@/components/dashboard/customer-dashboard";
 import { AnnouncementsStrip } from "@/components/dashboard/announcements-strip";
 import { getPanel, type Panel } from "@/server/auth/panel";
 
-export const metadata: Metadata = { title: "Dashboard" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("Dashboard") };
+}
 
 interface PageProps {
   searchParams: Promise<Record<string, string | undefined>>;

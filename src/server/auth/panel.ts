@@ -11,24 +11,25 @@
  *
  * Pure (no I/O) so it is easy to test and safe to import anywhere.
  */
+import { msg } from "@/i18n/locales";
 
 export type Panel = "ADMIN" | "VENDOR" | "CUSTOMER";
 
 const MEMBER_ROLES = new Set(["CUSTOMER", "VENDOR"]);
 
 export const PANEL_LABELS: Record<Panel, string> = {
-  ADMIN: "Admin panel",
-  VENDOR: "Vendor panel",
-  CUSTOMER: "Customer panel",
+  ADMIN: msg("Admin panel"),
+  VENDOR: msg("Vendor panel"),
+  CUSTOMER: msg("Customer panel"),
 };
 
 const ROLE_LABELS: Record<string, string> = {
-  SUPER_ADMIN: "Super Admin",
-  ADMIN: "Admin",
-  FINANCE: "Finance",
-  SUPPORT: "Support",
-  VENDOR: "Vendor",
-  CUSTOMER: "Customer",
+  SUPER_ADMIN: msg("Super Admin"),
+  ADMIN: msg("Admin"),
+  FINANCE: msg("Finance"),
+  SUPPORT: msg("Support"),
+  VENDOR: msg("Vendor"),
+  CUSTOMER: msg("Customer"),
 };
 
 export interface PanelSubject {

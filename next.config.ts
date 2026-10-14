@@ -45,6 +45,36 @@ const cspHeader = [
   ...(enforceHttps ? ["upgrade-insecure-requests"] : []),
 ].join("; ");
 
+/**
+ * Pages that show one person's account. They must never be kept by the browser or any cache, or the
+ * Back button after signing out (or switching to another account) can show the previous person's
+ * panel. `no-store` also keeps them out of the browser's back/forward cache.
+ */
+const PRIVATE_PREFIXES = [
+  "dashboard",
+  "admin",
+  "vendor",
+  "profile",
+  "cart",
+  "checkout",
+  "orders",
+  "referrals",
+  "wallet",
+  "subscription",
+  "support",
+  "messages",
+  "invoices",
+  "coupons",
+  "requirements",
+  "my-bids",
+  "my-auctions",
+  "rewards",
+  "sms",
+  "audit-log",
+  "login",
+  "register",
+];
+
 const nextConfig: NextConfig = {
   experimental: {
     // Server actions are capped at 1MB by default, which silently broke photo and document uploads.
@@ -63,6 +93,10 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     return [
+      ...PRIVATE_PREFIXES.map((prefix) => ({
+        source: `/${prefix}/:path*`,
+        headers: [{ key: "Cache-Control", value: "private, no-store, max-age=0" }],
+      })),
       {
         source: "/:path*",
         headers: [

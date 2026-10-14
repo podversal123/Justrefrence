@@ -1,3 +1,4 @@
+import { getT } from "@/i18n/server";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -13,6 +14,7 @@ import { Button } from "@/components/ui/button";
 
 /** Shared detail view for /products/[slug], /services/[slug], /projects/[slug]. */
 export async function PublicCatalogDetail({ kind, slug }: { kind: CatalogKind; slug: string }) {
+  const t = await getT();
   const repo = getCatalogRepository(kind);
   const listing = await repo.getBySlug(slug);
 
@@ -69,9 +71,11 @@ export async function PublicCatalogDetail({ kind, slug }: { kind: CatalogKind; s
 
       <div className="space-y-4">
         <div>
-          <p className="text-muted-foreground text-sm">{labels.singular}</p>
+          <p className="text-muted-foreground text-sm">{t(labels.singular)}</p>
           <h1>{listing.title}</h1>
-          <p className="text-muted-foreground text-sm">Sold by {listing.vendor.businessName}</p>
+          <p className="text-muted-foreground text-sm">
+            {t("Sold by {vendor}", { vendor: listing.vendor.businessName })}
+          </p>
         </div>
         <p className="text-2xl font-semibold">{formatPaise(listing.price, listing.currency)}</p>
         {listing.description ? (
@@ -79,7 +83,7 @@ export async function PublicCatalogDetail({ kind, slug }: { kind: CatalogKind; s
         ) : null}
 
         {kind === "PRODUCT" && listing.stock <= 0 ? (
-          <p className="text-destructive text-sm font-medium">Out of stock</p>
+          <p className="text-destructive text-sm font-medium">{t("Out of stock")}</p>
         ) : null}
 
         {canPurchase ? (
@@ -90,7 +94,10 @@ export async function PublicCatalogDetail({ kind, slug }: { kind: CatalogKind; s
               maxQty={kind === "PRODUCT" ? listing.stock : null}
             />
           ) : (
-            <Button nativeButton={false} render={<Link href="/login">Sign in to purchase</Link>} />
+            <Button
+              nativeButton={false}
+              render={<Link href="/login">{t("Sign in to purchase")}</Link>}
+            />
           )
         ) : null}
       </div>

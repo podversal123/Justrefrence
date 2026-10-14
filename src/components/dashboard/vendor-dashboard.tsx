@@ -1,3 +1,5 @@
+import { msg } from "@/i18n/locales";
+import { getFormat, getT } from "@/i18n/server";
 import Link from "next/link";
 import type { Route } from "next";
 import {
@@ -40,24 +42,26 @@ import { OrderStatusChart } from "./order-status-chart";
  * dashboard type, so distinct ids keep a stray collision impossible.
  */
 const WIDGETS = [
-  { id: "vendor-products", label: "Products" },
-  { id: "vendor-services", label: "Services" },
-  { id: "vendor-projects", label: "Projects" },
-  { id: "vendor-orders", label: "Orders" },
-  { id: "vendor-sales", label: "Sales" },
-  { id: "vendor-revenue-chart", label: "Sales chart" },
-  { id: "vendor-order-status-chart", label: "Orders-by-status chart" },
+  { id: "vendor-products", label: msg("Products") },
+  { id: "vendor-services", label: msg("Services") },
+  { id: "vendor-projects", label: msg("Projects") },
+  { id: "vendor-orders", label: msg("Orders") },
+  { id: "vendor-sales", label: msg("Sales") },
+  { id: "vendor-revenue-chart", label: msg("Sales chart") },
+  { id: "vendor-order-status-chart", label: msg("Orders-by-status chart") },
 ];
 
 export async function VendorDashboard({ session }: { session: AuthSession }) {
+  const t = await getT();
+  const { formatDate } = await getFormat();
   // Defensive only — the page-level router decides who reaches this
   // component at all; a vendor-less session should never get here.
   if (!session.vendorProfileId) {
     return (
       <EmptyState
         icon={Store}
-        title="No vendor profile"
-        description="This dashboard is only available to vendor accounts."
+        title={t("No vendor profile")}
+        description={t("This dashboard is only available to vendor accounts.")}
       />
     );
   }
@@ -99,10 +103,13 @@ export async function VendorDashboard({ session }: { session: AuthSession }) {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
             <div>
-              <h1>Welcome back, {businessName}</h1>
+              <h1>{t("Welcome back, {name}", { name: businessName })}</h1>
               <p className="text-muted-foreground">
-                An overview of your storefront.{" "}
-                {HERO_SLIDES.find((slide) => slide.id === "own-business")?.headline}
+                {t("An overview of your storefront.")}{" "}
+                {(() => {
+                  const slide = HERO_SLIDES.find((s) => s.id === "own-business");
+                  return slide ? t(slide.headline) : null;
+                })()}
               </p>
             </div>
             <StatusBadge status={approvalStatus} />
@@ -113,10 +120,12 @@ export async function VendorDashboard({ session }: { session: AuthSession }) {
         {approvalStatus !== "APPROVED" ? (
           <div className="bg-surface-sunken rounded-lg border px-4 py-3 text-sm">
             {approvalStatus === "PENDING"
-              ? "Your vendor account is pending approval. Once approved, your active listings become visible to customers."
+              ? t(
+                  "Your vendor account is pending approval. Once approved, your active listings become visible to customers.",
+                )
               : approvalStatus === "REJECTED"
-                ? "Your vendor application was rejected. Visit your vendor profile for details."
-                : "Your vendor account is suspended. Contact an administrator for details."}
+                ? t("Your vendor application was rejected. Visit your vendor profile for details.")
+                : t("Your vendor account is suspended. Contact an administrator for details.")}
           </div>
         ) : null}
 
@@ -124,41 +133,41 @@ export async function VendorDashboard({ session }: { session: AuthSession }) {
           <Widget id="vendor-products">
             <StatCard
               icon={Package}
-              label="Products"
+              label={t("Products")}
               value={catalog.products.total.toLocaleString()}
-              sublabel={`${catalog.products.active} live`}
+              sublabel={t("{count} live", { count: catalog.products.active })}
             />
           </Widget>
           <Widget id="vendor-services">
             <StatCard
               icon={Wrench}
-              label="Services"
+              label={t("Services")}
               value={catalog.services.total.toLocaleString()}
-              sublabel={`${catalog.services.active} live`}
+              sublabel={t("{count} live", { count: catalog.services.active })}
             />
           </Widget>
           <Widget id="vendor-projects">
             <StatCard
               icon={Briefcase}
-              label="Projects"
+              label={t("Projects")}
               value={catalog.projects.total.toLocaleString()}
-              sublabel={`${catalog.projects.active} live`}
+              sublabel={t("{count} live", { count: catalog.projects.active })}
             />
           </Widget>
           <Widget id="vendor-orders">
             <StatCard
               icon={ShoppingCart}
-              label="Orders"
+              label={t("Orders")}
               value={totalOrders.toLocaleString()}
-              sublabel="Last 30 days"
+              sublabel={t("Last 30 days")}
             />
           </Widget>
           <Widget id="vendor-sales">
             <StatCard
               icon={LineChartIcon}
-              label="Sales"
+              label={t("Sales")}
               value={formatPaise(totalRevenue.toString())}
-              sublabel="Last 30 days"
+              sublabel={t("Last 30 days")}
               tone="success"
             />
           </Widget>
@@ -176,10 +185,10 @@ export async function VendorDashboard({ session }: { session: AuthSession }) {
         <Card>
           <CardHeader className="flex-row items-center justify-between space-y-0">
             <div>
-              <CardTitle className="text-base">Recent orders</CardTitle>
+              <CardTitle className="text-base">{t("Recent orders")}</CardTitle>
               <CardDescription>
                 {recentOrders.items.length === 0
-                  ? "Orders placed with your business will appear here."
+                  ? t("Orders placed with your business will appear here.")
                   : `Your last ${recentOrders.items.length} order${recentOrders.items.length === 1 ? "" : "s"}.`}
               </CardDescription>
             </div>
@@ -189,15 +198,17 @@ export async function VendorDashboard({ session }: { session: AuthSession }) {
               nativeButton={false}
               render={<Link href="/vendor/orders" />}
             >
-              View all
+              {t("View all")}
             </Button>
           </CardHeader>
           <CardContent>
             {recentOrders.items.length === 0 ? (
               <EmptyState
                 icon={Receipt}
-                title="No orders yet"
-                description="Once customers order your products or services, they'll show up here."
+                title={t("No orders yet")}
+                description={t(
+                  "Once customers order your products or services, they'll show up here.",
+                )}
                 action={
                   <Button
                     size="touch"
@@ -205,7 +216,7 @@ export async function VendorDashboard({ session }: { session: AuthSession }) {
                     render={<Link href={"/vendor/catalog/products" as Route} />}
                   >
                     <Package />
-                    Manage catalog
+                    {t("Manage catalog")}
                   </Button>
                 }
               />
@@ -220,9 +231,11 @@ export async function VendorDashboard({ session }: { session: AuthSession }) {
                     <div>
                       <p className="font-medium">{order.orderNumber ?? order.id}</p>
                       <p className="text-muted-foreground text-sm">
-                        {order.buyer.fullName ?? order.buyer.email} · {order.items.length} item
-                        {order.items.length === 1 ? "" : "s"} ·{" "}
-                        {order.createdAt.toLocaleDateString()}
+                        {order.buyer.fullName ?? order.buyer.email} ·{" "}
+                        {order.items.length === 1
+                          ? t("1 item")
+                          : t("{count} items", { count: order.items.length })}{" "}
+                        · {formatDate(order.createdAt)}
                       </p>
                     </div>
                     <div className="flex items-center gap-3">
@@ -245,7 +258,7 @@ export async function VendorDashboard({ session }: { session: AuthSession }) {
             render={<Link href={"/vendor/catalog/products" as Route} />}
           >
             <Package />
-            Manage catalog
+            {t("Manage catalog")}
           </Button>
           <Button
             size="touch"
@@ -254,7 +267,7 @@ export async function VendorDashboard({ session }: { session: AuthSession }) {
             render={<Link href="/vendor/orders" />}
           >
             <ShoppingCart />
-            Vendor orders
+            {t("Vendor orders")}
           </Button>
           <Button
             size="touch"
@@ -263,7 +276,7 @@ export async function VendorDashboard({ session }: { session: AuthSession }) {
             render={<Link href="/vendor/profile" />}
           >
             <User />
-            Vendor profile
+            {t("Vendor profile")}
           </Button>
         </div>
       </div>

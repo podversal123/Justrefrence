@@ -1,9 +1,9 @@
+import { getFormat, getT } from "@/i18n/server";
 import Link from "next/link";
 import type { Route } from "next";
 import { Clock } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { findPendingFor } from "@/server/repositories/approvals/change-repository";
-import { formatDate } from "@/lib/format";
 import type { ChangeEntityType } from "@/generated/prisma/enums";
 
 /**
@@ -17,6 +17,8 @@ export async function PendingChangeBanner({
   entityType: ChangeEntityType;
   entityId: string;
 }) {
+  const t = await getT();
+  const { formatDate } = await getFormat();
   const pending = await findPendingFor(entityType, entityId).catch(() => null);
   if (!pending) return null;
   const by = pending.requester.fullName ?? pending.requester.email;
@@ -24,13 +26,15 @@ export async function PendingChangeBanner({
     <Alert>
       <Clock className="size-4" />
       <AlertDescription>
-        A change by {by} is waiting for a Super Admin to approve it (sent{" "}
-        {formatDate(pending.createdAt)}). What you see below is the current version.{" "}
+        {t(
+          "A change by {name} is waiting for a Super Admin to approve it (sent {date}). What you see below is the current version.",
+          { name: by, date: formatDate(pending.createdAt) },
+        )}{" "}
         <Link
           href={"/admin/approvals" as Route}
           className="text-primary font-medium hover:underline"
         >
-          See the request
+          {t("See the request")}
         </Link>
       </AlertDescription>
     </Alert>

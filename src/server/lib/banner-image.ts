@@ -16,7 +16,22 @@ const MAX_WIDTH = 2000;
 const MIN_WIDTH = 1200;
 const ALLOWED = new Set(["image/jpeg", "image/png", "image/webp"]);
 
-export async function uploadBannerImage(file: File): Promise<string> {
+export interface ImageUploadOptions {
+  /** Folder inside the bucket, e.g. "banners" or "ads". */
+  folder?: string;
+  /** Narrowest photo accepted, in pixels. */
+  minWidth?: number;
+  /** Widest the saved photo is allowed to be; larger ones are scaled down. */
+  maxWidth?: number;
+}
+
+export async function uploadBannerImage(
+  file: File,
+  options: ImageUploadOptions = {},
+): Promise<string> {
+  const folder = options.folder ?? "banners";
+  const minWidth = options.minWidth ?? MIN_WIDTH;
+  const maxWidth = options.maxWidth ?? MAX_WIDTH;
   if (file.size === 0) throw new ValidationError("Choose a photo for the banner.");
   if (file.size > MAX_UPLOAD_BYTES) {
     throw new ValidationError(`The photo is too large. Use one up to ${MAX_UPLOAD_LABEL}.`);
@@ -38,19 +53,19 @@ export async function uploadBannerImage(file: File): Promise<string> {
   ) {
     throw new ValidationError("The file's contents don't match its type. Pick it again.");
   }
-  if (meta.width < MIN_WIDTH) {
+  if (meta.width < minWidth) {
     throw new ValidationError(
-      `The photo is too small (${meta.width}px wide). Use one at least ${MIN_WIDTH}px wide so it looks sharp.`,
+      `The photo is too small (${meta.width}px wide). Use one at least ${minWidth}px wide so it looks sharp.`,
     );
   }
 
   const jpeg = await sharp(input)
     .rotate()
-    .resize({ width: MAX_WIDTH, withoutEnlargement: true })
+    .resize({ width: maxWidth, withoutEnlargement: true })
     .jpeg({ quality: 80, mozjpeg: true })
     .toBuffer();
 
-  const path = `banners/${randomUUID()}.jpg`;
+  const path = `${folder}/${randomUUID()}.jpg`;
   const { error } = await createAdminClient()
     .storage.from(BUCKET)
     .upload(path, jpeg, { contentType: "image/jpeg", upsert: false });

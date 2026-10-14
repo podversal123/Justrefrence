@@ -159,3 +159,6 @@ export const searchRateLimiter: RateLimiter = createRateLimiter("search", 120, 6
 
 /** Bids and requirements: 120 per 10 minutes per user — fast enough for a live auction, tight enough to stop scripted flooding. */
 export const bidRateLimiter: RateLimiter = createRateLimiter("bid", 120, 10 * 60 * 1000);
+
+/** Admin SMS sends. Each can reach many people, so the number of sends per hour is kept low. */
+export const smsRateLimiter: RateLimiter = createRateLimiter("sms", 30, 60 * 60 * 1000);

@@ -1,5 +1,7 @@
 "use client";
 
+import { msg } from "@/i18n/locales";
+import { useT } from "@/i18n/provider";
 import { AlertTriangle, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -10,7 +12,7 @@ import { Button } from "@/components/ui/button";
  * without throwing (e.g. a client-side React Query error).
  */
 export function ErrorState({
-  title = "Something went wrong",
+  title = msg("Something went wrong"),
   description,
   onRetry,
 }: {
@@ -18,13 +20,14 @@ export function ErrorState({
   description?: string;
   onRetry?: () => void;
 }) {
+  const t = useT();
   return (
     <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed py-12 text-center">
       <div className="bg-destructive/10 text-destructive rounded-full p-3">
         <AlertTriangle className="size-5" />
       </div>
       <div className="space-y-1">
-        <p className="text-sm font-medium">{title}</p>
+        <p className="text-sm font-medium">{t(title)}</p>
         {description ? (
           <p className="text-muted-foreground max-w-sm text-sm">{description}</p>
         ) : null}
@@ -32,7 +35,7 @@ export function ErrorState({
       {onRetry ? (
         <Button variant="outline" size="sm" onClick={onRetry}>
           <RotateCw />
-          Try again
+          {t("Try again")}
         </Button>
       ) : null}
     </div>

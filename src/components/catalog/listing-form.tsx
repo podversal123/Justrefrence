@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { useEffect, useState } from "react";
 import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
@@ -49,10 +50,11 @@ const nullState: ApiResult<{ id: string }> = {
 };
 
 function SubmitButton({ label }: { label: string }) {
+  const t = useT();
   const { pending } = useFormStatus();
   return (
     <Button type="submit" disabled={pending}>
-      {pending ? "Saving…" : label}
+      {pending ? t("Saving…") : label}
     </Button>
   );
 }
@@ -82,6 +84,7 @@ export function ListingForm({
   /** Called once with the new/edited listing's id after a successful submit. */
   onSuccess?: (id: string) => void;
 }) {
+  const t = useT();
   const [state, formAction] = useActionState(action, nullState);
   const [categoryId, setCategoryId] = useState(initialValues?.categoryId ?? "");
   const [pricingType, setPricingType] = useState<"FIXED" | "QUOTE">(
@@ -125,7 +128,7 @@ export function ListingForm({
         <Alert>
           <CheckCircle2 className="size-4" />
           <AlertDescription>
-            Sent to a Super Admin for approval. The live listing stays as it is until then.
+            {t("Sent to a Super Admin for approval. The live listing stays as it is until then.")}
           </AlertDescription>
         </Alert>
       ) : null}
@@ -133,15 +136,15 @@ export function ListingForm({
       {state !== nullState && !state.success ? (
         <Alert variant="destructive">
           <AlertCircle className="size-4" />
-          <AlertDescription>{state.error.message}</AlertDescription>
+          <AlertDescription>{t(state.error.message)}</AlertDescription>
         </Alert>
       ) : null}
 
       {vendors ? (
-        <FormField htmlFor="vendorId" label="Vendor">
+        <FormField htmlFor="vendorId" label={t("Vendor")}>
           <Select name="vendorId" required defaultValue={undefined}>
             <SelectTrigger id="vendorId" className="w-full">
-              <SelectValue placeholder="Choose a vendor" />
+              <SelectValue placeholder={t("Choose a vendor")} />
             </SelectTrigger>
             <SelectContent>
               {vendors.map((v) => (
@@ -154,12 +157,12 @@ export function ListingForm({
         </FormField>
       ) : null}
 
-      <FormField htmlFor="title" label="Title" error={fieldErrors["title"]}>
+      <FormField htmlFor="title" label={t("Title")} error={fieldErrors["title"]}>
         <Input id="title" name="title" defaultValue={initialValues?.title} required />
       </FormField>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <FormField htmlFor="categoryId" label="Category" error={fieldErrors["categoryId"]}>
+        <FormField htmlFor="categoryId" label={t("Category")} error={fieldErrors["categoryId"]}>
           <Select
             name="categoryId"
             value={categoryId}
@@ -167,7 +170,7 @@ export function ListingForm({
             required
           >
             <SelectTrigger id="categoryId" className="w-full">
-              <SelectValue placeholder="Choose a category" />
+              <SelectValue placeholder={t("Choose a category")} />
             </SelectTrigger>
             <SelectContent>
               {categories.map((c) => (
@@ -179,7 +182,7 @@ export function ListingForm({
           </Select>
         </FormField>
 
-        <FormField htmlFor="subcategoryId" label="Subcategory (optional)">
+        <FormField htmlFor="subcategoryId" label={t("Subcategory (optional)")}>
           <Select
             name="subcategoryId"
             defaultValue={initialValues?.subcategoryId ?? undefined}
@@ -187,7 +190,9 @@ export function ListingForm({
           >
             <SelectTrigger id="subcategoryId" className="w-full">
               <SelectValue
-                placeholder={selectedCategory ? "Choose a subcategory" : "Choose a category first"}
+                placeholder={
+                  selectedCategory ? t("Choose a subcategory") : t("Choose a category first")
+                }
               />
             </SelectTrigger>
             <SelectContent>
@@ -201,7 +206,7 @@ export function ListingForm({
         </FormField>
       </div>
 
-      <FormField htmlFor="description" label="Description">
+      <FormField htmlFor="description" label={t("Description")}>
         <Textarea
           id="description"
           name="description"
@@ -212,7 +217,7 @@ export function ListingForm({
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {kind === "SERVICE" ? (
-          <FormField htmlFor="pricingType" label="Pricing">
+          <FormField htmlFor="pricingType" label={t("Pricing")}>
             <Select
               name="pricingType"
               value={pricingType}
@@ -222,8 +227,8 @@ export function ListingForm({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="FIXED">Fixed price</SelectItem>
-                <SelectItem value="QUOTE">Quote on request</SelectItem>
+                <SelectItem value="FIXED">{t("Fixed price")}</SelectItem>
+                <SelectItem value="QUOTE">{t("Quote on request")}</SelectItem>
               </SelectContent>
             </Select>
           </FormField>
@@ -232,8 +237,8 @@ export function ListingForm({
         {kind !== "SERVICE" || pricingType === "FIXED" ? (
           <FormField
             htmlFor="price"
-            label="Price (₹)"
-            hint="In rupees, for example 1500 or 1499.50."
+            label={t("Price (₹)")}
+            hint={t("In rupees, for example 1500 or 1499.50.")}
             error={fieldErrors["price"]}
           >
             <Input
@@ -249,10 +254,10 @@ export function ListingForm({
 
         {kind === "PRODUCT" ? (
           <>
-            <FormField htmlFor="sku" label="SKU (optional)">
+            <FormField htmlFor="sku" label={t("SKU (optional)")}>
               <Input id="sku" name="sku" defaultValue={initialValues?.sku ?? ""} />
             </FormField>
-            <FormField htmlFor="stock" label="Stock">
+            <FormField htmlFor="stock" label={t("Stock")}>
               <Input
                 id="stock"
                 name="stock"

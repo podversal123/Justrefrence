@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { useState } from "react";
 import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
@@ -24,10 +25,11 @@ const TRANSITION_LABELS: Partial<Record<OrderStatus, string>> = {
 };
 
 function SubmitButton({ label }: { label: string }) {
+  const t = useT();
   const { pending } = useFormStatus();
   return (
     <Button type="submit" variant="outline" size="sm" disabled={pending}>
-      {pending ? "Saving…" : label}
+      {pending ? t("Saving…") : label}
     </Button>
   );
 }
@@ -39,6 +41,7 @@ export function OrderStatusActions({
   orderId: string;
   transitions: OrderStatus[];
 }) {
+  const t = useT();
   const [state, formAction] = useActionState(updateOrderStatusAction, initialState);
   const [reason, setReason] = useState("");
 
@@ -49,7 +52,7 @@ export function OrderStatusActions({
       {!state.success ? (
         <Alert variant="destructive" className="w-full max-w-xs">
           <AlertCircle className="size-4" />
-          <AlertDescription>{state.error.message}</AlertDescription>
+          <AlertDescription>{t(state.error.message)}</AlertDescription>
         </Alert>
       ) : null}
 
@@ -57,7 +60,7 @@ export function OrderStatusActions({
         <Input
           value={reason}
           onChange={(e) => setReason(e.target.value)}
-          placeholder="Reason for cancelling"
+          placeholder={t("Reason for cancelling")}
           className="max-w-xs"
         />
       ) : null}

@@ -11,16 +11,10 @@ import {
   getOrCreateOpenCart,
 } from "@/server/repositories/commerce/cart-repository";
 import { findCouponByCode, getCouponUsage } from "@/server/repositories/commerce/coupon-repository";
-import { createCouponRedemption } from "@/server/repositories/commerce/coupon-repository";
 import {
   createCheckout,
-  createOrder,
-  createOrderItems,
-  createOrderStatusHistory,
-  decrementProductStock,
   findCheckoutByIdempotencyKey,
   markCartCheckedOut,
-  setOrderNumber,
 } from "@/server/repositories/commerce/order-repository";
 import { isUniqueConstraintViolation, scopedIdempotencyKey } from "@/server/lib/idempotency";
 import { getPricingConfig } from "@/server/lib/pricing-config";
@@ -31,9 +25,8 @@ import {
   type PricedLine,
 } from "@/server/domain/commerce/pricing";
 import { couponFailureMessage, validateCoupon } from "@/server/domain/commerce/coupon";
-import { formatOrderNumber } from "@/server/domain/commerce/order-number";
+import { createVendorOrder } from "@/server/domain/commerce/order-creation";
 import { generateInvoiceForOrder } from "@/server/domain/commerce/invoice-service";
-import { createPendingCommissionsForOrder } from "@/server/domain/commission/commission-service";
 import { recordAudit } from "@/server/domain/audit/record";
 import { ConflictError, NotFoundError, ValidationError } from "@/server/lib/errors";
 import { logger } from "@/server/lib/logger";
@@ -141,7 +134,7 @@ export async function placeOrder(
   let totalDiscount = 0n;
   if (coupon) {
     const usage = await getCouponUsage(coupon.id, memberId);
-    const validation = validateCoupon(coupon, cartSubtotal, usage);
+    const validation = validateCoupon(coupon, cartSubtotal, usage, new Date(), memberId);
     if (!validation.valid) {
       throw new ValidationError(couponFailureMessage(validation.failure!));
     }
@@ -166,88 +159,24 @@ export async function placeOrder(
 
       for (let i = 0; i < vendorGroups.length; i++) {
         const [vendorId, lines] = vendorGroups[i]!;
-        const subtotal = vendorSubtotals[i]!;
-        const discount = discountShares[i]!;
-
-        // Stock defense happens INSIDE the transaction, per line, before any
-        // order row is written — if any product in this checkout is out of
-        // stock by the time we get here, the whole transaction rolls back
-        // (no partial multi-vendor order left dangling).
-        for (const line of lines) {
-          if (line.itemType === "PRODUCT") {
-            const ok = await decrementProductStock(tx, line.itemId, line.qty);
-            if (!ok) {
-              throw new ConflictError(`"${line.title}" just sold out — please update your cart.`);
-            }
-          }
-        }
-
-        const pricing = computeOrderPricing({
-          subtotal,
-          discount,
-          gstRateBps: pricingConfig.gstRateBps,
-          platformFeeRateBps: pricingConfig.platformFeeRateBps,
-        });
-
-        const order = await createOrder(tx, {
+        const created = await createVendorOrder(tx, {
           checkoutId: checkout.id,
           vendorId,
           buyerId,
-          subtotal: pricing.subtotal,
-          discountTotal: pricing.discountTotal,
-          taxTotal: pricing.taxTotal,
-          platformFeeTotal: pricing.platformFeeTotal,
-          grandTotal: pricing.grandTotal,
-          currency: "INR",
-        });
-
-        await setOrderNumber(tx, order.id, formatOrderNumber(order.orderSeq));
-        await createOrderItems(
-          tx,
-          lines.map((line) => ({
-            orderId: order.id,
+          memberId,
+          lines: lines.map((line) => ({
             itemType: line.itemType,
             itemId: line.itemId,
-            titleSnapshot: line.title,
-            unitPriceSnapshot: line.unitPrice,
+            title: line.title,
+            unitPrice: line.unitPrice,
             qty: line.qty,
-            lineTotal: line.unitPrice * BigInt(line.qty),
           })),
-        );
-        await createOrderStatusHistory(tx, {
-          orderId: order.id,
-          fromStatus: null,
-          toStatus: "PLACED",
-          actorId: buyerId,
+          discount: discountShares[i]!,
+          couponId: coupon?.id ?? null,
+          gstRateBps: pricingConfig.gstRateBps,
+          platformFeeRateBps: pricingConfig.platformFeeRateBps,
         });
-
-        if (coupon && discount > 0n) {
-          await createCouponRedemption(tx, {
-            couponId: coupon.id,
-            memberId,
-            orderId: order.id,
-            amountDiscounted: discount,
-          });
-        }
-
-        // Phase 6: commission accrual is atomic with order creation — if
-        // anything in this transaction fails, no PENDING commission is left
-        // dangling for an order that never actually got placed.
-        await createPendingCommissionsForOrder(
-          tx,
-          {
-            id: order.id,
-            buyerId,
-            buyerMemberId: memberId,
-            platformFeeTotal: pricing.platformFeeTotal,
-          },
-          lines.map((line) => ({
-            itemType: line.itemType,
-            lineTotal: line.unitPrice * BigInt(line.qty),
-          })),
-        );
-
-        orderIds.push(order.id);
+        orderIds.push(created.orderId);
       }
 
       await markCartCheckedOut(tx, cart.id);
@@ -333,7 +262,7 @@ export async function getCheckoutPreview(
       couponError = couponFailureMessage("NOT_FOUND");
     } else {
       const usage = await getCouponUsage(coupon.id, memberId);
-      const validation = validateCoupon(coupon, cartSubtotal, usage);
+      const validation = validateCoupon(coupon, cartSubtotal, usage, new Date(), memberId);
       if (!validation.valid) {
         couponError = couponFailureMessage(validation.failure!);
       } else {

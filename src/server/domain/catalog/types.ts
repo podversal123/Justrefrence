@@ -1,3 +1,4 @@
+import { msg } from "@/i18n/locales";
 import type { Permission } from "@/server/auth/permissions";
 
 /**
@@ -46,9 +47,9 @@ export const CATALOG_PERMISSIONS: Record<CatalogKind, CatalogPermissions> = {
 };
 
 export const CATALOG_LABELS: Record<CatalogKind, { singular: string; plural: string }> = {
-  PRODUCT: { singular: "Product", plural: "Products" },
-  SERVICE: { singular: "Service", plural: "Services" },
-  PROJECT: { singular: "Project", plural: "Projects" },
+  PRODUCT: { singular: msg("Product"), plural: msg("Products") },
+  SERVICE: { singular: msg("Service"), plural: msg("Services") },
+  PROJECT: { singular: msg("Project"), plural: msg("Projects") },
 };
 
 /**

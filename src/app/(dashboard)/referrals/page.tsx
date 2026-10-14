@@ -1,3 +1,4 @@
+import { getFormat, getT } from "@/i18n/server";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getAuthSession } from "@/server/auth/session";
@@ -9,9 +10,14 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Users } from "lucide-react";
 import { CopyLinkButton } from "./copy-link-button";
 
-export const metadata: Metadata = { title: "My referrals" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("My referrals") };
+}
 
 export default async function ReferralsPage() {
+  const t = await getT();
+  const { formatDate } = await getFormat();
   const session = await getAuthSession();
   if (!session) redirect("/login");
 
@@ -27,18 +33,18 @@ export default async function ReferralsPage() {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8">
       <div>
-        <h1>My referrals</h1>
+        <h1>{t("My referrals")}</h1>
         <p className="text-muted-foreground">
-          Member ID <span className="font-mono">{dashboard.memberId}</span> · Referral code{" "}
-          <span className="font-mono">{dashboard.referralCode}</span>
+          {t("Member ID")} <span className="font-mono">{dashboard.memberId}</span> ·{" "}
+          {t("Referral code")} <span className="font-mono">{dashboard.referralCode}</span>
         </p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Your referral link</CardTitle>
+          <CardTitle className="text-base">{t("Your referral link")}</CardTitle>
           <CardDescription>
-            Share this link. Anyone who registers through it becomes your direct referral.
+            {t("Share this link. Anyone who registers through it becomes your direct referral.")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -49,13 +55,13 @@ export default async function ReferralsPage() {
       <div className="grid grid-cols-2 gap-4">
         <Card>
           <CardContent className="py-4">
-            <p className="text-muted-foreground text-sm">Direct referrals</p>
+            <p className="text-muted-foreground text-sm">{t("Direct referrals")}</p>
             <p className="text-2xl font-semibold">{dashboard.directReferralCount}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="py-4">
-            <p className="text-muted-foreground text-sm">Indirect referrals</p>
+            <p className="text-muted-foreground text-sm">{t("Indirect referrals")}</p>
             <p className="text-2xl font-semibold">{dashboard.indirectReferralCount}</p>
           </CardContent>
         </Card>
@@ -63,15 +69,16 @@ export default async function ReferralsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Commission summary</CardTitle>
+          <CardTitle className="text-base">{t("Commission summary")}</CardTitle>
           <CardDescription>
-            Commissions are confirmed when the order completes, then become available after a short
-            release window.
+            {t(
+              "Commissions are confirmed when the order completes, then become available after a short release window.",
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {dashboard.commissionSummary.length === 0 ? (
-            <p className="text-muted-foreground text-sm">No commissions yet.</p>
+            <p className="text-muted-foreground text-sm">{t("No commissions yet.")}</p>
           ) : (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {dashboard.commissionSummary.map((row) => (
@@ -81,7 +88,9 @@ export default async function ReferralsPage() {
                     {formatPaise(row.totalAmount.toString())}
                   </p>
                   <p className="text-muted-foreground text-xs">
-                    {row.count} commission{row.count === 1 ? "" : "s"}
+                    {row.count === 1
+                      ? t("1 commission")
+                      : t("{count} commissions", { count: row.count })}
                   </p>
                 </div>
               ))}
@@ -92,14 +101,14 @@ export default async function ReferralsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Direct referrals</CardTitle>
+          <CardTitle className="text-base">{t("Direct referrals")}</CardTitle>
         </CardHeader>
         <CardContent>
           {dashboard.directReferrals.length === 0 ? (
             <EmptyState
               icon={Users}
-              title="No direct referrals yet"
-              description="Share your link to get started."
+              title={t("No direct referrals yet")}
+              description={t("Share your link to get started.")}
             />
           ) : (
             <div className="flex flex-col gap-2">
@@ -107,7 +116,7 @@ export default async function ReferralsPage() {
                 <div key={r.member.id} className="flex items-center justify-between text-sm">
                   <span>{r.member.user.fullName ?? r.member.user.email}</span>
                   <span className="text-muted-foreground font-mono text-xs">
-                    {r.member.memberId} · {r.member.createdAt.toLocaleDateString()}
+                    {r.member.memberId} · {formatDate(r.member.createdAt)}
                   </span>
                 </div>
               ))}
@@ -118,12 +127,12 @@ export default async function ReferralsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Referral tree</CardTitle>
-          <CardDescription>Everyone in your downline, direct and indirect.</CardDescription>
+          <CardTitle className="text-base">{t("Referral tree")}</CardTitle>
+          <CardDescription>{t("Everyone in your downline, direct and indirect.")}</CardDescription>
         </CardHeader>
         <CardContent>
           {dashboard.tree.length === 0 ? (
-            <p className="text-muted-foreground text-sm">Nobody in your tree yet.</p>
+            <p className="text-muted-foreground text-sm">{t("Nobody in your tree yet.")}</p>
           ) : (
             <div className="flex flex-col gap-1.5">
               {dashboard.tree.map((m) => (
@@ -139,16 +148,20 @@ export default async function ReferralsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Referral history</CardTitle>
+          <CardTitle className="text-base">{t("Referral history")}</CardTitle>
         </CardHeader>
         <CardContent>
           {dashboard.history.length === 0 ? (
-            <p className="text-muted-foreground text-sm">Nothing yet.</p>
+            <p className="text-muted-foreground text-sm">{t("Nothing yet.")}</p>
           ) : (
             <div className="flex flex-col gap-1.5">
               {dashboard.history.map((h) => (
                 <div key={h.id} className="flex items-center justify-between text-sm">
-                  <span>{h.member.user.fullName ?? h.member.user.email} joined your referral</span>
+                  <span>
+                    {t("{name} joined your referral", {
+                      name: h.member.user.fullName ?? h.member.user.email,
+                    })}
+                  </span>
                   <span className="text-muted-foreground text-xs">
                     {h.changedAt?.toLocaleString()}
                   </span>

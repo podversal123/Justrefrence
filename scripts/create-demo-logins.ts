@@ -9,7 +9,7 @@
  * users with known passwords (no email provider is needed), then the
  * matching `users` / role / profile rows are written. Local/demo use only.
  *
- *   npx tsx scripts/create-demo-logins.ts            # create (safe to re-run)
+ *   DEMO_PASSWORD="a-strong-password" npx tsx scripts/create-demo-logins.ts   # create (safe to re-run)
  *   npx tsx scripts/create-demo-logins.ts --remove   # delete both accounts
  *
  * Run scripts/seed-demo-catalog.ts first so the demo referrer exists.
@@ -25,19 +25,22 @@ import { buildReferralPath, formatMemberId } from "../src/server/domain/identity
 const ACCOUNTS = {
   vendor: {
     email: "vendor.demo@example.com",
-    password: "Vendor@12345",
+    password: process.env["DEMO_PASSWORD"] ?? "",
     fullName: "Demo Vendor",
     role: "VENDOR",
   },
   customer: {
     email: "customer.demo@example.com",
-    password: "Customer@12345",
+    password: process.env["DEMO_PASSWORD"] ?? "",
     fullName: "Demo Customer",
     role: "CUSTOMER",
   },
 } as const;
 
 async function main() {
+  if (!process.argv.includes("--remove") && (process.env["DEMO_PASSWORD"] ?? "").length < 12) {
+    throw new Error("Set DEMO_PASSWORD to a strong password of at least 12 characters (it is never kept in the code).");
+  }
   const supabaseUrl = process.env["NEXT_PUBLIC_SUPABASE_URL"];
   const serviceRoleKey = process.env["SUPABASE_SERVICE_ROLE_KEY"];
   const databaseUrl = process.env["DATABASE_URL"];

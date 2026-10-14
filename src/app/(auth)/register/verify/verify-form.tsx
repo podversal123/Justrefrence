@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
@@ -21,19 +22,21 @@ const initialResendState: ApiResult<{ maskedDestination: string }> = {
 };
 
 function SubmitButton() {
+  const t = useT();
   const { pending } = useFormStatus();
   return (
     <Button type="submit" className="w-full" disabled={pending}>
-      {pending ? "Verifying…" : "Verify and continue"}
+      {pending ? t("Verifying…") : t("Verify and continue")}
     </Button>
   );
 }
 
 function ResendButton() {
+  const t = useT();
   const { pending } = useFormStatus();
   return (
     <Button type="submit" variant="link" size="sm" className="px-0" disabled={pending}>
-      {pending ? "Sending…" : "Resend code"}
+      {pending ? t("Sending…") : t("Resend code")}
     </Button>
   );
 }
@@ -47,6 +50,7 @@ export function VerifyForm({
   channel: string;
   referralCode?: string;
 }) {
+  const t = useT();
   const [state, formAction] = useActionState(confirmRegistrationAction, initialConfirmState);
   const [resendState, resendAction] = useActionState(
     resendRegistrationOtpAction,
@@ -62,12 +66,12 @@ export function VerifyForm({
         {!state.success ? (
           <Alert variant="destructive">
             <AlertCircle className="size-4" />
-            <AlertDescription>{state.error.message}</AlertDescription>
+            <AlertDescription>{t(state.error.message)}</AlertDescription>
           </Alert>
         ) : null}
 
         <div className="space-y-2">
-          <Label htmlFor="code">6-digit code</Label>
+          <Label htmlFor="code">{t("6-digit code")}</Label>
           <Input
             id="code"
             name="code"
@@ -88,10 +92,10 @@ export function VerifyForm({
         {resendState.success && resendState.data.maskedDestination ? (
           <span className="text-muted-foreground flex items-center gap-1 text-xs">
             <CheckCircle2 className="size-3.5" />
-            Sent to {resendState.data.maskedDestination}
+            {t("Sent to {destination}", { destination: resendState.data.maskedDestination })}
           </span>
         ) : !resendState.success ? (
-          <span className="text-destructive text-xs">{resendState.error.message}</span>
+          <span className="text-destructive text-xs">{t(resendState.error.message)}</span>
         ) : (
           <span />
         )}

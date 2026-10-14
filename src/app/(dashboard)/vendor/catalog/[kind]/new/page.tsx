@@ -1,3 +1,4 @@
+import { getT } from "@/i18n/server";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { getAuthSession } from "@/server/auth/session";
@@ -21,6 +22,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function VendorNewListingPage({ params }: PageProps) {
+  const t = await getT();
   const { kind: kindSegment } = await params;
   const kind = kindFromRouteSegment(kindSegment);
   if (!kind) notFound();
@@ -37,15 +39,19 @@ export default async function VendorNewListingPage({ params }: PageProps) {
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
       <div>
-        <h1>New {labels.singular.toLowerCase()}</h1>
-        <p className="text-muted-foreground">Starts as Pending until an admin approves it.</p>
+        <h1>{t("New {kind}", { kind: t(labels.singular).toLowerCase() })}</h1>
+        <p className="text-muted-foreground">
+          {t("Starts as Pending until an admin approves it.")}
+        </p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Details</CardTitle>
+          <CardTitle>{t("Details")}</CardTitle>
           <CardDescription>
-            You can add images after creating the {labels.singular.toLowerCase()}.
+            {t("You can add images after creating the {kind}.", {
+              kind: t(labels.singular).toLowerCase(),
+            })}
           </CardDescription>
         </CardHeader>
         <CardContent>

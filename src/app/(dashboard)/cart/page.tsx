@@ -1,3 +1,4 @@
+import { getT } from "@/i18n/server";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import Link from "next/link";
@@ -13,9 +14,13 @@ import { Separator } from "@/components/ui/separator";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CartLineControls } from "./cart-line-controls";
 
-export const metadata: Metadata = { title: "My cart" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("My cart") };
+}
 
 export default async function CartPage() {
+  const t = await getT();
   const session = await getAuthSession();
   if (!session) redirect("/login");
 
@@ -26,8 +31,8 @@ export default async function CartPage() {
       <div className="mx-auto w-full max-w-3xl px-4 py-8">
         <EmptyState
           icon={ShoppingCart}
-          title="Your cart is empty"
-          description="Browse products, services, or projects to add something."
+          title={t("Your cart is empty")}
+          description={t("Browse products, services, or projects to add something.")}
         />
       </div>
     );
@@ -36,11 +41,11 @@ export default async function CartPage() {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8">
       <div>
-        <h1>My cart</h1>
+        <h1>{t("My cart")}</h1>
         <p className="text-muted-foreground">
           {view.groups.length > 1
             ? `Items from ${view.groups.length} vendors will be split into separate orders at checkout.`
-            : "Review your items before checkout."}
+            : t("Review your items before checkout.")}
         </p>
       </div>
 
@@ -84,7 +89,7 @@ export default async function CartPage() {
             ))}
             <Separator />
             <div className="flex justify-between text-sm font-medium">
-              <span>Vendor subtotal</span>
+              <span>{t("Vendor subtotal")}</span>
               <span>{formatPaise(group.subtotal.toString())}</span>
             </div>
           </CardContent>
@@ -94,19 +99,19 @@ export default async function CartPage() {
       <Card>
         <CardContent className="flex items-center justify-between py-4">
           <div>
-            <p className="text-muted-foreground text-sm">Cart subtotal</p>
+            <p className="text-muted-foreground text-sm">{t("Cart subtotal")}</p>
             <p className="text-xl font-semibold">{formatPaise(view.subtotal.toString())}</p>
           </div>
           <Button
             size="lg"
             disabled={view.hasUnavailableItems}
             nativeButton={false}
-            render={<Link href="/checkout">Proceed to checkout</Link>}
+            render={<Link href="/checkout">{t("Proceed to checkout")}</Link>}
           />
         </CardContent>
         {view.hasUnavailableItems ? (
           <CardContent className="text-destructive pt-0 text-sm">
-            Remove unavailable items before checking out.
+            {t("Remove unavailable items before checking out.")}
           </CardContent>
         ) : null}
       </Card>

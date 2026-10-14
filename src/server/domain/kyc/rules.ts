@@ -1,3 +1,4 @@
+import { msg } from "@/i18n/locales";
 import type { KycDocumentStatus, KycDocumentType } from "@/generated/prisma/enums";
 import { MAX_UPLOAD_BYTES, MAX_UPLOAD_LABEL } from "@/lib/upload-limits";
 
@@ -56,8 +57,8 @@ export function checkUpload(input: {
 }
 
 export const DOCUMENT_LABELS: Record<KycDocumentType, string> = {
-  PAN_CARD: "PAN card",
-  GST_CERTIFICATE: "GST certificate",
+  PAN_CARD: msg("PAN card"),
+  GST_CERTIFICATE: msg("GST certificate"),
 };
 
 /** Everyone can submit a PAN card; the GST certificate is for vendors. */

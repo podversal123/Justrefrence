@@ -1,4 +1,5 @@
 import { Label } from "@/components/ui/label";
+import { T } from "@/i18n/t-text";
 import { cn } from "@/lib/utils";
 
 /**
@@ -28,7 +29,11 @@ export function FormField({
       <Label htmlFor={htmlFor}>{label}</Label>
       {children}
       {hint && !error?.length ? <p className="text-muted-foreground text-xs">{hint}</p> : null}
-      {error?.length ? <p className="text-destructive text-xs">{error[0]}</p> : null}
+      {error?.length ? (
+        <p className="text-destructive text-xs">
+          <T text={error[0]!} />
+        </p>
+      ) : null}
     </div>
   );
 }

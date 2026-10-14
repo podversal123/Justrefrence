@@ -1,3 +1,4 @@
+import { translate, type TranslateVars } from "@/i18n/locales";
 import { formatPaise } from "@/lib/money";
 
 interface CouponForDisplay {
@@ -13,15 +14,21 @@ interface CouponForDisplay {
   _count: { redemptions: number };
 }
 
+type Translator = (text: string, vars?: TranslateVars) => string;
+
+/** English unless the caller passes its `t`, so server code that has no language still works. */
+const english: Translator = (text, vars) => translate({}, text, vars);
+
 export function describeDiscount(
   coupon: Pick<CouponForDisplay, "discountType" | "valuePercentBps" | "valueFixed">,
+  t: Translator = english,
 ): string {
   if (coupon.discountType === "PERCENT") {
     const bps = coupon.valuePercentBps ?? 0;
     const percent = bps % 100 === 0 ? String(bps / 100) : (bps / 100).toFixed(2);
-    return `${percent}% off`;
+    return t("{percent}% off", { percent });
   }
-  return `${formatPaise((coupon.valueFixed ?? 0n).toString(), "INR")} off`;
+  return t("{amount} off", { amount: formatPaise((coupon.valueFixed ?? 0n).toString(), "INR") });
 }
 
 export type CouponState = "ACTIVE" | "SCHEDULED" | "EXPIRED" | "USED_UP" | "DEACTIVATED";

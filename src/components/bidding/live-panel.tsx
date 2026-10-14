@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Gavel, Radio, Trophy } from "lucide-react";
@@ -36,6 +37,7 @@ export function LivePanel({
   initial: LiveSnapshot;
   audience: "vendor" | "owner" | "staff" | "public";
 }) {
+  const t = useT();
   const router = useRouter();
   const [snapshot, setSnapshot] = useState(initial);
   const [stale, setStale] = useState(false);
@@ -86,7 +88,7 @@ export function LivePanel({
 
   return (
     <section
-      aria-label="Live bidding status"
+      aria-label={t("Live bidding status")}
       className={cn(
         "space-y-4 rounded-lg border p-5",
         open && type === "REVERSE_AUCTION" && "border-info/40 bg-info/5",
@@ -105,15 +107,15 @@ export function LivePanel({
                   aria-hidden="true"
                 />
                 {stale
-                  ? "Reconnecting…"
+                  ? t("Reconnecting…")
                   : type === "REVERSE_AUCTION"
-                    ? "Live auction"
-                    : "Bidding open"}
+                    ? t("Live auction")
+                    : t("Bidding open")}
               </>
             ) : (
               <>
                 <Gavel className="size-3.5" aria-hidden="true" />
-                Bidding ended
+                {t("Bidding ended")}
               </>
             )}
           </p>
@@ -121,12 +123,12 @@ export function LivePanel({
             {open ? (
               <Countdown closesAt={snapshot.closesAt} serverNow={snapshot.serverNow} />
             ) : (
-              <span className="text-muted-foreground">Closed</span>
+              <span className="text-muted-foreground">{t("Closed")}</span>
             )}
           </p>
         </div>
         <div className="text-right">
-          <p className="text-muted-foreground text-xs">Bids</p>
+          <p className="text-muted-foreground text-xs">{t("Bids")}</p>
           <p className="text-3xl font-semibold tabular-nums">{snapshot.bidCount}</p>
         </div>
       </div>
@@ -134,7 +136,7 @@ export function LivePanel({
       {snapshot.l1Total !== null ? (
         <div className="bg-background flex items-center justify-between rounded-md border px-3 py-2 text-sm">
           <span className="text-muted-foreground">
-            {snapshot.status === "AWARDED" ? "Winning total" : "Lowest total (L1)"}
+            {snapshot.status === "AWARDED" ? t("Winning total") : t("Lowest total (L1)")}
           </span>
           <span className="font-semibold tabular-nums">{formatPaise(snapshot.l1Total, "INR")}</span>
         </div>
@@ -151,7 +153,7 @@ export function LivePanel({
             {isLeader && open ? (
               <Trophy className="text-success size-4" aria-hidden="true" />
             ) : null}
-            {showRank ? (isLeader ? "You are L1" : `You are L${rank}`) : "Your bid"}
+            {showRank ? (isLeader ? t("You are L1") : `You are L${rank}`) : t("Your bid")}
           </span>
           <span className="font-semibold tabular-nums">
             {formatPaise(snapshot.myBid.totalPrice, "INR")}
@@ -161,8 +163,9 @@ export function LivePanel({
 
       {audience === "owner" && open && type === "TENDER" ? (
         <p className="text-muted-foreground text-xs">
-          Bids are sealed. You will see every offer, with prices and vendor names, once bidding
-          closes.
+          {t(
+            "Bids are sealed. You will see every offer, with prices and vendor names, once bidding closes.",
+          )}
         </p>
       ) : null}
 

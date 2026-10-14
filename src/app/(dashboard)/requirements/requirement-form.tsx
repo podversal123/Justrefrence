@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { useRouter } from "next/navigation";
 import type { Route } from "next";
 import { useState } from "react";
@@ -17,6 +18,7 @@ function istLocal(minutesFromNow: number): string {
 }
 
 export function RequirementForm() {
+  const t = useT();
   const router = useRouter();
   const [type, setType] = useState<"TENDER" | "REVERSE_AUCTION">("TENDER");
   const auction = type === "REVERSE_AUCTION";
@@ -24,84 +26,97 @@ export function RequirementForm() {
   return (
     <ActionForm
       action={createRequirementAction}
-      submitLabel="Post requirement"
-      pendingLabel="Posting…"
-      successMessage="Requirement posted"
+      submitLabel={t("Post requirement")}
+      pendingLabel={t("Posting…")}
+      successMessage={t("Requirement posted")}
       onSuccess={(data) => router.push(`/requirements/${data.requirementId}` as Route)}
     >
       {(errors) => (
         <div className="space-y-5">
-          <FormField htmlFor="rq-type" label="How should vendors bid?" error={errors["type"]}>
+          <FormField htmlFor="rq-type" label={t("How should vendors bid?")} error={errors["type"]}>
             <NativeSelect
               id="rq-type"
               name="type"
               value={type}
               onChange={(event) => setType(event.target.value as "TENDER" | "REVERSE_AUCTION")}
             >
-              <option value="TENDER">Sealed tender: each vendor submits one private offer</option>
+              <option value="TENDER">
+                {t("Sealed tender: each vendor submits one private offer")}
+              </option>
               <option value="REVERSE_AUCTION">
-                Reverse auction: live bidding, lowest price wins
+                {t("Reverse auction: live bidding, lowest price wins")}
               </option>
             </NativeSelect>
           </FormField>
 
-          <FormField htmlFor="rq-title" label="What do you need?" error={errors["title"]}>
+          <FormField htmlFor="rq-title" label={t("What do you need?")} error={errors["title"]}>
             <Input
               id="rq-title"
               name="title"
               maxLength={150}
-              placeholder="e.g. 50 ergonomic office chairs"
+              placeholder={t("e.g. 50 ergonomic office chairs")}
               required
             />
           </FormField>
           <FormField
             htmlFor="rq-desc"
-            label="Details and specifications"
-            hint="Sizes, standards, brands, warranty, anything a vendor needs to quote accurately."
+            label={t("Details and specifications")}
+            hint={t(
+              "Sizes, standards, brands, warranty, anything a vendor needs to quote accurately.",
+            )}
             error={errors["description"]}
           >
             <Textarea id="rq-desc" name="description" rows={5} maxLength={4000} required />
           </FormField>
 
           <div className="grid gap-4 sm:grid-cols-3">
-            <FormField htmlFor="rq-kind" label="Type" error={errors["itemKind"]}>
+            <FormField htmlFor="rq-kind" label={t("Type")} error={errors["itemKind"]}>
               <NativeSelect id="rq-kind" name="itemKind" defaultValue="PRODUCT">
-                <option value="PRODUCT">Product</option>
-                <option value="SERVICE">Service</option>
-                <option value="PROJECT">Project</option>
+                <option value="PRODUCT">{t("Product")}</option>
+                <option value="SERVICE">{t("Service")}</option>
+                <option value="PROJECT">{t("Project")}</option>
               </NativeSelect>
             </FormField>
-            <FormField htmlFor="rq-qty" label="Quantity" error={errors["quantity"]}>
+            <FormField htmlFor="rq-qty" label={t("Quantity")} error={errors["quantity"]}>
               <Input id="rq-qty" name="quantity" type="number" min={1} defaultValue={1} required />
             </FormField>
-            <FormField htmlFor="rq-unit" label="Unit" error={errors["unit"]}>
+            <FormField htmlFor="rq-unit" label={t("Unit")} error={errors["unit"]}>
               <Input id="rq-unit" name="unit" maxLength={20} defaultValue="units" />
             </FormField>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <FormField htmlFor="rq-cat" label="Category (optional)" error={errors["categoryLabel"]}>
+            <FormField
+              htmlFor="rq-cat"
+              label={t("Category (optional)")}
+              error={errors["categoryLabel"]}
+            >
               <Input
                 id="rq-cat"
                 name="categoryLabel"
                 maxLength={80}
-                placeholder="e.g. Office Furniture"
+                placeholder={t("e.g. Office Furniture")}
               />
             </FormField>
             <FormField
               htmlFor="rq-city"
-              label="Deliver to (optional)"
+              label={t("Deliver to (optional)")}
               error={errors["deliveryCity"]}
             >
-              <Input id="rq-city" name="deliveryCity" maxLength={80} placeholder="e.g. New Delhi" />
+              <Input
+                id="rq-city"
+                name="deliveryCity"
+                maxLength={80}
+                placeholder={t("e.g. New Delhi")}
+              />
             </FormField>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <FormField
               htmlFor="rq-closes"
-              label="Bidding closes (IST)"
-              hint="At least 5 minutes from now."
+              label={t("Bidding closes (IST)")}
+              hint={t("At least 5 minutes from now.")}
               error={errors["closesAtLocal"]}
             >
               <Input
@@ -114,8 +129,8 @@ export function RequirementForm() {
             </FormField>
             <FormField
               htmlFor="rq-budget"
-              label="Maximum budget, total (₹), optional"
-              hint="Bids above this total are refused."
+              label={t("Maximum budget, total (₹), optional")}
+              hint={t("Bids above this total are refused.")}
               error={errors["maxBudgetRupees"]}
             >
               <Input
@@ -129,19 +144,19 @@ export function RequirementForm() {
 
           {auction ? (
             <fieldset className="bg-info/5 border-info/30 grid gap-4 rounded-lg border p-4 sm:grid-cols-2">
-              <legend className="px-1 text-sm font-medium">Auction rules</legend>
+              <legend className="px-1 text-sm font-medium">{t("Auction rules")}</legend>
               <FormField
                 htmlFor="rq-dec"
-                label="Minimum price drop per bid (₹ per unit)"
-                hint="Leave empty to allow any lower price."
+                label={t("Minimum price drop per bid (₹ per unit)")}
+                hint={t("Leave empty to allow any lower price.")}
                 error={errors["minDecrementRupees"]}
               >
                 <Input id="rq-dec" name="minDecrementRupees" inputMode="decimal" placeholder="10" />
               </FormField>
               <FormField
                 htmlFor="rq-ext"
-                label="Extend if a bid arrives in the last (minutes)"
-                hint="0 turns this off. Stops last-second bids from ending an auction early."
+                label={t("Extend if a bid arrives in the last (minutes)")}
+                hint={t("0 turns this off. Stops last-second bids from ending an auction early.")}
                 error={errors["autoExtendMinutes"]}
               >
                 <Input

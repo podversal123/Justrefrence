@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
 import { Minus, Plus, Trash2 } from "lucide-react";
@@ -37,6 +38,7 @@ export function CartLineControls({
   maxQty: number | null;
   editable: boolean;
 }) {
+  const t = useT();
   const [, decAction] = useActionState(updateCartItemQtyAction, nullState);
   const [, incAction] = useActionState(updateCartItemQtyAction, nullState);
   const [, removeAction] = useActionState(removeCartItemAction, nullState);
@@ -61,7 +63,7 @@ export function CartLineControls({
           </form>
         </div>
       ) : (
-        <span className="text-muted-foreground text-xs">Qty {qty}</span>
+        <span className="text-muted-foreground text-xs">{t("Qty {qty}", { qty })}</span>
       )}
 
       <form action={removeAction}>

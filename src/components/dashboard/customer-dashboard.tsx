@@ -1,3 +1,8 @@
+import { getLocale } from "@/i18n/server";
+import { localeTag } from "@/i18n/locales";
+import { msg } from "@/i18n/locales";
+import { transactionLabel } from "@/lib/wallet-labels";
+import { getFormat, getT } from "@/i18n/server";
 import Link from "next/link";
 import { BRAND } from "@/lib/brand";
 import type { Route } from "next";
@@ -38,18 +43,12 @@ import { CopyLinkButton } from "@/app/(dashboard)/referrals/copy-link-button";
 import { DashboardNotificationList } from "./dashboard-notification-list";
 
 const QUICK_ACTIONS: { href: Route; label: string; icon: LucideIcon }[] = [
-  { href: "/products" as Route, label: "Browse products", icon: ShoppingBag },
-  { href: "/referrals" as Route, label: "My referrals", icon: Users },
-  { href: "/orders" as Route, label: "My orders", icon: Package },
-  { href: "/profile" as Route, label: "My profile", icon: UserCircle },
-  { href: "/cart" as Route, label: "Cart", icon: ShoppingCart },
+  { href: "/products" as Route, label: msg("Browse products"), icon: ShoppingBag },
+  { href: "/referrals" as Route, label: msg("My referrals"), icon: Users },
+  { href: "/orders" as Route, label: msg("My orders"), icon: Package },
+  { href: "/profile" as Route, label: msg("My profile"), icon: UserCircle },
+  { href: "/cart" as Route, label: msg("Cart"), icon: ShoppingCart },
 ];
-
-/** "TOPUP" -> "Topup", "ADJUSTMENT" -> "Adjustment" — same lowercase-after-first-letter convention used elsewhere for enum display. */
-function formatTransactionType(type: string): string {
-  const words = type.split("_");
-  return words.map((w) => w.charAt(0) + w.slice(1).toLowerCase()).join(" ");
-}
 
 /**
  * Customer-facing dashboard: greeting, wallet, earnings, referrals, orders,
@@ -60,8 +59,10 @@ function formatTransactionType(type: string): string {
  * inline empty/error state instead of crashing the whole page.
  */
 export async function CustomerDashboard({ session }: { session: AuthSession }) {
+  const t = await getT();
+  const { formatDate, formatDateTime } = await getFormat();
   const today = new Date();
-  const dateLabel = today.toLocaleDateString("en-IN", {
+  const dateLabel = today.toLocaleDateString(localeTag(await getLocale()), {
     weekday: "long",
     year: "numeric",
     month: "long",
@@ -129,45 +130,49 @@ export async function CustomerDashboard({ session }: { session: AuthSession }) {
   return (
     <div className="flex flex-col gap-8">
       <div>
-        <h1>Welcome back, {session.fullName ?? session.email}</h1>
+        <h1>{t("Welcome back, {name}", { name: session.fullName ?? session.email })}</h1>
         <p className="text-muted-foreground">
-          {dateLabel} · {BRAND.taglineSecondary}
+          {dateLabel} · {t(BRAND.taglineSecondary)}
         </p>
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <StatCard
           icon={WalletIcon}
-          label="Wallet balance"
+          label={t("Wallet balance")}
           value={wallet ? formatPaise(wallet.balance.toString()) : "—"}
           sublabel={
             wallet
-              ? `${formatPaise(wallet.pendingBalance.toString())} pending`
-              : "Couldn't load your wallet"
+              ? t("{amount} pending", { amount: formatPaise(wallet.pendingBalance.toString()) })
+              : t("Couldn't load your wallet")
           }
           tone={walletError ? "muted" : "default"}
         />
         <StatCard
           icon={TrendingUp}
-          label="Earnings available"
+          label={t("Earnings available")}
           value={formatPaise(availableEarnings.toString())}
-          sublabel={`${formatPaise(pendingEarnings.toString())} pending`}
+          sublabel={t("{amount} pending", { amount: formatPaise(pendingEarnings.toString()) })}
           tone={availableEarnings > 0n ? "success" : "default"}
         />
         <StatCard
           icon={Users}
-          label="Referrals"
+          label={t("Referrals")}
           value={referral ? referral.directReferralCount.toLocaleString() : "0"}
-          sublabel={referral ? `${referral.indirectReferralCount} indirect` : "No referrals yet"}
+          sublabel={
+            referral
+              ? t("{count} indirect", { count: referral.indirectReferralCount })
+              : t("No referrals yet")
+          }
         />
       </div>
 
       <section className="bg-surface-sunken rounded-xl border p-4 sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="text-base font-semibold">Your referral link</h2>
+            <h2 className="text-base font-semibold">{t("Your referral link")}</h2>
             <p className="text-muted-foreground text-sm">
-              Share it. Anyone who signs up through it becomes your direct referral.
+              {t("Share it. Anyone who signs up through it becomes your direct referral.")}
             </p>
           </div>
           <Gift className="text-muted-foreground hidden size-5 sm:block" aria-hidden="true" />
@@ -178,17 +183,17 @@ export async function CustomerDashboard({ session }: { session: AuthSession }) {
           ) : referralStatus === "not_found" ? (
             <EmptyState
               icon={Gift}
-              title="Your referral link isn't ready yet"
-              description="Your referral profile is still being set up. Check back shortly."
+              title={t("Your referral link isn't ready yet")}
+              description={t("Your referral profile is still being set up. Check back shortly.")}
             />
           ) : (
-            <ErrorState title="Couldn't load your referral link" />
+            <ErrorState title={t("Couldn't load your referral link")} />
           )}
         </div>
       </section>
 
       <div>
-        <h2 className="sr-only">Quick actions</h2>
+        <h2 className="sr-only">{t("Quick actions")}</h2>
         <div className="flex flex-wrap gap-2">
           {QUICK_ACTIONS.map(({ href, label, icon: Icon }) => (
             <Button
@@ -199,7 +204,7 @@ export async function CustomerDashboard({ session }: { session: AuthSession }) {
               render={
                 <Link href={href}>
                   <Icon />
-                  {label}
+                  {t(label)}
                 </Link>
               }
             />
@@ -210,26 +215,26 @@ export async function CustomerDashboard({ session }: { session: AuthSession }) {
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-semibold">Recent orders</h2>
+            <h2 className="text-base font-semibold">{t("Recent orders")}</h2>
             <Button
               variant="ghost"
               size="sm"
               nativeButton={false}
-              render={<Link href="/orders">View all</Link>}
+              render={<Link href="/orders">{t("View all")}</Link>}
             />
           </div>
           {ordersError ? (
-            <ErrorState title="Couldn't load your orders" />
+            <ErrorState title={t("Couldn't load your orders")} />
           ) : orders.length === 0 ? (
             <EmptyState
               icon={Package}
-              title="No orders yet"
-              description="When you place an order, it will show up here."
+              title={t("No orders yet")}
+              description={t("When you place an order, it will show up here.")}
               action={
                 <Button
                   size="touch"
                   nativeButton={false}
-                  render={<Link href="/products">Browse products</Link>}
+                  render={<Link href="/products">{t("Browse products")}</Link>}
                 />
               }
             />
@@ -244,7 +249,7 @@ export async function CustomerDashboard({ session }: { session: AuthSession }) {
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">{order.orderNumber ?? order.id}</p>
                     <p className="text-muted-foreground truncate text-xs">
-                      {order.vendor.businessName} · {order.createdAt.toLocaleDateString()}
+                      {order.vendor.businessName} · {formatDate(order.createdAt)}
                     </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-3">
@@ -260,9 +265,9 @@ export async function CustomerDashboard({ session }: { session: AuthSession }) {
         </section>
 
         <section className="flex flex-col gap-3">
-          <h2 className="text-base font-semibold">Notifications</h2>
+          <h2 className="text-base font-semibold">{t("Notifications")}</h2>
           {notificationsError ? (
-            <ErrorState title="Couldn't load your notifications" />
+            <ErrorState title={t("Couldn't load your notifications")} />
           ) : (
             <div className="bg-surface-sunken rounded-xl border px-4 py-3">
               <DashboardNotificationList notifications={notifications} unreadCount={unreadCount} />
@@ -272,14 +277,14 @@ export async function CustomerDashboard({ session }: { session: AuthSession }) {
       </div>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-base font-semibold">Recent transactions</h2>
+        <h2 className="text-base font-semibold">{t("Recent transactions")}</h2>
         {transactionsError ? (
-          <ErrorState title="Couldn't load your transactions" />
+          <ErrorState title={t("Couldn't load your transactions")} />
         ) : transactions.length === 0 ? (
           <EmptyState
             icon={WalletIcon}
-            title="No transactions yet"
-            description="Credits and debits to your wallet will show up here."
+            title={t("No transactions yet")}
+            description={t("Credits and debits to your wallet will show up here.")}
           />
         ) : (
           <div className="bg-surface-sunken divide-border divide-y rounded-xl border">
@@ -301,8 +306,8 @@ export async function CustomerDashboard({ session }: { session: AuthSession }) {
                     )}
                   </span>
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">{formatTransactionType(tx.type)}</p>
-                    <p className="text-muted-foreground text-xs">{tx.createdAt.toLocaleString()}</p>
+                    <p className="truncate text-sm font-medium">{t(transactionLabel(tx.type))}</p>
+                    <p className="text-muted-foreground text-xs">{formatDateTime(tx.createdAt)}</p>
                   </div>
                 </div>
                 <span
@@ -326,11 +331,11 @@ export async function CustomerDashboard({ session }: { session: AuthSession }) {
             <LifeBuoy className="size-4" />
           </div>
           <div>
-            <h2 className="text-base font-semibold">Need help?</h2>
+            <h2 className="text-base font-semibold">{t("Need help?")}</h2>
             <p className="text-muted-foreground text-sm">
-              A dedicated support channel hasn&apos;t been published yet. In the meantime, contact
-              your account manager or the member who referred you for help with orders, payouts, or
-              your account.
+              {t(
+                "A dedicated support channel hasn't been published yet. In the meantime, contact your account manager or the member who referred you for help with orders, payouts, or your account.",
+              )}
             </p>
           </div>
         </div>

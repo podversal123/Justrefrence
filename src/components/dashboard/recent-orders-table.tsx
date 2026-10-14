@@ -1,3 +1,4 @@
+import { getFormat, getT } from "@/i18n/server";
 import Link from "next/link";
 import { Download, Receipt } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,7 +29,7 @@ interface OrderRow {
   vendorBusinessName: string;
 }
 
-export function RecentOrdersTable({
+export async function RecentOrdersTable({
   items,
   nextCursor,
   search,
@@ -39,6 +40,8 @@ export function RecentOrdersTable({
   search?: string;
   status?: string;
 }) {
+  const t = await getT();
+  const { formatDate } = await getFormat();
   const exportParams = new URLSearchParams();
   if (search) exportParams.set("search", search);
   if (status) exportParams.set("status", status);
@@ -47,8 +50,8 @@ export function RecentOrdersTable({
     <Card>
       <CardHeader className="flex-row items-center justify-between space-y-0">
         <div>
-          <CardTitle className="text-base">Recent orders</CardTitle>
-          <CardDescription>Across every vendor.</CardDescription>
+          <CardTitle className="text-base">{t("Recent orders")}</CardTitle>
+          <CardDescription>{t("Across every vendor.")}</CardDescription>
         </div>
         <Button
           variant="outline"
@@ -57,16 +60,16 @@ export function RecentOrdersTable({
           render={<Link href={`/api/admin/dashboard/export-orders?${exportParams.toString()}`} />}
         >
           <Download />
-          Export CSV
+          {t("Export CSV")}
         </Button>
       </CardHeader>
       <CardContent className="space-y-4">
         <FilterBar>
-          <SearchInput placeholder="Search order number or buyer email…" />
+          <SearchInput placeholder={t("Search order number or buyer email…")} />
           <SelectFilter
             paramName="status"
             ariaLabel="Filter by status"
-            placeholder="All statuses"
+            placeholder={t("All statuses")}
             options={ORDER_STATUSES.map((s) => ({ value: s, label: s }))}
           />
         </FilterBar>
@@ -74,19 +77,19 @@ export function RecentOrdersTable({
         {items.length === 0 ? (
           <EmptyState
             icon={Receipt}
-            title="No orders"
-            description="No orders match these filters."
+            title={t("No orders")}
+            description={t("No orders match these filters.")}
           />
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Order</TableHead>
-                <TableHead>Vendor</TableHead>
-                <TableHead>Buyer</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Placed</TableHead>
+                <TableHead>{t("Order")}</TableHead>
+                <TableHead>{t("Vendor")}</TableHead>
+                <TableHead>{t("Buyer")}</TableHead>
+                <TableHead>{t("Amount")}</TableHead>
+                <TableHead>{t("Status")}</TableHead>
+                <TableHead>{t("Placed")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -106,7 +109,7 @@ export function RecentOrdersTable({
                     <StatusBadge status={order.status} />
                   </TableCell>
                   <TableCell className="text-muted-foreground text-xs">
-                    {order.createdAt.toLocaleDateString()}
+                    {formatDate(order.createdAt)}
                   </TableCell>
                 </TableRow>
               ))}

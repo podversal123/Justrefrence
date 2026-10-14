@@ -1,5 +1,7 @@
 "use client";
 
+import { useLocale, useT } from "@/i18n/provider";
+import { localeTag, type Locale } from "@/i18n/locales";
 import {
   Area,
   AreaChart,
@@ -17,14 +19,16 @@ interface RevenuePoint {
   amount: string; // paise, stringified for the client boundary
 }
 
-function shortDay(day: string): string {
+function shortDay(day: string, locale: Locale): string {
   const d = new Date(`${day}T00:00:00Z`);
-  return d.toLocaleDateString("en-IN", { month: "short", day: "numeric" });
+  return d.toLocaleDateString(localeTag(locale), { month: "short", day: "numeric" });
 }
 
 export function RevenueChart({ data }: { data: RevenuePoint[] }) {
+  const t = useT();
+  const locale = useLocale();
   const chartData = data.map((d) => ({
-    day: shortDay(d.day),
+    day: shortDay(d.day, locale),
     amountRupees: Number(d.amount) / 100,
   }));
   const hasAnyRevenue = chartData.some((d) => d.amountRupees > 0);
@@ -32,8 +36,8 @@ export function RevenueChart({ data }: { data: RevenuePoint[] }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Revenue</CardTitle>
-        <CardDescription>Captured order value per day.</CardDescription>
+        <CardTitle className="text-base">{t("Revenue")}</CardTitle>
+        <CardDescription>{t("Captured order value per day.")}</CardDescription>
       </CardHeader>
       <CardContent className="h-64">
         {hasAnyRevenue ? (
@@ -75,7 +79,7 @@ export function RevenueChart({ data }: { data: RevenuePoint[] }) {
           </ResponsiveContainer>
         ) : (
           <div className="text-muted-foreground flex h-full items-center justify-center text-sm">
-            No revenue in this period yet.
+            {t("No revenue in this period yet.")}
           </div>
         )}
       </CardContent>

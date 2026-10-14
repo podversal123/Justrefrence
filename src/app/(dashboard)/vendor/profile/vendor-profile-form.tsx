@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
@@ -14,10 +15,11 @@ import type { FieldErrors } from "@/components/ui/action-form";
 const initialState: ApiResult<null> = { success: true, data: null, meta: { requestId: "" } };
 
 function SubmitButton() {
+  const t = useT();
   const { pending } = useFormStatus();
   return (
     <Button type="submit" disabled={pending}>
-      {pending ? "Saving…" : "Save changes"}
+      {pending ? t("Saving…") : t("Save changes")}
     </Button>
   );
 }
@@ -31,6 +33,7 @@ export interface VendorProfileValues {
 }
 
 export function VendorProfileForm({ values }: { values: VendorProfileValues }) {
+  const t = useT();
   const [state, formAction] = useActionState(updateVendorProfileAction, initialState);
   const submitted = state !== initialState;
   const errors: FieldErrors =
@@ -43,25 +46,25 @@ export function VendorProfileForm({ values }: { values: VendorProfileValues }) {
       {submitted && !state.success ? (
         <Alert variant="destructive">
           <AlertCircle className="size-4" />
-          <AlertDescription>{state.error.message}</AlertDescription>
+          <AlertDescription>{t(state.error.message)}</AlertDescription>
         </Alert>
       ) : null}
       {submitted && state.success ? (
         <Alert>
           <CheckCircle2 className="size-4" />
-          <AlertDescription>Business profile saved.</AlertDescription>
+          <AlertDescription>{t("Business profile saved.")}</AlertDescription>
         </Alert>
       ) : null}
 
-      <FormField htmlFor="businessName" label="Business name" error={errors["businessName"]}>
+      <FormField htmlFor="businessName" label={t("Business name")} error={errors["businessName"]}>
         <Input id="businessName" name="businessName" defaultValue={values.businessName} required />
       </FormField>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <FormField
           htmlFor="vp-phone"
-          label="Business mobile"
-          hint="With country code. Buyers and our team reach you here."
+          label={t("Business mobile")}
+          hint={t("With country code. Buyers and our team reach you here.")}
           error={errors["phone"]}
         >
           <Input
@@ -73,7 +76,11 @@ export function VendorProfileForm({ values }: { values: VendorProfileValues }) {
             required
           />
         </FormField>
-        <FormField htmlFor="vp-telephone" label="Telephone (optional)" error={errors["telephone"]}>
+        <FormField
+          htmlFor="vp-telephone"
+          label={t("Telephone (optional)")}
+          error={errors["telephone"]}
+        >
           <Input
             id="vp-telephone"
             name="telephone"
@@ -85,16 +92,21 @@ export function VendorProfileForm({ values }: { values: VendorProfileValues }) {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <FormField htmlFor="vp-gstin" label="GSTIN (optional)" error={errors["gstin"]}>
+        <FormField htmlFor="vp-gstin" label={t("GSTIN (optional)")} error={errors["gstin"]}>
           <Input
             id="vp-gstin"
             name="gstin"
             defaultValue={values.gstin ?? ""}
-            placeholder="29ABCDE1234F1Z5"
+            placeholder={t("29ABCDE1234F1Z5")}
           />
         </FormField>
-        <FormField htmlFor="vp-pan" label="Business PAN (optional)" error={errors["pan"]}>
-          <Input id="vp-pan" name="pan" defaultValue={values.pan ?? ""} placeholder="ABCDE1234F" />
+        <FormField htmlFor="vp-pan" label={t("Business PAN (optional)")} error={errors["pan"]}>
+          <Input
+            id="vp-pan"
+            name="pan"
+            defaultValue={values.pan ?? ""}
+            placeholder={t("ABCDE1234F")}
+          />
         </FormField>
       </div>
 

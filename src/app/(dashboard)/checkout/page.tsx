@@ -1,3 +1,4 @@
+import { getT } from "@/i18n/server";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getAuthSession } from "@/server/auth/session";
@@ -13,13 +14,17 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { PlaceOrderForm } from "./place-order-form";
 
-export const metadata: Metadata = { title: "Checkout" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("Checkout") };
+}
 
 interface PageProps {
   searchParams: Promise<{ coupon?: string }>;
 }
 
 export default async function CheckoutPage({ searchParams }: PageProps) {
+  const t = await getT();
   const session = await getAuthSession();
   if (!session) redirect("/login");
 
@@ -38,26 +43,26 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8">
       <div>
-        <h1>Checkout</h1>
+        <h1>{t("Checkout")}</h1>
         <p className="text-muted-foreground">
           {preview.groups.length > 1
             ? `This will create ${preview.groups.length} separate orders, one per vendor.`
-            : "Review your order before placing it."}
+            : t("Review your order before placing it.")}
         </p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Coupon</CardTitle>
+          <CardTitle className="text-base">{t("Coupon")}</CardTitle>
         </CardHeader>
         <CardContent>
           <form method="get" className="flex items-end gap-2">
             <div className="flex-1 space-y-2">
-              <Label htmlFor="coupon">Coupon code</Label>
-              <Input id="coupon" name="coupon" defaultValue={coupon} placeholder="SAVE10" />
+              <Label htmlFor="coupon">{t("Coupon code")}</Label>
+              <Input id="coupon" name="coupon" defaultValue={coupon} placeholder={t("SAVE10")} />
             </div>
             <Button type="submit" variant="outline">
-              Apply
+              {t("Apply")}
             </Button>
           </form>
           {preview.couponError ? (
@@ -86,23 +91,23 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
             <Separator />
             <div className="space-y-1 text-sm">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Subtotal</span>
+                <span className="text-muted-foreground">{t("Subtotal")}</span>
                 <span>{formatPaise(group.pricing.subtotal.toString())}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Discount</span>
+                <span className="text-muted-foreground">{t("Discount")}</span>
                 <span>-{formatPaise(group.pricing.discountTotal.toString())}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Tax (GST)</span>
+                <span className="text-muted-foreground">{t("Tax (GST)")}</span>
                 <span>{formatPaise(group.pricing.taxTotal.toString())}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Platform fee</span>
+                <span className="text-muted-foreground">{t("Platform fee")}</span>
                 <span>{formatPaise(group.pricing.platformFeeTotal.toString())}</span>
               </div>
               <div className="flex justify-between font-semibold">
-                <span>Order total</span>
+                <span>{t("Order total")}</span>
                 <span>{formatPaise(group.pricing.grandTotal.toString())}</span>
               </div>
             </div>
@@ -113,7 +118,7 @@ export default async function CheckoutPage({ searchParams }: PageProps) {
       <Card>
         <CardContent className="flex items-center justify-between py-4">
           <div>
-            <p className="text-muted-foreground text-sm">Total payable</p>
+            <p className="text-muted-foreground text-sm">{t("Total payable")}</p>
             <p className="text-xl font-semibold">{formatPaise(preview.grandTotal.toString())}</p>
           </div>
           <PlaceOrderForm couponCode={coupon} />

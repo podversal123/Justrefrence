@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { useState, useTransition } from "react";
 import { Download } from "lucide-react";
 import { getInvoiceDownloadUrlAction } from "@/server/services/order-actions";
@@ -12,11 +13,12 @@ export function InvoiceDownloadButton({
   orderId: string;
   hasInvoice: boolean;
 }) {
+  const t = useT();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
   if (!hasInvoice) {
-    return <p className="text-muted-foreground text-sm">Invoice not yet available.</p>;
+    return <p className="text-muted-foreground text-sm">{t("Invoice not yet available.")}</p>;
   }
 
   return (
@@ -32,13 +34,13 @@ export function InvoiceDownloadButton({
             if (result.success) {
               window.open(result.data.url, "_blank", "noopener,noreferrer");
             } else {
-              setError(result.error.message);
+              setError(t(result.error.message));
             }
           });
         }}
       >
         <Download />
-        {isPending ? "Preparing…" : "Download invoice"}
+        {isPending ? t("Preparing…") : t("Download invoice")}
       </Button>
       {error ? <p className="text-destructive mt-1 text-xs">{error}</p> : null}
     </div>

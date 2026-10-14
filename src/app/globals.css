@@ -48,7 +48,7 @@
   --color-ink-soft: var(--ink-soft);
   --color-marigold: var(--marigold);
   --color-marigold-foreground: var(--marigold-foreground);
-  --font-sans: var(--font-sans);
+  --font-sans: var(--font-sans), var(--font-devanagari), ui-sans-serif, system-ui, sans-serif;
   --color-brand: var(--brand);
   --color-brand-foreground: var(--brand-foreground);
   --color-success: var(--success);

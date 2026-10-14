@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { useState } from "react";
 import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
@@ -12,15 +13,17 @@ import type { ApiResult } from "@/lib/api-response";
 const initialState: ApiResult<null> = { success: true, data: null, meta: { requestId: "" } };
 
 function SubmitButton() {
+  const t = useT();
   const { pending } = useFormStatus();
   return (
     <Button type="submit" size="lg" disabled={pending}>
-      {pending ? "Placing order…" : "Place order"}
+      {pending ? t("Placing order…") : t("Place order")}
     </Button>
   );
 }
 
 export function PlaceOrderForm({ couponCode }: { couponCode?: string }) {
+  const t = useT();
   const [state, formAction] = useActionState(placeOrderAction, initialState);
   // Generated once per page load (not per click) — a re-submission of the
   // SAME form (double-click, retried request) reuses the same key, which
@@ -37,7 +40,7 @@ export function PlaceOrderForm({ couponCode }: { couponCode?: string }) {
       {!state.success ? (
         <Alert variant="destructive" className="w-full">
           <AlertCircle className="size-4" />
-          <AlertDescription>{state.error.message}</AlertDescription>
+          <AlertDescription>{t(state.error.message)}</AlertDescription>
         </Alert>
       ) : null}
 

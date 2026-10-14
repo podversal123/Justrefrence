@@ -1,5 +1,6 @@
 "use server";
 
+import { safeNextPath } from "@/lib/safe-next";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
@@ -255,7 +256,7 @@ export async function confirmMobileLoginOtpAction(
     return failureFrom(error);
   }
 
-  redirect("/dashboard");
+  redirect(safeNextPath(formData.get("next")) as never);
 }
 
 // ---------------------------------------------------------------------------

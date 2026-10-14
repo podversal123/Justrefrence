@@ -1,5 +1,7 @@
 "use client";
 
+import { msg } from "@/i18n/locales";
+import { useT } from "@/i18n/provider";
 import { useEffect, useRef, useState } from "react";
 import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
@@ -21,10 +23,11 @@ import type { ApiResult } from "@/lib/api-response";
 const nullState: ApiResult<null> = { success: true, data: null, meta: { requestId: "" } };
 
 function ConfirmButton({ label, variant }: { label: string; variant: "default" | "destructive" }) {
+  const t = useT();
   const { pending } = useFormStatus();
   return (
     <Button type="submit" variant={variant} disabled={pending}>
-      {pending ? "Working…" : label}
+      {pending ? t("Working…") : t(label)}
     </Button>
   );
 }
@@ -42,7 +45,7 @@ export function ConfirmationDialog({
   description,
   action,
   hiddenFields,
-  confirmLabel = "Confirm",
+  confirmLabel = msg("Confirm"),
   variant = "default",
   successMessage,
   children,
@@ -59,6 +62,7 @@ export function ConfirmationDialog({
   /** Extra fields shown inside the form (for example a reason box). */
   children?: React.ReactNode;
 }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [state, formAction] = useActionState(action, nullState);
   const handled = useRef<string | null>(null);
@@ -73,8 +77,11 @@ export function ConfirmationDialog({
     if (state === nullState || !state.success) return;
     if (handled.current === state.meta.requestId) return;
     handled.current = state.meta.requestId;
-    if (messageAtSubmit.current) toast.success(messageAtSubmit.current);
+    if (messageAtSubmit.current) toast.success(t(messageAtSubmit.current));
     setOpen(false);
+    // `t` is left out on purpose: this runs once per result (guarded by the request id), and a
+    // language switch must not show the toast again.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state]);
 
   return (
@@ -103,7 +110,7 @@ export function ConfirmationDialog({
           {state !== nullState && !state.success ? (
             <Alert variant="destructive">
               <AlertCircle className="size-4" />
-              <AlertDescription>{state.error.message}</AlertDescription>
+              <AlertDescription>{t(state.error.message)}</AlertDescription>
             </Alert>
           ) : null}
 

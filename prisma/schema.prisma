@@ -88,6 +88,11 @@ model User {
   blogPosts                  BlogPost[]                @relation("BlogAuthor")
   feedbacks                  Feedback[]
   requirementsPosted         Requirement[]             @relation("RequirementBuyer")
+  auctionBids                AuctionBid[]
+  rewardsGranted             Reward[]                  @relation("RewardGrantor")
+  smsSent                    SmsMessage[]              @relation("SmsSender")
+  smsReceived                SmsMessage[]              @relation("SmsRecipient")
+  smsDrafts                  SmsDraft[]                @relation("SmsDraftAuthor")
 
   @@index([status])
   @@map("users")
@@ -237,6 +242,8 @@ model MemberProfile {
   asMember          ReferralRelationship?  @relation("ReferralMember")
   asReferrer        ReferralRelationship[] @relation("ReferralReferrer")
   couponRedemptions CouponRedemption[]
+  assignedCoupons   Coupon[]               @relation("CouponAssignee")
+  rewards           Reward[]
   commissionsEarned Commission[]
   subscriptions     Subscription[]
 
@@ -417,6 +424,8 @@ model VendorProfile {
   projects Project[]
   orders   Order[]
   bids     Bid[]
+  auctions Auction[]
+  ads      Advertisement[]
 
   @@index([approvalStatus])
   @@index([businessName])
@@ -908,15 +917,21 @@ model Coupon {
   expiresAt           DateTime?          @map("expires_at")
   usageLimit          Int?               @map("usage_limit")
   usageLimitPerMember Int                @default(1) @map("usage_limit_per_member")
+  /// When set, only this member can use the coupon (a coupon paid out as a reward). It is hidden
+  /// from everyone else, and checkout answers "doesn't exist" so the code can't be probed.
+  assignedMemberId    String?            @map("assigned_member_id") @db.Uuid
   createdBy           String             @map("created_by") @db.Uuid
   createdAt           DateTime           @default(now()) @map("created_at")
   updatedAt           DateTime           @updatedAt @map("updated_at")
   deletedAt           DateTime?          @map("deleted_at")
 
-  creator     User               @relation(fields: [createdBy], references: [id])
-  checkouts   Checkout[]
-  redemptions CouponRedemption[]
+  creator        User               @relation(fields: [createdBy], references: [id])
+  assignedMember MemberProfile?     @relation("CouponAssignee", fields: [assignedMemberId], references: [id])
+  checkouts      Checkout[]
+  redemptions    CouponRedemption[]
+  reward         Reward?
 
+  @@index([assignedMemberId])
   @@map("coupons")
 }
 
@@ -1730,6 +1745,218 @@ model BidRevision {
 
   @@index([bidId, createdAt])
   @@map("bid_revisions")
+}
+
+enum AuctionStatus {
+  OPEN
+  /// Bidding ended with a winner. The winner then pays; `orderId` is set once they do.
+  SOLD
+  /// Bidding ended with no bids, or the reserve price was not reached.
+  UNSOLD
+  CANCELLED
+}
+
+/// Forward auction: a vendor puts one of their own listings up for sale and members bid the price UP.
+/// The highest bid at closing wins (if it reaches the reserve). OPEN becomes effectively ended once
+/// `closesAt` passes (derived at read time and persisted lazily), same rule as `Requirement`.
+model Auction {
+  id                String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  /// Display number is derived from this (AUC-000123).
+  auctionSeq        BigInt          @unique @default(autoincrement()) @map("auction_seq")
+  vendorId          String          @map("vendor_id") @db.Uuid
+  itemType          CatalogItemKind @map("item_type")
+  itemId            String          @map("item_id") @db.Uuid
+  /// Listing title at the time the auction was created (the listing may be edited later).
+  title             String
+  description       String?
+  quantity          Int
+  /// Paise per unit. The first bid must be at least this.
+  startPrice        BigInt          @map("start_price")
+  /// Paise per unit. Optional; if the top bid is below it the auction ends UNSOLD. Never shown to bidders.
+  reservePrice      BigInt?         @map("reserve_price")
+  /// Paise per unit. Each new bid must beat the top bid by at least this.
+  minIncrement      BigInt          @default(0) @map("min_increment")
+  /// A bid in the last N minutes pushes the close out by N minutes (0 = off).
+  autoExtendMinutes Int             @default(0) @map("auto_extend_minutes")
+  closesAt          DateTime        @map("closes_at")
+  status            AuctionStatus   @default(OPEN)
+  winningBidId      String?         @unique @map("winning_bid_id") @db.Uuid
+  /// Set when the winner pays: the checkout that holds the order.
+  checkoutId        String?         @unique @map("checkout_id") @db.Uuid
+  cancelledReason   String?         @map("cancelled_reason")
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
+
+  vendor     VendorProfile @relation(fields: [vendorId], references: [id])
+  bids       AuctionBid[]  @relation("AuctionBids")
+  winningBid AuctionBid?   @relation("AuctionWinningBid", fields: [winningBidId], references: [id])
+
+  @@index([status, closesAt])
+  @@index([vendorId, createdAt])
+  @@map("auctions")
+}
+
+/// Append-only: every bid is a new row. The top bid is the highest `unitPrice`; two bids can never tie
+/// because each must beat the previous top (checked inside the same transaction that takes the lock).
+model AuctionBid {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  auctionId  String   @map("auction_id") @db.Uuid
+  bidderId   String   @map("bidder_id") @db.Uuid
+  /// Paise per unit; `totalPrice` = unitPrice x quantity, computed server-side only.
+  unitPrice  BigInt   @map("unit_price")
+  totalPrice BigInt   @map("total_price")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  auction    Auction  @relation("AuctionBids", fields: [auctionId], references: [id])
+  bidder     User     @relation(fields: [bidderId], references: [id])
+  wonAuction Auction? @relation("AuctionWinningBid")
+
+  @@index([auctionId, unitPrice])
+  @@index([bidderId, createdAt])
+  @@map("auction_bids")
+}
+
+enum RewardType {
+  /// Credited straight to the member's wallet.
+  CASH
+  /// A coupon that only this member can use.
+  COUPON
+  /// A gift or benefit handed over outside the platform; the admin marks it as given.
+  OTHER
+}
+
+/// A reward an admin paid to a member (the workflow doc's "Pay Rewards" / "Rewards List" / member
+/// "Bonus/Rewards"). Triggers are manual on purpose (docs/business-rules.md Q-08). Insert-only except
+/// `usedAt` on OTHER rewards. Status (Used / Unused / Expired) is derived in
+/// src/server/domain/rewards/rules.ts, never stored.
+model Reward {
+  id                  String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  /// Display number is derived from this (RWD-000123).
+  rewardSeq           BigInt     @unique @default(autoincrement()) @map("reward_seq")
+  memberId            String     @map("member_id") @db.Uuid
+  type                RewardType
+  title               String
+  /// Why it was paid. Required, shown to the member and kept for audit.
+  reason              String
+  /// CASH only: paise credited to the wallet.
+  amount              BigInt?
+  /// COUPON only.
+  couponId            String?    @unique @map("coupon_id") @db.Uuid
+  /// CASH only: the wallet ledger row that paid it.
+  walletTransactionId String?    @unique @map("wallet_transaction_id") @db.Uuid
+  /// OTHER only: after this the reward can no longer be claimed.
+  expiresAt           DateTime?  @map("expires_at")
+  /// CASH: when it was credited. OTHER: when it was handed over.
+  usedAt              DateTime?  @map("used_at")
+  grantedBy           String     @map("granted_by") @db.Uuid
+  idempotencyKey      String     @unique @map("idempotency_key")
+  createdAt           DateTime   @default(now()) @map("created_at")
+
+  member  MemberProfile @relation(fields: [memberId], references: [id])
+  coupon  Coupon?       @relation(fields: [couponId], references: [id])
+  grantor User          @relation("RewardGrantor", fields: [grantedBy], references: [id])
+
+  @@index([memberId, createdAt])
+  @@index([type, createdAt])
+  @@map("rewards")
+}
+
+enum AdStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+/// A vendor's advertisement, shown in the "Sponsored" strip on the home page once staff approve it.
+/// Any edit by the vendor sends it back to PENDING. The vendor can pause an approved ad (`isActive`);
+/// staff can reject one at any time, with a reason the vendor sees.
+model Advertisement {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  vendorId       String    @map("vendor_id") @db.Uuid
+  headline       String
+  subline        String?
+  ctaLabel       String    @map("cta_label")
+  /// An internal path ("/products") or an https link; checked by isSafeBannerHref().
+  ctaHref        String    @map("cta_href")
+  imagePath      String    @map("image_path")
+  status         AdStatus  @default(PENDING)
+  isActive       Boolean   @default(true) @map("is_active")
+  rejectedReason String?   @map("rejected_reason")
+  reviewedBy     String?   @map("reviewed_by") @db.Uuid
+  reviewedAt     DateTime? @map("reviewed_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  vendor VendorProfile @relation(fields: [vendorId], references: [id])
+
+  @@index([status, isActive, createdAt])
+  @@index([vendorId, createdAt])
+  @@map("advertisements")
+}
+
+enum SmsAudience {
+  /// One member, chosen by the admin.
+  SINGLE
+  /// Every active member that has a mobile number.
+  ALL_MEMBERS
+  /// Every active member who is an approved vendor and has a mobile number.
+  VENDORS
+}
+
+enum SmsStatus {
+  /// Saved for sending; the provider has not been called yet.
+  QUEUED
+  SENT
+  FAILED
+}
+
+/// One SMS to one member (an admin's message). Sending to a group makes one row per recipient, all
+/// sharing a `batchKey`. Never used for OTP codes: those are not stored anywhere.
+/// `provider` starting with "console" means no real SMS service is connected yet, so the text was only
+/// recorded here (the screens say so rather than claiming it was delivered).
+model SmsMessage {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  /// Scoped idempotency key of the send; with the recipient it makes a double submit a no-op.
+  batchKey          String    @map("batch_key")
+  senderId          String    @map("sender_id") @db.Uuid
+  recipientUserId   String    @map("recipient_user_id") @db.Uuid
+  /// The number the text was sent to, as it was at send time.
+  phone             String
+  body              String
+  status            SmsStatus @default(QUEUED)
+  provider          String?
+  providerMessageId String?   @map("provider_message_id")
+  failureReason     String?   @map("failure_reason")
+  /// When the member opened it in their inbox.
+  readAt            DateTime? @map("read_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  sentAt            DateTime? @map("sent_at")
+
+  sender    User @relation("SmsSender", fields: [senderId], references: [id])
+  recipient User @relation("SmsRecipient", fields: [recipientUserId], references: [id])
+
+  @@unique([batchKey, recipientUserId])
+  @@index([recipientUserId, createdAt])
+  @@index([senderId, createdAt])
+  @@index([status, createdAt])
+  @@map("sms_messages")
+}
+
+/// An SMS an admin saved to finish later. Sending it turns it into SmsMessage rows and removes the draft.
+model SmsDraft {
+  id              String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  authorId        String      @map("author_id") @db.Uuid
+  audience        SmsAudience
+  /// Set only for SINGLE.
+  recipientUserId String?     @map("recipient_user_id") @db.Uuid
+  body            String
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  author User @relation("SmsDraftAuthor", fields: [authorId], references: [id])
+
+  @@index([authorId, updatedAt])
+  @@map("sms_drafts")
 }
 
 // ─────────────────────────────────────────────────────────────────────────

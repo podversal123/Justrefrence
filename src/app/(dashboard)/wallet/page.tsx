@@ -1,3 +1,5 @@
+import { transactionLabel } from "@/lib/wallet-labels";
+import { getFormat, getT } from "@/i18n/server";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import {
@@ -25,17 +27,14 @@ import { ErrorState } from "@/components/ui/error-state";
 import { SetWalletPinForm } from "./set-wallet-pin-form";
 import { PayoutRequestForm } from "./payout-request-form";
 
-export const metadata: Metadata = { title: "My wallet" };
-
-/** "TOPUP" -> "Topup" — same enum-display convention as customer-dashboard.tsx. */
-function formatTransactionType(type: string): string {
-  return type
-    .split("_")
-    .map((w) => w.charAt(0) + w.slice(1).toLowerCase())
-    .join(" ");
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("My wallet") };
 }
 
 export default async function WalletPage() {
+  const t = await getT();
+  const { formatDate } = await getFormat();
   const session = await getAuthSession();
   if (!session) redirect("/login");
 
@@ -56,11 +55,11 @@ export default async function WalletPage() {
     return (
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8">
         <div>
-          <h1>My wallet</h1>
+          <h1>{t("My wallet")}</h1>
         </div>
         <ErrorState
-          title="Couldn't load your wallet"
-          description="Something went wrong loading your wallet. Please try again shortly."
+          title={t("Couldn't load your wallet")}
+          description={t("Something went wrong loading your wallet. Please try again shortly.")}
         />
       </div>
     );
@@ -86,37 +85,37 @@ export default async function WalletPage() {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 py-8">
       <div>
-        <h1>My wallet</h1>
+        <h1>{t("My wallet")}</h1>
         <p className="text-muted-foreground">
-          Your balance, payout requests, and transaction history.
+          {t("Your balance, payout requests, and transaction history.")}
         </p>
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <StatCard
           icon={WalletIcon}
-          label="Available balance"
+          label={t("Available balance")}
           value={formatPaise(wallet.balance.toString())}
         />
         <StatCard
           icon={Clock}
-          label="Pending balance"
+          label={t("Pending balance")}
           value={formatPaise(wallet.pendingBalance.toString())}
-          sublabel="Held against open payout requests"
+          sublabel={t("Held against open payout requests")}
           tone={wallet.pendingBalance > 0n ? "warning" : "muted"}
         />
       </div>
 
       <section className="rounded-xl border p-4 sm:p-5">
-        <h2 className="text-base font-semibold">Wallet PIN</h2>
+        <h2 className="text-base font-semibold">{t("Wallet PIN")}</h2>
         <p className="text-muted-foreground text-sm">
-          Optional. Adds a confirmation step when you request a payout.
+          {t("Optional. Adds a confirmation step when you request a payout.")}
         </p>
         <div className="mt-4">
           {hasPin ? (
             <div className="text-success flex items-center gap-2 text-sm font-medium">
               <ShieldCheck className="size-4" />
-              PIN is set
+              {t("PIN is set")}
             </div>
           ) : (
             <SetWalletPinForm />
@@ -125,27 +124,28 @@ export default async function WalletPage() {
       </section>
 
       <section className="rounded-xl border p-4 sm:p-5">
-        <h2 className="text-base font-semibold">Request a payout</h2>
+        <h2 className="text-base font-semibold">{t("Request a payout")}</h2>
         <p className="text-muted-foreground mb-4 text-sm">
-          Funds move from your available balance into pending until an admin approves or rejects the
-          request.
+          {t(
+            "Funds move from your available balance into pending until an admin approves or rejects the request.",
+          )}
         </p>
         {bankAccountError ? (
-          <ErrorState title="Couldn't load your bank account" />
+          <ErrorState title={t("Couldn't load your bank account")} />
         ) : (
           <PayoutRequestForm bankAccount={bankAccount} hasPin={hasPin} />
         )}
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-base font-semibold">Recent transactions</h2>
+        <h2 className="text-base font-semibold">{t("Recent transactions")}</h2>
         {transactionsError ? (
-          <ErrorState title="Couldn't load your transactions" />
+          <ErrorState title={t("Couldn't load your transactions")} />
         ) : transactions.length === 0 ? (
           <EmptyState
             icon={ReceiptText}
-            title="No transactions yet"
-            description="Credits and debits to your wallet will show up here."
+            title={t("No transactions yet")}
+            description={t("Credits and debits to your wallet will show up here.")}
           />
         ) : (
           <div className="bg-surface-sunken divide-border divide-y rounded-xl border">
@@ -167,7 +167,7 @@ export default async function WalletPage() {
                     )}
                   </span>
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">{formatTransactionType(tx.type)}</p>
+                    <p className="truncate text-sm font-medium">{t(transactionLabel(tx.type))}</p>
                     <p className="text-muted-foreground text-xs">{tx.createdAt.toLocaleString()}</p>
                   </div>
                 </div>
@@ -182,7 +182,7 @@ export default async function WalletPage() {
                     {formatPaise(tx.amount.toString())}
                   </p>
                   <p className="text-muted-foreground text-xs">
-                    Balance {formatPaise(tx.balanceAfter.toString())}
+                    {t("Balance {amount}", { amount: formatPaise(tx.balanceAfter.toString()) })}
                   </p>
                 </div>
               </div>
@@ -192,14 +192,14 @@ export default async function WalletPage() {
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-base font-semibold">Recent payout requests</h2>
+        <h2 className="text-base font-semibold">{t("Recent payout requests")}</h2>
         {payoutsError ? (
-          <ErrorState title="Couldn't load your payout requests" />
+          <ErrorState title={t("Couldn't load your payout requests")} />
         ) : payouts.length === 0 ? (
           <EmptyState
             icon={Landmark}
-            title="No payout requests yet"
-            description="Requests you submit will show up here with their status."
+            title={t("No payout requests yet")}
+            description={t("Requests you submit will show up here with their status.")}
           />
         ) : (
           <div className="bg-surface-sunken divide-border divide-y rounded-xl border">
@@ -211,7 +211,7 @@ export default async function WalletPage() {
                   </span>
                   <div className="flex items-center gap-3">
                     <span className="text-muted-foreground text-xs">
-                      {payout.createdAt.toLocaleDateString()}
+                      {formatDate(payout.createdAt)}
                     </span>
                     <StatusBadge status={payout.status} />
                   </div>

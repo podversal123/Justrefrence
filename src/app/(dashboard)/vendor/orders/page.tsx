@@ -1,3 +1,4 @@
+import { getFormat, getT } from "@/i18n/server";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import Link from "next/link";
@@ -11,13 +12,18 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CursorPagination } from "@/components/ui/pagination";
 
-export const metadata: Metadata = { title: "Vendor orders" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("Vendor orders") };
+}
 
 interface PageProps {
   searchParams: Promise<Record<string, string | undefined>>;
 }
 
 export default async function VendorOrdersPage({ searchParams }: PageProps) {
+  const t = await getT();
+  const { formatDate } = await getFormat();
   const session = await getAuthSession();
   if (!session) redirect("/login");
   if (!session.vendorProfileId) redirect("/dashboard");
@@ -30,15 +36,15 @@ export default async function VendorOrdersPage({ searchParams }: PageProps) {
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-8">
       <div>
-        <h1>Orders</h1>
-        <p className="text-muted-foreground">Orders placed with your business.</p>
+        <h1>{t("Orders")}</h1>
+        <p className="text-muted-foreground">{t("Orders placed with your business.")}</p>
       </div>
 
       {items.length === 0 ? (
         <EmptyState
           icon={Receipt}
-          title="No orders yet"
-          description="Orders you receive will show up here."
+          title={t("No orders yet")}
+          description={t("Orders you receive will show up here.")}
         />
       ) : (
         <div className="flex flex-col gap-3">
@@ -49,8 +55,11 @@ export default async function VendorOrdersPage({ searchParams }: PageProps) {
                   <div>
                     <p className="font-medium">{order.orderNumber ?? order.id}</p>
                     <p className="text-muted-foreground text-sm">
-                      {order.buyer.fullName ?? order.buyer.email} · {order.items.length} item
-                      {order.items.length === 1 ? "" : "s"} · {order.createdAt.toLocaleDateString()}
+                      {order.buyer.fullName ?? order.buyer.email} ·{" "}
+                      {order.items.length === 1
+                        ? t("1 item")
+                        : t("{count} items", { count: order.items.length })}{" "}
+                      · {formatDate(order.createdAt)}
                     </p>
                   </div>
                   <div className="flex items-center gap-3">

@@ -30,8 +30,13 @@ const PROTECTED_PREFIXES = [
   "/coupons",
   "/requirements",
   "/my-bids",
+  "/my-auctions",
+  "/rewards",
+  "/sms",
 ];
-const AUTH_ONLY_PREFIXES = ["/login", "/forgot-password", "/register"];
+// /login is not listed: a signed-in visitor sees an "already signed in" card there (with a way to switch
+// account) instead of being sent silently to whichever dashboard they are in.
+const AUTH_ONLY_PREFIXES = ["/forgot-password", "/register"];
 
 export async function proxy(request: NextRequest) {
   const { response, user } = await updateSession(request);

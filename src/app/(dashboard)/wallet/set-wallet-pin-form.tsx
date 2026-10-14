@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { useEffect } from "react";
 import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
@@ -15,10 +16,11 @@ import type { ApiResult } from "@/lib/api-response";
 const initialState: ApiResult<null> = { success: true, data: null, meta: { requestId: "" } };
 
 function SubmitButton() {
+  const t = useT();
   const { pending } = useFormStatus();
   return (
     <Button type="submit" size="touch" disabled={pending}>
-      {pending ? "Saving…" : "Set PIN"}
+      {pending ? t("Saving…") : t("Set PIN")}
     </Button>
   );
 }
@@ -32,13 +34,16 @@ function SubmitButton() {
  * needed beyond the success toast.
  */
 export function SetWalletPinForm() {
+  const t = useT();
   const [state, formAction] = useActionState(setWalletPinAction, initialState);
   const submitted = state !== initialState;
 
   useEffect(() => {
     if (submitted && state.success) {
-      toast.success("Wallet PIN set", "You'll be asked for it when requesting a payout.");
+      toast.success(t("Wallet PIN set"), t("You'll be asked for it when requesting a payout."));
     }
+    // `t` only changes when the language does; that must not announce the success a second time.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, submitted]);
 
   return (
@@ -46,17 +51,17 @@ export function SetWalletPinForm() {
       {submitted && !state.success ? (
         <Alert variant="destructive">
           <AlertCircle className="size-4" />
-          <AlertDescription>{state.error.message}</AlertDescription>
+          <AlertDescription>{t(state.error.message)}</AlertDescription>
         </Alert>
       ) : null}
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="pin">6-digit PIN</Label>
+          <Label htmlFor="pin">{t("6-digit PIN")}</Label>
           <Input id="pin" name="pin" type="password" inputMode="numeric" maxLength={6} required />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="confirmPin">Confirm PIN</Label>
+          <Label htmlFor="confirmPin">{t("Confirm PIN")}</Label>
           <Input
             id="confirmPin"
             name="confirmPin"

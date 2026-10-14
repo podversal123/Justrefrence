@@ -1,3 +1,4 @@
+import { getT } from "@/i18n/server";
 import type { Metadata, Route } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -8,9 +9,13 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { getAuthSession } from "@/server/auth/session";
 import { listRequirementsForBuyer } from "@/server/repositories/bidding/bidding-repository";
 
-export const metadata: Metadata = { title: "My requirements" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("My requirements") };
+}
 
 export default async function MyRequirementsPage() {
+  const t = await getT();
   const session = await getAuthSession();
   if (!session) redirect("/login");
   if (!session.permissions.has("requirement:create")) redirect("/unauthorized");
@@ -21,7 +26,7 @@ export default async function MyRequirementsPage() {
   const postButton = (
     <Link href={"/requirements/new" as Route} className={buttonVariants()}>
       <Plus />
-      Post a requirement
+      {t("Post a requirement")}
     </Link>
   );
 
@@ -29,9 +34,9 @@ export default async function MyRequirementsPage() {
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1>My requirements</h1>
+          <h1>{t("My requirements")}</h1>
           <p className="text-muted-foreground">
-            What you&apos;ve asked vendors to bid on, and the offers that came in.
+            {t("What you've asked vendors to bid on, and the offers that came in.")}
           </p>
         </div>
         {postButton}
@@ -40,8 +45,10 @@ export default async function MyRequirementsPage() {
       {requirements.length === 0 ? (
         <EmptyState
           icon={ClipboardList}
-          title="No requirements yet"
-          description="Post what you need and approved vendors will bid, in a sealed tender or a live reverse auction."
+          title={t("No requirements yet")}
+          description={t(
+            "Post what you need and approved vendors will bid, in a sealed tender or a live reverse auction.",
+          )}
           action={postButton}
         />
       ) : (

@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -41,6 +42,7 @@ export function PlaceBidForm({
   maxBudget: string | null;
   existing: ExistingBidData | null;
 }) {
+  const t = useT();
   const router = useRouter();
   const [price, setPrice] = useState(existing ? paiseToRupeesInput(existing.unitPrice) : "");
   const paise = rupeesToPaise(price);
@@ -53,20 +55,22 @@ export function PlaceBidForm({
     <div className="space-y-4 rounded-lg border p-5">
       <div>
         <h2 className="text-base font-semibold">
-          {existing ? "Revise your bid" : "Place your bid"}
+          {existing ? t("Revise your bid") : t("Place your bid")}
         </h2>
         <p className="text-muted-foreground text-sm">
           {auction
-            ? "Reverse auction: the lowest total wins, and each new bid must be lower than your last."
-            : "Sealed tender: only you and the buyer see your offer until bidding closes."}
+            ? t(
+                "Reverse auction: the lowest total wins, and each new bid must be lower than your last.",
+              )
+            : t("Sealed tender: only you and the buyer see your offer until bidding closes.")}
         </p>
       </div>
 
       <ActionForm
         action={placeBidAction}
-        submitLabel={existing ? "Update bid" : "Place bid"}
-        pendingLabel="Submitting…"
-        successMessage="Bid saved"
+        submitLabel={existing ? t("Update bid") : t("Place bid")}
+        pendingLabel={t("Submitting…")}
+        successMessage={t("Bid saved")}
         resetOnSuccess={false}
         onSuccess={(data) => {
           if (auction) {
@@ -89,7 +93,7 @@ export function PlaceBidForm({
               hint={
                 ceiling !== null && ceiling > 0n
                   ? `Must be ₹${paiseToRupeesInput(ceiling.toString())} or lower${decrement > 0n ? ` (minimum drop ₹${paiseToRupeesInput(decrement.toString())})` : ""}.`
-                  : "Enter the price in rupees, e.g. 1500 or 1499.50."
+                  : t("Enter the price in rupees, e.g. 1500 or 1499.50.")
               }
               error={errors["unitPriceRupees"]}
             >
@@ -105,7 +109,10 @@ export function PlaceBidForm({
 
             <div className="bg-muted/50 flex items-baseline justify-between rounded-md px-3 py-2 text-sm">
               <span className="text-muted-foreground">
-                Total for {quantity.toLocaleString("en-IN")} {unit}
+                {t("Total for {quantity} {unit}", {
+                  quantity: quantity.toLocaleString("en-IN"),
+                  unit,
+                })}
               </span>
               <span className="text-base font-semibold tabular-nums">
                 {total !== null ? formatPaise(total.toString(), "INR") : "—"}
@@ -113,13 +120,15 @@ export function PlaceBidForm({
             </div>
             {maxBudget !== null && total !== null && total > BigInt(maxBudget) ? (
               <p className="text-destructive text-xs">
-                This is above the buyer&apos;s maximum budget of {formatPaise(maxBudget, "INR")}.
+                {t("This is above the buyer's maximum budget of {amount}.", {
+                  amount: formatPaise(maxBudget, "INR"),
+                })}
               </p>
             ) : null}
 
             <FormField
               htmlFor="bid-days"
-              label="Delivery time (days)"
+              label={t("Delivery time (days)")}
               error={errors["deliveryDays"]}
             >
               <Input
@@ -134,7 +143,7 @@ export function PlaceBidForm({
             </FormField>
             <FormField
               htmlFor="bid-note"
-              label="Note to the buyer (optional)"
+              label={t("Note to the buyer (optional)")}
               error={errors["note"]}
             >
               <Textarea
@@ -153,16 +162,16 @@ export function PlaceBidForm({
         <ConfirmationDialog
           trigger={
             <Button type="button" variant="outline" size="sm">
-              Withdraw bid
+              {t("Withdraw bid")}
             </Button>
           }
-          title="Withdraw your bid?"
-          description="You can place a new bid any time before bidding closes."
+          title={t("Withdraw your bid?")}
+          description={t("You can place a new bid any time before bidding closes.")}
           action={withdrawBidAction}
           hiddenFields={{ requirementId }}
-          confirmLabel="Withdraw"
+          confirmLabel={t("Withdraw")}
           variant="destructive"
-          successMessage="Bid withdrawn"
+          successMessage={t("Bid withdrawn")}
         />
       ) : null}
     </div>

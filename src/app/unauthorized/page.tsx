@@ -1,9 +1,13 @@
+import { getT } from "@/i18n/server";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export const metadata: Metadata = { title: "Access denied" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("Access denied") };
+}
 
 export default function UnauthorizedPage() {
   return (

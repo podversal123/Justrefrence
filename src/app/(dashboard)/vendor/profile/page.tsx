@@ -1,3 +1,4 @@
+import { getT } from "@/i18n/server";
 import { StatusBadge } from "@/components/ui/status-badge";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
@@ -7,9 +8,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { VendorProfileForm } from "./vendor-profile-form";
 import { KycDocumentsCard } from "@/components/kyc/kyc-documents-card";
 
-export const metadata: Metadata = { title: "My vendor profile" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("My vendor profile") };
+}
 
 export default async function VendorProfilePage() {
+  const t = await getT();
   const session = await getAuthSession();
   if (!session) redirect("/login");
 
@@ -23,17 +28,17 @@ export default async function VendorProfilePage() {
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
       <div>
-        <h1>My vendor profile</h1>
+        <h1>{t("My vendor profile")}</h1>
         <p className="text-muted-foreground">
-          Your business details, visible to Justreference admins.
+          {t("Your business details, visible to Justreference admins.")}
         </p>
       </div>
 
       <Card>
         <CardHeader className="flex-row items-center justify-between space-y-0">
           <div>
-            <CardTitle>Business profile</CardTitle>
-            <CardDescription>Status is managed by an admin.</CardDescription>
+            <CardTitle>{t("Business profile")}</CardTitle>
+            <CardDescription>{t("Status is managed by an admin.")}</CardDescription>
           </div>
           <StatusBadge status={vendorProfile.approvalStatus} />
         </CardHeader>
@@ -50,12 +55,12 @@ export default async function VendorProfilePage() {
         </CardContent>
       </Card>
 
-      <KycDocumentsCard ownerUserId={session.userId} isVendor title="Business documents" />
+      <KycDocumentsCard ownerUserId={session.userId} isVendor title={t("Business documents")} />
 
       {vendorProfile.approvalStatus === "REJECTED" && vendorProfile.rejectedReason ? (
         <Card>
           <CardHeader>
-            <CardTitle className="text-destructive text-sm">Rejection reason</CardTitle>
+            <CardTitle className="text-destructive text-sm">{t("Rejection reason")}</CardTitle>
           </CardHeader>
           <CardContent className="text-muted-foreground text-sm">
             {vendorProfile.rejectedReason}

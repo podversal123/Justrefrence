@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -37,6 +38,7 @@ export function Countdown({
   className?: string;
   closedLabel?: string;
 }) {
+  const t = useT();
   // Offset is captured once, lazily, at first render on the client.
   const [offset] = useState(() => new Date(serverNow).getTime() - Date.now());
   const [now, setNow] = useState<number | null>(null);
@@ -55,7 +57,7 @@ export function Countdown({
   return (
     <span
       role="timer"
-      aria-label={remaining <= 0 ? "Bidding is closed" : `Time left: ${text}`}
+      aria-label={remaining <= 0 ? t("Bidding is closed") : t("Time left: {time}", { time: text })}
       className={cn("tabular-nums", urgent && "text-destructive font-semibold", className)}
     >
       {text}

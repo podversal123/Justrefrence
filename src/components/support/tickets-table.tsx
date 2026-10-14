@@ -1,3 +1,4 @@
+import { getFormat, getT } from "@/i18n/server";
 import Link from "next/link";
 import type { Route } from "next";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -10,7 +11,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatDateTime } from "@/lib/format";
 import { formatTicketNo } from "@/server/repositories/support/ticket-repository";
 
 interface TicketRow {
@@ -24,7 +24,7 @@ interface TicketRow {
   user: { fullName: string | null; email: string };
 }
 
-export function TicketsTable({
+export async function TicketsTable({
   tickets,
   basePath,
   showOwner,
@@ -33,15 +33,17 @@ export function TicketsTable({
   basePath: "/support" | "/admin/support";
   showOwner: boolean;
 }) {
+  const t = await getT();
+  const { formatDateTime } = await getFormat();
   return (
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Ticket</TableHead>
-          <TableHead>Subject</TableHead>
-          {showOwner ? <TableHead>Member</TableHead> : null}
-          <TableHead>Status</TableHead>
-          <TableHead>Last update</TableHead>
+          <TableHead>{t("Ticket")}</TableHead>
+          <TableHead>{t("Subject")}</TableHead>
+          {showOwner ? <TableHead>{t("Member")}</TableHead> : null}
+          <TableHead>{t("Status")}</TableHead>
+          <TableHead>{t("Last update")}</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -59,7 +61,9 @@ export function TicketsTable({
               </Link>
               <div className="text-muted-foreground flex items-center gap-2 text-xs">
                 {ticket.category}
-                {ticket.priority === "HIGH" ? <Badge variant="destructive">High</Badge> : null}
+                {ticket.priority === "HIGH" ? (
+                  <Badge variant="destructive">{t("High")}</Badge>
+                ) : null}
               </div>
             </TableCell>
             {showOwner ? <TableCell>{ticket.user.fullName ?? ticket.user.email}</TableCell> : null}

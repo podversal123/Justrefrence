@@ -1,3 +1,4 @@
+import { msg } from "@/i18n/locales";
 import Link from "next/link";
 import type { Route } from "next";
 import type { LucideIcon } from "lucide-react";
@@ -14,6 +15,7 @@ import {
 import { Logo } from "@/components/brand/logo";
 import { BRAND } from "@/lib/brand";
 import { getSiteSettings } from "@/server/lib/site-settings";
+import { getT } from "@/i18n/server";
 
 /**
  * Dark, multi-column footer: who we are, how to reach us, and every top-level area, so nothing
@@ -23,45 +25,46 @@ import { getSiteSettings } from "@/server/lib/site-settings";
  */
 const COLUMNS: { heading: string; links: { href: string; label: string }[] }[] = [
   {
-    heading: "Marketplace",
+    heading: msg("Marketplace"),
     links: [
-      { href: "/products", label: "Products" },
-      { href: "/services", label: "Services" },
-      { href: "/projects", label: "Projects" },
-      { href: "/bids", label: "Bids and auctions" },
+      { href: "/products", label: msg("Products") },
+      { href: "/services", label: msg("Services") },
+      { href: "/projects", label: msg("Projects") },
+      { href: "/bids", label: msg("Bids and tenders") },
+      { href: "/auctions", label: msg("Auctions") },
     ],
   },
   {
-    heading: "Buyers",
+    heading: msg("Buyers"),
     links: [
-      { href: "/register", label: "Create an account" },
-      { href: "/login", label: "Sign in" },
-      { href: "/requirements/new", label: "Post a requirement" },
+      { href: "/register", label: msg("Create an account") },
+      { href: "/login", label: msg("Sign in") },
+      { href: "/requirements/new", label: msg("Post a requirement") },
     ],
   },
   {
-    heading: "Vendors and partners",
+    heading: msg("Vendors and partners"),
     links: [
-      { href: "/register", label: "Become a vendor" },
-      { href: "/bids", label: "Open bids to quote on" },
-      { href: "/referrals", label: "Referral program" },
+      { href: "/register", label: msg("Become a vendor") },
+      { href: "/bids", label: msg("Open bids to quote on") },
+      { href: "/referrals", label: msg("Referral program") },
     ],
   },
   {
-    heading: "Company",
+    heading: msg("Company"),
     links: [
-      { href: "/about", label: "About us" },
-      { href: "/contact", label: "Contact us" },
-      { href: "/blog", label: "News and updates" },
-      { href: "/feedback", label: "Feedback" },
+      { href: "/about", label: msg("About us") },
+      { href: "/contact", label: msg("Contact us") },
+      { href: "/blog", label: msg("News and updates") },
+      { href: "/feedback", label: msg("Feedback") },
     ],
   },
 ];
 
 const TRUST_POINTS = [
-  { icon: BadgeCheck, label: "Every vendor is approved before listing" },
-  { icon: ShieldCheck, label: "Payments are confirmed with the payment provider" },
-  { icon: FileText, label: "A GST invoice for every order" },
+  { icon: BadgeCheck, label: msg("Every vendor is approved before listing") },
+  { icon: ShieldCheck, label: msg("Payments are confirmed with the payment provider") },
+  { icon: FileText, label: msg("A GST invoice for every order") },
 ];
 
 interface ContactRow {
@@ -71,6 +74,7 @@ interface ContactRow {
 }
 
 export async function PortalFooter() {
+  const t = await getT();
   const settings = await getSiteSettings();
   const contact: ContactRow[] = [];
   if (settings.contactEmail) {
@@ -104,7 +108,7 @@ export async function PortalFooter() {
               <span className="bg-marigold/15 text-marigold flex size-9 shrink-0 items-center justify-center rounded-full">
                 <Icon className="size-4" aria-hidden="true" />
               </span>
-              {label}
+              {t(label)}
             </li>
           ))}
         </ul>
@@ -113,11 +117,13 @@ export async function PortalFooter() {
           <div className="space-y-6">
             <Logo size={36} withWordmark className="[&_span]:text-ink-foreground" />
             <p className="max-w-sm text-2xl leading-snug font-bold tracking-tight">
-              {BRAND.tagline}
+              {t(BRAND.tagline)}
             </p>
             <p className="text-ink-foreground/70 max-w-sm text-sm leading-relaxed">
-              {BRAND.name} brings buyers and approved vendors together, and rewards the people who
-              introduce them.
+              {t(
+                "{name} brings buyers and approved vendors together, and rewards the people who introduce them.",
+                { name: BRAND.name },
+              )}
             </p>
 
             {contact.length > 0 ? (
@@ -140,15 +146,15 @@ export async function PortalFooter() {
                 href={"/contact" as Route}
                 className="text-marigold inline-flex items-center gap-1.5 text-sm font-semibold hover:underline"
               >
-                Talk to our team
+                {t("Talk to our team")}
               </Link>
             )}
           </div>
 
           <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
             {COLUMNS.map((column) => (
-              <nav key={column.heading} aria-label={column.heading} className="space-y-4">
-                <p className="text-sm font-semibold">{column.heading}</p>
+              <nav key={column.heading} aria-label={t(column.heading)} className="space-y-4">
+                <p className="text-sm font-semibold">{t(column.heading)}</p>
                 <ul className="text-ink-foreground/70 space-y-2.5 text-sm">
                   {column.links.map((link) => (
                     <li key={link.label}>
@@ -156,7 +162,7 @@ export async function PortalFooter() {
                         href={link.href as Route}
                         className="hover:text-ink-foreground transition-colors"
                       >
-                        {link.label}
+                        {t(link.label)}
                       </Link>
                     </li>
                   ))}
@@ -168,13 +174,16 @@ export async function PortalFooter() {
 
         <div className="text-ink-foreground/60 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-6 text-xs">
           <p>
-            © {new Date().getFullYear()} {BRAND.name}. All rights reserved.
+            {t("© {year} {name}. All rights reserved.", {
+              year: new Date().getFullYear(),
+              name: BRAND.name,
+            })}
           </p>
           <a
             href="#"
             className="hover:text-ink-foreground inline-flex items-center gap-1.5 transition-colors"
           >
-            Back to top
+            {t("Back to top")}
             <ArrowUp className="size-3.5" aria-hidden="true" />
           </a>
         </div>

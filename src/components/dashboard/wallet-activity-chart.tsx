@@ -1,5 +1,7 @@
 "use client";
 
+import { useLocale, useT } from "@/i18n/provider";
+import { localeTag, type Locale } from "@/i18n/locales";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatPaise } from "@/lib/money";
@@ -10,16 +12,18 @@ interface WalletPoint {
   debits: string;
 }
 
-function shortDay(day: string): string {
-  return new Date(`${day}T00:00:00Z`).toLocaleDateString("en-IN", {
+function shortDay(day: string, locale: Locale): string {
+  return new Date(`${day}T00:00:00Z`).toLocaleDateString(localeTag(locale), {
     month: "short",
     day: "numeric",
   });
 }
 
 export function WalletActivityChart({ data }: { data: WalletPoint[] }) {
+  const t = useT();
+  const locale = useLocale();
   const chartData = data.map((d) => ({
-    day: shortDay(d.day),
+    day: shortDay(d.day, locale),
     creditsRupees: Number(d.credits) / 100,
     debitsRupees: Number(d.debits) / 100,
   }));
@@ -28,8 +32,8 @@ export function WalletActivityChart({ data }: { data: WalletPoint[] }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Wallet activity</CardTitle>
-        <CardDescription>Credits vs. debits across all member wallets.</CardDescription>
+        <CardTitle className="text-base">{t("Wallet activity")}</CardTitle>
+        <CardDescription>{t("Credits vs. debits across all member wallets.")}</CardDescription>
       </CardHeader>
       <CardContent className="h-40">
         {hasActivity ? (
@@ -68,7 +72,7 @@ export function WalletActivityChart({ data }: { data: WalletPoint[] }) {
           </ResponsiveContainer>
         ) : (
           <div className="text-muted-foreground flex h-full items-center justify-center text-sm">
-            No wallet activity in this period yet.
+            {t("No wallet activity in this period yet.")}
           </div>
         )}
       </CardContent>

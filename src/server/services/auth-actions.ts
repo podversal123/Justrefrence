@@ -1,5 +1,6 @@
 "use server";
 
+import { safeNextPath } from "@/lib/safe-next";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
@@ -156,7 +157,7 @@ export async function loginAction(
     ip,
   });
 
-  redirect("/dashboard");
+  redirect(safeNextPath(formData.get("next")) as never);
 }
 
 export async function forgotPasswordAction(

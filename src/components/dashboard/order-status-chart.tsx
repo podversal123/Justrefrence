@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -20,14 +21,17 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export function OrderStatusChart({ data }: { data: StatusCount[] }) {
+  const t = useT();
   const total = data.reduce((sum, d) => sum + d.count, 0);
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Orders by status</CardTitle>
+        <CardTitle className="text-base">{t("Orders by status")}</CardTitle>
         <CardDescription>
-          {total} order{total === 1 ? "" : "s"} in this period.
+          {total === 1
+            ? t("1 order in this period.")
+            : t("{count} orders in this period.", { count: total })}
         </CardDescription>
       </CardHeader>
       <CardContent className="h-64">
@@ -55,7 +59,7 @@ export function OrderStatusChart({ data }: { data: StatusCount[] }) {
           </ResponsiveContainer>
         ) : (
           <div className="text-muted-foreground flex h-full items-center justify-center text-sm">
-            No orders in this period yet.
+            {t("No orders in this period yet.")}
           </div>
         )}
       </CardContent>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { useState } from "react";
 import Link from "next/link";
 import { AlertCircle, Landmark } from "lucide-react";
@@ -49,6 +50,7 @@ export function PayoutRequestForm({
   bankAccount: BankAccountSummary | null;
   hasPin: boolean;
 }) {
+  const t = useT();
   // Fresh per mount, not per click — a double-click re-submits the same
   // key, which the backend's idempotency check naturally dedupes. See
   // place-order-form.tsx for the identical pattern.
@@ -63,13 +65,13 @@ export function PayoutRequestForm({
     return (
       <EmptyState
         icon={Landmark}
-        title="Add a bank account to request a payout"
-        description="Your payout destination is managed from your profile."
+        title={t("Add a bank account to request a payout")}
+        description={t("Your payout destination is managed from your profile.")}
         action={
           <Button
             size="touch"
             nativeButton={false}
-            render={<Link href="/profile">Go to profile</Link>}
+            render={<Link href="/profile">{t("Go to profile")}</Link>}
           />
         }
       />
@@ -108,11 +110,11 @@ export function PayoutRequestForm({
     setOpen(false);
 
     if (result.success) {
-      toast.success("Payout request submitted", "An admin will review it shortly.");
+      toast.success(t("Payout request submitted"), t("An admin will review it shortly."));
       setAmountRupees("");
       setWalletPin("");
     } else {
-      toast.error("Could not submit payout request", result.error.message);
+      toast.error(t("Could not submit payout request"), t(result.error.message));
     }
   }
 
@@ -135,7 +137,7 @@ export function PayoutRequestForm({
 
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="amountRupees">Amount (₹)</Label>
+            <Label htmlFor="amountRupees">{t("Amount (₹)")}</Label>
             <Input
               id="amountRupees"
               type="number"
@@ -149,7 +151,7 @@ export function PayoutRequestForm({
           </div>
           {hasPin ? (
             <div className="space-y-2">
-              <Label htmlFor="walletPin">Wallet PIN</Label>
+              <Label htmlFor="walletPin">{t("Wallet PIN")}</Label>
               <Input
                 id="walletPin"
                 type="password"
@@ -165,7 +167,7 @@ export function PayoutRequestForm({
 
         <div>
           <Button type="submit" size="touch">
-            Request payout
+            {t("Request payout")}
           </Button>
         </div>
       </form>
@@ -173,18 +175,20 @@ export function PayoutRequestForm({
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Request this payout?</DialogTitle>
+            <DialogTitle>{t("Request this payout?")}</DialogTitle>
             <DialogDescription>
-              ₹{amountRupees} will be transferred to {account.accountNoMasked}. This moves money out
-              of your wallet balance and can&apos;t be undone once an admin approves it.
+              {t(
+                "₹{amount} will be transferred to {account}. This moves money out of your wallet balance and can't be undone once an admin approves it.",
+                { amount: amountRupees, account: account.accountNoMasked },
+              )}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={busy}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button type="button" onClick={confirmSubmit} disabled={busy}>
-              {busy ? "Submitting…" : "Confirm request"}
+              {busy ? t("Submitting…") : t("Confirm request")}
             </Button>
           </DialogFooter>
         </DialogContent>

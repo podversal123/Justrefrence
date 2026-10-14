@@ -1,3 +1,4 @@
+import { getT } from "@/i18n/server";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -39,6 +40,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
  * ownership pattern). See docs/adr/0011.
  */
 export default async function VendorCatalogListPage({ params, searchParams }: PageProps) {
+  const t = await getT();
   const { kind: kindSegment } = await params;
   const kind = kindFromRouteSegment(kindSegment);
   if (!kind) notFound();
@@ -62,12 +64,16 @@ export default async function VendorCatalogListPage({ params, searchParams }: Pa
   const hasActiveFilters = Boolean(query.search || query.approvalStatus);
 
   const columns: DataTableColumn<CatalogListItem>[] = [
-    { key: "title", header: "Title", cell: (r) => <span className="font-medium">{r.title}</span> },
-    { key: "category", header: "Category", cell: (r) => r.categoryName, hideOnMobile: true },
-    { key: "price", header: "Price", cell: (r) => formatPaise(r.price, r.currency) },
+    {
+      key: "title",
+      header: t("Title"),
+      cell: (r) => <span className="font-medium">{r.title}</span>,
+    },
+    { key: "category", header: t("Category"), cell: (r) => r.categoryName, hideOnMobile: true },
+    { key: "price", header: t("Price"), cell: (r) => formatPaise(r.price, r.currency) },
     {
       key: "status",
-      header: "Status",
+      header: t("Status"),
       cell: (r) => (
         <div className="flex flex-wrap gap-1">
           <StatusBadge status={r.approvalStatus} />
@@ -81,8 +87,8 @@ export default async function VendorCatalogListPage({ params, searchParams }: Pa
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1>My {labels.plural.toLowerCase()}</h1>
-          <p className="text-muted-foreground">Only you can manage these listings.</p>
+          <h1>{t("My {kind}", { kind: t(labels.plural).toLowerCase() })}</h1>
+          <p className="text-muted-foreground">{t("Only you can manage these listings.")}</p>
         </div>
         {canCreate ? (
           <Button
@@ -90,7 +96,7 @@ export default async function VendorCatalogListPage({ params, searchParams }: Pa
             render={
               <Link href={`/vendor/catalog/${kindSegment}/new`}>
                 <Plus />
-                New {labels.singular.toLowerCase()}
+                {t("New {kind}", { kind: t(labels.singular).toLowerCase() })}
               </Link>
             }
           />
@@ -98,15 +104,17 @@ export default async function VendorCatalogListPage({ params, searchParams }: Pa
       </div>
 
       <FilterBar>
-        <SearchInput placeholder={`Search my ${labels.plural.toLowerCase()}…`} />
+        <SearchInput
+          placeholder={t("Search my {kind}…", { kind: t(labels.plural).toLowerCase() })}
+        />
         <SelectFilter
           paramName="approvalStatus"
-          ariaLabel="Filter by approval status"
-          placeholder="All statuses"
+          ariaLabel={t("Filter by approval status")}
+          placeholder={t("All statuses")}
           options={[
-            { value: "PENDING", label: "Pending" },
-            { value: "APPROVED", label: "Approved" },
-            { value: "REJECTED", label: "Rejected" },
+            { value: "PENDING", label: t("Pending") },
+            { value: "APPROVED", label: t("Approved") },
+            { value: "REJECTED", label: t("Rejected") },
           ]}
         />
       </FilterBar>
@@ -116,14 +124,16 @@ export default async function VendorCatalogListPage({ params, searchParams }: Pa
           icon={Package}
           title={
             hasActiveFilters
-              ? `No ${labels.plural.toLowerCase()} match your filters`
-              : `No ${labels.plural.toLowerCase()} yet`
+              ? t("No {kind} match your filters", { kind: t(labels.plural).toLowerCase() })
+              : t("No {kind} yet", { kind: t(labels.plural).toLowerCase() })
           }
           description={
             hasActiveFilters
-              ? "Try a different search term or clear the filters."
+              ? t("Try a different search term or clear the filters.")
               : canCreate
-                ? `Create your first ${labels.singular.toLowerCase()} to get started.`
+                ? t("Create your first {kind} to get started.", {
+                    kind: t(labels.singular).toLowerCase(),
+                  })
                 : undefined
           }
         />

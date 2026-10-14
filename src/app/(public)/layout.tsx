@@ -1,3 +1,4 @@
+import { getT } from "@/i18n/server";
 import { PortalFooter } from "@/components/portal/portal-footer";
 import { PortalHeader } from "@/components/portal/portal-header";
 import { MaintenanceNotice } from "@/components/portal/maintenance-notice";
@@ -13,6 +14,7 @@ import { canBypassMaintenance, getSiteSettings } from "@/server/lib/site-setting
  * anonymous visitor to /login from there, same as any other protected page.
  */
 export default async function PublicLayout({ children }: { children: React.ReactNode }) {
+  const t = await getT();
   const [settings, session] = await Promise.all([getSiteSettings(), getAuthSession()]);
   if (settings.maintenanceEnabled && !canBypassMaintenance(session)) {
     return <MaintenanceNotice message={settings.maintenanceMessage} />;
@@ -24,7 +26,7 @@ export default async function PublicLayout({ children }: { children: React.React
         href="#main"
         className="bg-background focus:ring-ring sr-only z-50 rounded-md px-3 py-2 text-sm focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:ring-2"
       >
-        Skip to content
+        {t("Skip to content")}
       </a>
       <PortalHeader />
       <main id="main" className="flex-1">

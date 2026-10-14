@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,7 @@ import { Button } from "@/components/ui/button";
  * count needed, no page-N random access into an unbounded list).
  */
 export function CursorPagination({ nextCursor }: { nextCursor: string | null }) {
+  const t = useT();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
@@ -24,7 +26,7 @@ export function CursorPagination({ nextCursor }: { nextCursor: string | null }) 
       <Button
         variant="outline"
         nativeButton={false}
-        render={<Link href={href as never}>Load more</Link>}
+        render={<Link href={href as never}>{t("Load more")}</Link>}
       />
     </div>
   );

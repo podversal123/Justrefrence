@@ -1,3 +1,6 @@
+import { T } from "@/i18n/t-text";
+import { msg } from "@/i18n/locales";
+import { getFormat, getT } from "@/i18n/server";
 import type { Metadata, Route } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -12,7 +15,6 @@ import { loadRequirementView, viewerFromSession } from "@/server/domain/bidding/
 import { toLiveSnapshot } from "@/server/domain/bidding/snapshot";
 import { formatRequirementNumber } from "@/server/domain/bidding/rules";
 import { getRequirementById } from "@/server/repositories/bidding/bidding-repository";
-import { formatDateTime } from "@/lib/format";
 import { formatPaise } from "@/lib/money";
 
 export async function generateMetadata({
@@ -21,16 +23,17 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  if (!z.string().uuid().safeParse(id).success) return { title: "Requirement not found" };
+  const t = await getT();
+  if (!z.string().uuid().safeParse(id).success) return { title: t("Requirement not found") };
   const requirement = await getRequirementById(id).catch(() => null);
-  if (!requirement) return { title: "Requirement not found" };
+  if (!requirement) return { title: t("Requirement not found") };
   return { title: `${formatRequirementNumber(requirement.reqSeq)}: ${requirement.title}` };
 }
 
 const KIND_LABEL: Record<string, string> = {
-  PRODUCT: "Product",
-  SERVICE: "Service",
-  PROJECT: "Project",
+  PRODUCT: msg("Product"),
+  SERVICE: msg("Service"),
+  PROJECT: msg("Project"),
 };
 
 function Fact({
@@ -56,6 +59,8 @@ function Fact({
 }
 
 export default async function BidDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const t = await getT();
+  const { formatDateTime } = await getFormat();
   const { id } = await params;
   if (!z.string().uuid().safeParse(id).success) notFound();
 
@@ -71,13 +76,13 @@ export default async function BidDetailPage({ params }: { params: Promise<{ id: 
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8">
-      <nav aria-label="Breadcrumb" className="text-muted-foreground mb-4 text-xs">
+      <nav aria-label={t("Breadcrumb")} className="text-muted-foreground mb-4 text-xs">
         <Link href="/" className="hover:text-foreground">
-          Home
+          {t("Home")}
         </Link>{" "}
         /{" "}
         <Link href={"/bids" as Route} className="hover:text-foreground">
-          Bids and auctions
+          {t("Bids and auctions")}
         </Link>{" "}
         / <span aria-current="page">{number}</span>
       </nav>
@@ -90,8 +95,10 @@ export default async function BidDetailPage({ params }: { params: Promise<{ id: 
         </div>
         <h1>{requirement.title}</h1>
         <p className="text-muted-foreground text-sm">
-          Posted {formatDateTime(requirement.createdAt)}
-          {view.isOwner || view.isStaff ? ` by ${requirement.buyer.fullName ?? "a member"}` : ""}
+          {t("Posted {date}", { date: formatDateTime(requirement.createdAt) })}
+          {view.isOwner || view.isStaff
+            ? ` ${t("by {name}", { name: requirement.buyer.fullName ?? t("a member") })}`
+            : ""}
         </p>
       </div>
 
@@ -99,42 +106,42 @@ export default async function BidDetailPage({ params }: { params: Promise<{ id: 
         <div className="space-y-8">
           <section aria-labelledby="req-details" className="space-y-3">
             <h2 id="req-details" className="text-lg">
-              Requirement
+              {t("Requirement")}
             </h2>
             <p className="whitespace-pre-wrap">{requirement.description}</p>
           </section>
 
           <section aria-labelledby="req-facts" className="space-y-3">
             <h2 id="req-facts" className="text-lg">
-              Key details
+              {t("Key details")}
             </h2>
             <dl className="grid gap-4 sm:grid-cols-2">
-              <Fact icon={Package} label="Quantity">
+              <Fact icon={Package} label={t("Quantity")}>
                 {requirement.quantity.toLocaleString("en-IN")} {requirement.unit} ·{" "}
-                {KIND_LABEL[requirement.itemKind]}
+                <T text={KIND_LABEL[requirement.itemKind] ?? requirement.itemKind} />
                 {requirement.categoryLabel ? ` · ${requirement.categoryLabel}` : ""}
               </Fact>
               {requirement.deliveryCity ? (
-                <Fact icon={MapPin} label="Deliver to">
+                <Fact icon={MapPin} label={t("Deliver to")}>
                   {requirement.deliveryCity}
                 </Fact>
               ) : null}
-              <Fact icon={CalendarClock} label={open ? "Bidding closes" : "Bidding closed"}>
-                {formatDateTime(requirement.closesAt)} IST
+              <Fact icon={CalendarClock} label={open ? t("Bidding closes") : t("Bidding closed")}>
+                {t("{date} IST", { date: formatDateTime(requirement.closesAt) })}
               </Fact>
               {requirement.estimatedValue !== null ? (
-                <Fact icon={Wallet} label="Maximum budget (total)">
+                <Fact icon={Wallet} label={t("Maximum budget (total)")}>
                   {formatPaise(requirement.estimatedValue.toString(), "INR")}
                 </Fact>
               ) : null}
               {requirement.type === "REVERSE_AUCTION" ? (
-                <Fact icon={Gavel} label="Auction rules">
+                <Fact icon={Gavel} label={t("Auction rules")}>
                   {requirement.minDecrement > 0n
                     ? `Each bid must drop by at least ${formatPaise(requirement.minDecrement.toString(), "INR")} per unit. `
-                    : "Any lower price is accepted. "}
+                    : t("Any lower price is accepted. ")}
                   {requirement.autoExtendMinutes > 0
                     ? `A bid in the last ${requirement.autoExtendMinutes} minutes extends bidding by ${requirement.autoExtendMinutes} minutes.`
-                    : "Closing time is fixed."}
+                    : t("Closing time is fixed.")}
                 </Fact>
               ) : null}
             </dl>
@@ -142,12 +149,12 @@ export default async function BidDetailPage({ params }: { params: Promise<{ id: 
 
           {requirement.status === "CANCELLED" && requirement.cancelledReason ? (
             <p className="border-destructive/30 bg-destructive/5 rounded-lg border p-4 text-sm">
-              <span className="font-medium">Cancelled:</span> {requirement.cancelledReason}
+              <span className="font-medium">{t("Cancelled:")}</span> {requirement.cancelledReason}
             </p>
           ) : null}
         </div>
 
-        <aside className="space-y-4" aria-label="Bidding">
+        <aside className="space-y-4" aria-label={t("Bidding")}>
           <LivePanel
             requirementId={requirement.id}
             type={requirement.type}
@@ -177,20 +184,20 @@ export default async function BidDetailPage({ params }: { params: Promise<{ id: 
             ) : view.myBid ? (
               <div className="space-y-2 rounded-lg border p-5 text-sm">
                 <div className="flex items-center justify-between">
-                  <span className="font-medium">Your bid</span>
+                  <span className="font-medium">{t("Your bid")}</span>
                   <BidStatusBadge status={view.myBid.status} />
                 </div>
                 <p className="text-muted-foreground">
                   {view.myBid.status === "ACCEPTED"
-                    ? "Congratulations. The buyer awarded this requirement to you."
+                    ? t("Congratulations. The buyer awarded this requirement to you.")
                     : view.myBid.status === "REJECTED"
-                      ? "The buyer chose a different offer, or cancelled the requirement."
-                      : "Bidding has ended. The buyer will award the requirement soon."}
+                      ? t("The buyer chose a different offer, or cancelled the requirement.")
+                      : t("Bidding has ended. The buyer will award the requirement soon.")}
                 </p>
               </div>
             ) : (
               <p className="text-muted-foreground rounded-lg border p-5 text-sm">
-                Bidding on this requirement has ended.
+                {t("Bidding on this requirement has ended.")}
               </p>
             )
           ) : null}
@@ -200,17 +207,21 @@ export default async function BidDetailPage({ params }: { params: Promise<{ id: 
               href={`/requirements/${requirement.id}` as Route}
               className={buttonVariants({ size: "touch", className: "w-full" })}
             >
-              {audience === "owner" ? "Manage this requirement" : "Open admin view"}
+              {audience === "owner" ? t("Manage this requirement") : t("Open admin view")}
             </Link>
           ) : null}
 
           {audience === "public" ? (
             <div className="space-y-3 rounded-lg border p-5 text-sm">
-              <p className="font-medium">Want to bid on this?</p>
+              <p className="font-medium">{t("Want to bid on this?")}</p>
               <p className="text-muted-foreground">
                 {session
-                  ? "Only approved vendors can place bids. Contact the team to register your business as a vendor."
-                  : "Sign in with an approved vendor account to place a bid, or register your business as a vendor."}
+                  ? t(
+                      "Only approved vendors can place bids. Contact the team to register your business as a vendor.",
+                    )
+                  : t(
+                      "Sign in with an approved vendor account to place a bid, or register your business as a vendor.",
+                    )}
               </p>
               {session ? null : (
                 <div className="flex flex-wrap gap-2">
@@ -218,13 +229,13 @@ export default async function BidDetailPage({ params }: { params: Promise<{ id: 
                     href={`/login?next=/bids/${requirement.id}` as Route}
                     className={buttonVariants()}
                   >
-                    Sign in
+                    {t("Sign in")}
                   </Link>
                   <Link
                     href={"/register" as Route}
                     className={buttonVariants({ variant: "outline" })}
                   >
-                    Become a vendor
+                    {t("Become a vendor")}
                   </Link>
                 </div>
               )}

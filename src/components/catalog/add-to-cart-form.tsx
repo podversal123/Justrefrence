@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { useState } from "react";
 import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
@@ -14,10 +15,11 @@ import type { CatalogKind } from "@/server/domain/catalog/types";
 const initialState: ApiResult<null> = { success: true, data: null, meta: { requestId: "" } };
 
 function SubmitButton() {
+  const t = useT();
   const { pending } = useFormStatus();
   return (
     <Button type="submit" disabled={pending} className="w-full">
-      {pending ? "Adding…" : "Add to cart"}
+      {pending ? t("Adding…") : t("Add to cart")}
     </Button>
   );
 }
@@ -31,6 +33,7 @@ export function AddToCartForm({
   itemId: string;
   maxQty: number | null;
 }) {
+  const t = useT();
   const [state, formAction] = useActionState(addToCartAction, initialState);
   const [qty, setQty] = useState(1);
   const submitted = state !== initialState;
@@ -45,13 +48,13 @@ export function AddToCartForm({
       {submitted && !state.success ? (
         <Alert variant="destructive">
           <AlertCircle className="size-4" />
-          <AlertDescription>{state.error.message}</AlertDescription>
+          <AlertDescription>{t(state.error.message)}</AlertDescription>
         </Alert>
       ) : null}
       {submitted && state.success ? (
         <Alert>
           <CheckCircle2 className="size-4" />
-          <AlertDescription>Added to your cart.</AlertDescription>
+          <AlertDescription>{t("Added to your cart.")}</AlertDescription>
         </Alert>
       ) : null}
 
@@ -65,7 +68,7 @@ export function AddToCartForm({
           >
             <Minus />
           </Button>
-          <Input className="w-16 text-center" value={qty} readOnly aria-label="Quantity" />
+          <Input className="w-16 text-center" value={qty} readOnly aria-label={t("Quantity")} />
           <Button
             type="button"
             variant="outline"

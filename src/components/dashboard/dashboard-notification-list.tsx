@@ -1,5 +1,6 @@
 "use client";
 
+import { useFormat, useT } from "@/i18n/provider";
 import { describeNotification } from "@/lib/notification-labels";
 import { useEffect, useRef } from "react";
 import { useActionState } from "@/lib/use-action-state";
@@ -34,6 +35,7 @@ const nullState: ApiResult<null> = { success: true, data: null, meta: { requestI
 
 /** Fires a toast exactly once per completed action dispatch, keyed on the envelope's requestId. */
 function useActionToast(state: ApiResult<null>, successMessage: string, errorTitle: string) {
+  const t = useT();
   const lastRequestId = useRef(state.meta.requestId);
   useEffect(() => {
     if (!state.meta.requestId || state.meta.requestId === lastRequestId.current) return;
@@ -41,12 +43,13 @@ function useActionToast(state: ApiResult<null>, successMessage: string, errorTit
     if (state.success) {
       toast.success(successMessage);
     } else {
-      toast.error(errorTitle, state.error.message);
+      toast.error(errorTitle, t(state.error.message));
     }
-  }, [state, successMessage, errorTitle]);
+  }, [state, successMessage, errorTitle, t]);
 }
 
 function MarkReadButton({ notificationId }: { notificationId: string }) {
+  const t = useT();
   const [state, action] = useActionState(markNotificationReadAction, nullState);
   useActionToast(state, "Notification marked as read", "Couldn't mark as read");
 
@@ -58,7 +61,7 @@ function MarkReadButton({ notificationId }: { notificationId: string }) {
         variant="ghost"
         size="icon-sm"
         className="text-muted-foreground"
-        aria-label="Mark notification as read"
+        aria-label={t("Mark notification as read")}
       >
         <Check className="size-3.5" />
       </Button>
@@ -67,6 +70,7 @@ function MarkReadButton({ notificationId }: { notificationId: string }) {
 }
 
 function MarkAllReadButton() {
+  const t = useT();
   const [state, action] = useActionState(markAllNotificationsReadAction, nullState);
   useActionToast(state, "All notifications marked as read", "Couldn't mark all as read");
 
@@ -74,7 +78,7 @@ function MarkAllReadButton() {
     <form action={action}>
       <Button type="submit" variant="ghost" size="sm" className="text-muted-foreground">
         <CheckCheck className="size-3.5" />
-        Mark all read
+        {t("Mark all read")}
       </Button>
     </form>
   );
@@ -87,12 +91,14 @@ export function DashboardNotificationList({
   notifications: DashboardNotification[];
   unreadCount: number;
 }) {
+  const t = useT();
+  const { formatDateTime } = useFormat();
   if (notifications.length === 0) {
     return (
       <EmptyState
         icon={BellOff}
-        title="No notifications yet"
-        description="We'll let you know here when something needs your attention."
+        title={t("No notifications yet")}
+        description={t("We'll let you know here when something needs your attention.")}
       />
     );
   }
@@ -102,7 +108,9 @@ export function DashboardNotificationList({
       {unreadCount > 0 ? (
         <div className="flex items-center justify-between">
           <p className="text-muted-foreground text-xs">
-            {unreadCount} unread notification{unreadCount === 1 ? "" : "s"}
+            {unreadCount === 1
+              ? t("1 unread notification")
+              : t("{count} unread notifications", { count: unreadCount })}
           </p>
           <MarkAllReadButton />
         </div>
@@ -128,10 +136,10 @@ export function DashboardNotificationList({
                     notification.readAt ? "text-muted-foreground text-sm" : "text-sm font-medium"
                   }
                 >
-                  {describe(notification)}
+                  {t(describe(notification))}
                 </p>
                 <p className="text-muted-foreground text-xs">
-                  {notification.createdAt.toLocaleString("en-IN")}
+                  {formatDateTime(notification.createdAt)}
                 </p>
               </div>
             </div>

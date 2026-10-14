@@ -1,3 +1,5 @@
+import { T } from "@/i18n/t-text";
+import { msg } from "@/i18n/locales";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
@@ -61,9 +63,41 @@ const STATUS_VARIANTS: Record<string, BadgeVariant> = {
 };
 
 const STATUS_LABELS: Record<string, string> = {
-  PENDING_VERIFICATION: "Pending",
-  IN_PROGRESS: "In progress",
-  USED_UP: "Fully used",
+  ACTIVE: msg("Active"),
+  APPROVED: msg("Approved"),
+  VERIFIED: msg("Verified"),
+  INACTIVE: msg("Inactive"),
+  PENDING: msg("Pending"),
+  PENDING_VERIFICATION: msg("Pending"),
+  REJECTED: msg("Rejected"),
+  SUSPENDED: msg("Suspended"),
+  BLOCKED: msg("Blocked"),
+  PLACED: msg("Placed"),
+  PAID: msg("Paid"),
+  PROCESSING: msg("Processing"),
+  SHIPPED: msg("Shipped"),
+  DELIVERED: msg("Delivered"),
+  COMPLETED: msg("Completed"),
+  CANCELLED: msg("Cancelled"),
+  REFUNDED: msg("Refunded"),
+  ELIGIBLE: msg("Eligible"),
+  AVAILABLE: msg("Available"),
+  REVERSED: msg("Reversed"),
+  FRESH: msg("Fresh"),
+  USED: msg("Used"),
+  EXPIRED: msg("Expired"),
+  REVOKED: msg("Revoked"),
+  REQUESTED: msg("Requested"),
+  FAILED: msg("Failed"),
+  OPEN: msg("Open"),
+  IN_PROGRESS: msg("In progress"),
+  RESOLVED: msg("Resolved"),
+  CLOSED: msg("Closed"),
+  DRAFT: msg("Draft"),
+  PUBLISHED: msg("Published"),
+  SCHEDULED: msg("Scheduled"),
+  USED_UP: msg("Fully used"),
+  DEACTIVATED: msg("Deactivated"),
 };
 
 /**
@@ -73,10 +107,10 @@ const STATUS_LABELS: Record<string, string> = {
  */
 export function StatusBadge({ status, className }: { status: string; className?: string }) {
   const variant = STATUS_VARIANTS[status] ?? "outline";
-  const label = STATUS_LABELS[status] ?? status;
+  const label = STATUS_LABELS[status] ?? status.replace(/_/g, " ").toLowerCase();
   return (
     <Badge variant={variant} className={cn(className)}>
-      {label}
+      <T text={label} />
     </Badge>
   );
 }

@@ -1,3 +1,4 @@
+import { getT } from "@/i18n/server";
 import type { Metadata, Route } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -5,9 +6,13 @@ import { ArrowLeft } from "lucide-react";
 import { getAuthSession } from "@/server/auth/session";
 import { RequirementForm } from "../requirement-form";
 
-export const metadata: Metadata = { title: "Post a requirement" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("Post a requirement") };
+}
 
 export default async function NewRequirementPage() {
+  const t = await getT();
   const session = await getAuthSession();
   if (!session) redirect("/login");
   if (!session.permissions.has("requirement:create")) redirect("/unauthorized");
@@ -19,13 +24,14 @@ export default async function NewRequirementPage() {
         className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-sm"
       >
         <ArrowLeft className="size-4" />
-        My requirements
+        {t("My requirements")}
       </Link>
       <div>
-        <h1>Post a requirement</h1>
+        <h1>{t("Post a requirement")}</h1>
         <p className="text-muted-foreground">
-          Describe what you need. Approved vendors can bid straight away, and you award the offer
-          you prefer once bidding closes.
+          {t(
+            "Describe what you need. Approved vendors can bid straight away, and you award the offer you prefer once bidding closes.",
+          )}
         </p>
       </div>
       <RequirementForm />

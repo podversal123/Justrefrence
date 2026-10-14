@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { MAX_UPLOAD_BYTES, MAX_UPLOAD_LABEL } from "@/lib/upload-limits";
 import { useRef, useState, useTransition } from "react";
 import Image from "next/image";
@@ -35,6 +36,7 @@ export function ImageUploader({
   itemId: string;
   images: CatalogImage[];
 }) {
+  const t = useT();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -65,7 +67,7 @@ export function ImageUploader({
 
     startTransition(async () => {
       const result = await uploadListingImageAction(undefined, formData);
-      if (!result.success) setError(result.error.message);
+      if (!result.success) setError(t(result.error.message));
     });
   }
 
@@ -77,7 +79,7 @@ export function ImageUploader({
     formData.set("imageId", imageId);
     startTransition(async () => {
       const result = await deleteListingImageAction(undefined, formData);
-      if (!result.success) setError(result.error.message);
+      if (!result.success) setError(t(result.error.message));
       setDeletingId(null);
     });
   }
@@ -108,7 +110,7 @@ export function ImageUploader({
               type="button"
               onClick={() => handleDelete(image.id)}
               disabled={pending}
-              aria-label="Remove image"
+              aria-label={t("Remove image")}
               className="bg-background/90 text-foreground absolute top-1.5 right-1.5 rounded-full p-1 opacity-0 transition-opacity group-hover:opacity-100 disabled:opacity-50"
             >
               {deletingId === image.id ? (
@@ -132,7 +134,7 @@ export function ImageUploader({
             ) : (
               <ImagePlus className="size-5" />
             )}
-            Add image
+            {t("Add image")}
           </button>
         ) : null}
       </div>
@@ -146,7 +148,11 @@ export function ImageUploader({
       />
 
       <p className="text-muted-foreground text-xs">
-        {images.length} / {MAX_IMAGES} images · JPEG, PNG, or WebP, up to {MAX_UPLOAD_LABEL} each.
+        {t("{count} / {max} images · JPEG, PNG, or WebP, up to {size} each.", {
+          count: images.length,
+          max: MAX_IMAGES,
+          size: MAX_UPLOAD_LABEL,
+        })}
       </p>
     </div>
   );

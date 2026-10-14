@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Settings2 } from "lucide-react";
+import { useT } from "@/i18n/provider";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -97,6 +98,7 @@ export function Widget({ id, children }: { id: string; children: ReactNode }) {
 
 export function WidgetToggleMenu({ widgets }: { widgets: { id: string; label: string }[] }) {
   const { isVisible, toggle } = useWidgetVisibility();
+  const t = useT();
 
   return (
     <DropdownMenu>
@@ -104,12 +106,14 @@ export function WidgetToggleMenu({ widgets }: { widgets: { id: string; label: st
         render={
           <Button variant="outline" size="sm">
             <Settings2 />
-            Widgets
+            {t("Widgets")}
           </Button>
         }
       />
       <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel className="text-xs font-normal">Show on dashboard</DropdownMenuLabel>
+        <DropdownMenuLabel className="text-xs font-normal">
+          {t("Show on dashboard")}
+        </DropdownMenuLabel>
         <DropdownMenuSeparator />
         {widgets.map((w) => (
           <DropdownMenuCheckboxItem
@@ -118,7 +122,7 @@ export function WidgetToggleMenu({ widgets }: { widgets: { id: string; label: st
             onCheckedChange={() => toggle(w.id)}
             closeOnClick={false}
           >
-            {w.label}
+            {t(w.label)}
           </DropdownMenuCheckboxItem>
         ))}
       </DropdownMenuContent>

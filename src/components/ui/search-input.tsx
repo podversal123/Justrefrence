@@ -1,5 +1,7 @@
 "use client";
 
+import { msg } from "@/i18n/locales";
+import { useT } from "@/i18n/provider";
 import { useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Search } from "lucide-react";
@@ -14,7 +16,7 @@ import { Input } from "@/components/ui/input";
  */
 export function SearchInput({
   paramName = "search",
-  placeholder = "Search…",
+  placeholder = msg("Search…"),
   debounceMs = 350,
   className,
 }: {
@@ -23,6 +25,7 @@ export function SearchInput({
   debounceMs?: number;
   className?: string;
 }) {
+  const t = useT();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -46,9 +49,9 @@ export function SearchInput({
       <Input
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        placeholder={placeholder}
+        placeholder={t(placeholder)}
         className="pl-8"
-        aria-label={placeholder}
+        aria-label={t(placeholder)}
       />
     </div>
   );

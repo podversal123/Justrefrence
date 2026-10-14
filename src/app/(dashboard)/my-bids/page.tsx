@@ -1,3 +1,4 @@
+import { getT } from "@/i18n/server";
 import type { Metadata, Route } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -19,9 +20,13 @@ import { effectiveStatus, formatRequirementNumber } from "@/server/domain/biddin
 import { listBidsForVendor } from "@/server/repositories/bidding/bidding-repository";
 import { formatPaise } from "@/lib/money";
 
-export const metadata: Metadata = { title: "My bids" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("My bids") };
+}
 
 export default async function MyBidsPage() {
+  const t = await getT();
   const session = await getAuthSession();
   if (!session) redirect("/login");
   if (!session.permissions.has("bid:submit") || !session.vendorProfileId) redirect("/unauthorized");
@@ -30,7 +35,7 @@ export default async function MyBidsPage() {
   const now = new Date();
   const browse = (
     <Link href={"/bids" as Route} className={buttonVariants()}>
-      Browse open requirements
+      {t("Browse open requirements")}
     </Link>
   );
 
@@ -38,9 +43,9 @@ export default async function MyBidsPage() {
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1>My bids</h1>
+          <h1>{t("My bids")}</h1>
           <p className="text-muted-foreground">
-            Every requirement you&apos;ve bid on, and where it stands.
+            {t("Every requirement you've bid on, and where it stands.")}
           </p>
         </div>
         {browse}
@@ -49,20 +54,22 @@ export default async function MyBidsPage() {
       {bids.length === 0 ? (
         <EmptyState
           icon={Gavel}
-          title="You haven't bid yet"
-          description="Find an open requirement and place your first bid. Reverse auctions run live, so check back often."
+          title={t("You haven't bid yet")}
+          description={t(
+            "Find an open requirement and place your first bid. Reverse auctions run live, so check back often.",
+          )}
           action={browse}
         />
       ) : (
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Requirement</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead className="text-right">Your total</TableHead>
-              <TableHead>Bid</TableHead>
-              <TableHead>Requirement status</TableHead>
-              <TableHead>Closes</TableHead>
+              <TableHead>{t("Requirement")}</TableHead>
+              <TableHead>{t("Type")}</TableHead>
+              <TableHead className="text-right">{t("Your total")}</TableHead>
+              <TableHead>{t("Bid")}</TableHead>
+              <TableHead>{t("Requirement status")}</TableHead>
+              <TableHead>{t("Closes")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -100,7 +107,7 @@ export default async function MyBidsPage() {
                         serverNow={now.toISOString()}
                       />
                     ) : (
-                      <span className="text-muted-foreground">Closed</span>
+                      <span className="text-muted-foreground">{t("Closed")}</span>
                     )}
                   </TableCell>
                 </TableRow>

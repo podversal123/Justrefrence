@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,43 +20,48 @@ export function AwardButton({
   bidderLabel: string;
   total: string;
 }) {
+  const t = useT();
   const router = useRouter();
   return (
     <ConfirmationDialog
       trigger={
         <Button size="sm" type="button">
-          Award
+          {t("Award")}
         </Button>
       }
-      title={`Award to ${bidderLabel}?`}
-      description={`You are accepting their offer of ${total}. Every other bidder is told their bid was not selected. This can't be undone.`}
+      title={t("Award to {name}?", { name: bidderLabel })}
+      description={t(
+        "You are accepting their offer of {total}. Every other bidder is told their bid was not selected. This can't be undone.",
+        { total },
+      )}
       action={async (prev, formData) => {
         const result = await awardBidAction(prev, formData);
         if (result.success) router.refresh();
         return result;
       }}
       hiddenFields={{ requirementId, bidId }}
-      confirmLabel="Award bid"
-      successMessage="Bid awarded"
+      confirmLabel={t("Award bid")}
+      successMessage={t("Bid awarded")}
     />
   );
 }
 
 export function CancelRequirementButton({ requirementId }: { requirementId: string }) {
+  const t = useT();
   const router = useRouter();
   return (
     <ActionFormDialog
       trigger={
         <Button variant="outline" size="sm" type="button">
-          Cancel requirement
+          {t("Cancel requirement")}
         </Button>
       }
-      title="Cancel this requirement?"
-      description="Bidding stops immediately and every bidder is told it was cancelled."
+      title={t("Cancel this requirement?")}
+      description={t("Bidding stops immediately and every bidder is told it was cancelled.")}
       action={cancelRequirementAction}
-      submitLabel="Cancel requirement"
-      pendingLabel="Cancelling…"
-      successMessage="Requirement cancelled"
+      submitLabel={t("Cancel requirement")}
+      pendingLabel={t("Cancelling…")}
+      successMessage={t("Requirement cancelled")}
       onSuccess={() => router.refresh()}
     >
       {(errors) => (
@@ -63,8 +69,8 @@ export function CancelRequirementButton({ requirementId }: { requirementId: stri
           <input type="hidden" name="requirementId" value={requirementId} />
           <FormField
             htmlFor="cancel-reason"
-            label="Reason"
-            hint="Shown to the bidders."
+            label={t("Reason")}
+            hint={t("Shown to the bidders.")}
             error={errors["reason"]}
           >
             <Textarea id="cancel-reason" name="reason" rows={3} maxLength={300} required />

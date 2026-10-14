@@ -48,3 +48,16 @@ export async function markAllNotificationsRead(userId: string) {
     data: { readAt: new Date() },
   });
 }
+
+/** Many notifications in one insert, e.g. one per recipient of a group SMS. */
+export async function createNotifications(inputs: CreateNotificationInput[]) {
+  if (inputs.length === 0) return { count: 0 };
+  return prisma.notification.createMany({
+    data: inputs.map((input) => ({
+      userId: input.userId,
+      type: input.type,
+      payload: input.payload,
+      channel: input.channel ?? "IN_APP",
+    })),
+  });
+}

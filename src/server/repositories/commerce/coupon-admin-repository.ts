@@ -58,7 +58,11 @@ export async function setCouponDeleted(couponId: string, deleted: boolean): Prom
 export async function listCouponsForMember(memberProfileId: string) {
   const [coupons, mine] = await Promise.all([
     prisma.coupon.findMany({
-      where: { deletedAt: null },
+      // Public coupons, plus any paid to this member as a reward. Someone else's are never listed.
+      where: {
+        deletedAt: null,
+        OR: [{ assignedMemberId: null }, { assignedMemberId: memberProfileId }],
+      },
       orderBy: { createdAt: "desc" },
       take: 100,
       select: COUPON_LIST_SELECT,

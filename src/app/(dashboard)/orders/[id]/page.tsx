@@ -1,3 +1,4 @@
+import { getT } from "@/i18n/server";
 import type { Metadata } from "next";
 import { redirect, notFound } from "next/navigation";
 import { getAuthSession } from "@/server/auth/session";
@@ -11,13 +12,17 @@ import { Separator } from "@/components/ui/separator";
 import { OrderStatusActions } from "./order-status-actions";
 import { InvoiceDownloadButton } from "./invoice-download-button";
 
-export const metadata: Metadata = { title: "Order detail" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("Order detail") };
+}
 
 interface PageProps {
   params: Promise<{ id: string }>;
 }
 
 export default async function OrderDetailPage({ params }: PageProps) {
+  const t = await getT();
   const session = await getAuthSession();
   if (!session) redirect("/login");
 
@@ -49,9 +54,10 @@ export default async function OrderDetailPage({ params }: PageProps) {
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1>Order {order.orderNumber ?? order.id}</h1>
+          <h1>{t("Order {number}", { number: order.orderNumber ?? order.id })}</h1>
           <p className="text-muted-foreground">
-            {order.vendor.businessName} · Placed {order.createdAt.toLocaleString()}
+            {order.vendor.businessName} ·{" "}
+            {t("Placed {date}", { date: order.createdAt.toLocaleString() })}
           </p>
         </div>
         <StatusBadge status={order.status} />
@@ -59,7 +65,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Items</CardTitle>
+          <CardTitle className="text-base">{t("Items")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {order.items.map((item) => (
@@ -73,23 +79,23 @@ export default async function OrderDetailPage({ params }: PageProps) {
           <Separator />
           <div className="space-y-1 text-sm">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Subtotal</span>
+              <span className="text-muted-foreground">{t("Subtotal")}</span>
               <span>{formatPaise(order.subtotal.toString())}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Discount</span>
+              <span className="text-muted-foreground">{t("Discount")}</span>
               <span>-{formatPaise(order.discountTotal.toString())}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Tax (GST)</span>
+              <span className="text-muted-foreground">{t("Tax (GST)")}</span>
               <span>{formatPaise(order.taxTotal.toString())}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Platform fee</span>
+              <span className="text-muted-foreground">{t("Platform fee")}</span>
               <span>{formatPaise(order.platformFeeTotal.toString())}</span>
             </div>
             <div className="flex justify-between font-semibold">
-              <span>Total</span>
+              <span>{t("Total")}</span>
               <span>{formatPaise(order.grandTotal.toString())}</span>
             </div>
           </div>
@@ -98,7 +104,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Status history</CardTitle>
+          <CardTitle className="text-base">{t("Status history")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
           {order.statusHistory.map((entry) => (

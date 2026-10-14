@@ -1,3 +1,4 @@
+import { msg } from "@/i18n/locales";
 import Link from "next/link";
 import type { Route } from "next";
 import { ChevronDown, Menu, ShoppingCart, UserRound } from "lucide-react";
@@ -14,6 +15,8 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { getAuthSession } from "@/server/auth/session";
+import { LanguageSwitch } from "@/components/layout/language-switch";
+import { getT, type TFunction } from "@/i18n/server";
 import { countOpenCartItems } from "@/server/repositories/commerce/cart-repository";
 import {
   getProductCategoriesWithCounts,
@@ -34,19 +37,20 @@ import {
  */
 
 const NAV_LINKS: { href: Route; label: string }[] = [
-  { href: "/products", label: "Products" },
-  { href: "/services", label: "Services" },
-  { href: "/projects", label: "Projects" },
+  { href: "/products", label: msg("Products") },
+  { href: "/services", label: msg("Services") },
+  { href: "/projects", label: msg("Projects") },
   // New routes aren't in the generated typed-route table until the next typegen, hence the cast.
-  { href: "/bids" as Route, label: "Bids and auctions" },
+  { href: "/bids" as Route, label: "Bids and tenders" },
+  { href: "/auctions" as Route, label: "Auctions" },
 ];
 
 /** Secondary pages: one dropdown on desktop, plain links in the mobile sheet. */
 const MORE_LINKS: { href: Route; label: string }[] = [
-  { href: "/about" as Route, label: "About us" },
+  { href: "/about" as Route, label: msg("About us") },
   { href: "/contact" as Route, label: "Contact us" },
   { href: "/blog", label: "News and updates" },
-  { href: "/feedback", label: "Feedback" },
+  { href: "/feedback", label: msg("Feedback") },
 ];
 
 const MENU_CATEGORY_LIMIT = 10;
@@ -71,12 +75,13 @@ async function loadCategories(): Promise<{
 }
 
 export async function PortalHeader() {
+  const t = await getT();
   const session = await getAuthSession();
   const [cartCount, categories] = await Promise.all([
     session ? countOpenCartItems(session.userId) : Promise.resolve(0),
     loadCategories(),
   ]);
-  const cartLabel = cartCount > 0 ? `Cart, ${cartCount} item${cartCount === 1 ? "" : "s"}` : "Cart";
+  const cartLabel = cartCount > 0 ? t("Cart, {count} items", { count: cartCount }) : t("Cart");
   const popularCategories = [
     ...categories.products.slice(0, 4).map((c) => ({
       id: `p-${c.id}`,
@@ -90,7 +95,7 @@ export async function PortalHeader() {
     })),
   ];
   const accountHref = (session ? "/dashboard" : "/login") as Route;
-  const accountLabel = session ? "Dashboard" : "Sign in";
+  const accountLabel = session ? t("Dashboard") : t("Sign in");
 
   return (
     <header className="sticky top-0 z-30">
@@ -102,16 +107,16 @@ export async function PortalHeader() {
               render={<Button variant="ghost" size="icon-touch" className="lg:hidden" />}
             >
               <Menu />
-              <span className="sr-only">Open menu</span>
+              <span className="sr-only">{t("Open menu")}</span>
             </SheetTrigger>
             <SheetContent side="left" className="w-4/5 overflow-y-auto sm:max-w-sm">
               <SheetHeader>
-                <SheetTitle className="sr-only">Menu</SheetTitle>
-                <Link href="/" aria-label="Justreference home">
+                <SheetTitle className="sr-only">{t("Menu")}</SheetTitle>
+                <Link href="/" aria-label={t("Justreference home")}>
                   <Logo size={28} withWordmark />
                 </Link>
               </SheetHeader>
-              <nav className="flex flex-col gap-1 px-4" aria-label="Mobile">
+              <nav className="flex flex-col gap-1 px-4" aria-label={t("Mobile")}>
                 {NAV_LINKS.map((link) => (
                   <SheetClose
                     key={link.href}
@@ -119,7 +124,7 @@ export async function PortalHeader() {
                     render={<Link href={link.href} />}
                     className={mobileLinkClass}
                   >
-                    {link.label}
+                    {t(link.label)}
                   </SheetClose>
                 ))}
                 <SheetClose
@@ -127,7 +132,7 @@ export async function PortalHeader() {
                   render={<Link href="/referrals" />}
                   className={mobileLinkClass}
                 >
-                  Refer and earn
+                  {t("Refer and earn")}
                 </SheetClose>
                 {MORE_LINKS.map((link) => (
                   <SheetClose
@@ -136,7 +141,7 @@ export async function PortalHeader() {
                     render={<Link href={link.href} />}
                     className={mobileLinkClass}
                   >
-                    {link.label}
+                    {t(link.label)}
                   </SheetClose>
                 ))}
                 <SheetClose
@@ -148,16 +153,17 @@ export async function PortalHeader() {
                 </SheetClose>
               </nav>
               <MobileCategories
-                heading="Product categories"
+                heading={t("Product categories")}
                 basePath="/products"
                 categories={categories.products}
               />
               <MobileCategories
-                heading="Service categories"
+                heading={t("Service categories")}
                 basePath="/services"
                 categories={categories.services}
               />
-              <div className="mt-auto p-4">
+              <div className="mt-auto space-y-3 p-4">
+                <LanguageSwitch />
                 <SheetClose
                   nativeButton={false}
                   render={<Link href={accountHref} />}
@@ -169,7 +175,11 @@ export async function PortalHeader() {
             </SheetContent>
           </Sheet>
 
-          <Link href="/" className="flex shrink-0 items-center" aria-label="Justreference home">
+          <Link
+            href="/"
+            className="flex shrink-0 items-center"
+            aria-label={t("Justreference home")}
+          >
             <span className="sm:hidden">
               <Logo size={32} />
             </span>
@@ -185,6 +195,7 @@ export async function PortalHeader() {
           />
 
           <div className="ml-auto flex items-center gap-1 sm:gap-2">
+            <LanguageSwitch className="hidden sm:inline-flex" />
             <Button
               variant="ghost"
               size="icon-touch"
@@ -233,18 +244,20 @@ export async function PortalHeader() {
               className="hover:bg-primary-foreground/10 focus-visible:bg-primary-foreground/10 flex h-11 items-center gap-2 rounded-md px-3 text-sm font-semibold outline-none"
             >
               <Menu className="size-4" />
-              All categories
+              {t("All categories")}
               <ChevronDown className="size-4" />
             </button>
             <div className="text-foreground bg-background invisible absolute top-full left-4 z-40 w-[min(56rem,calc(100vw-2rem))] translate-y-1 rounded-b-lg border opacity-0 shadow-lg transition group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 motion-reduce:transition-none">
               <div className="grid grid-cols-2 gap-8 p-6">
                 <MegaColumn
-                  heading="Products"
+                  heading={t("Products")}
+                  t={t}
                   basePath="/products"
                   categories={categories.products.slice(0, MENU_CATEGORY_LIMIT)}
                 />
                 <MegaColumn
-                  heading="Services"
+                  heading={t("Services")}
+                  t={t}
                   basePath="/services"
                   categories={categories.services.slice(0, MENU_CATEGORY_LIMIT)}
                 />
@@ -252,10 +265,10 @@ export async function PortalHeader() {
             </div>
           </div>
 
-          <nav aria-label="Main" className="flex items-center gap-1">
+          <nav aria-label={t("Main")} className="flex items-center gap-1">
             {NAV_LINKS.map((link) => (
               <Link key={link.href} href={link.href} className={bandLinkClass}>
-                {link.label}
+                {t(link.label)}
               </Link>
             ))}
           </nav>
@@ -263,7 +276,7 @@ export async function PortalHeader() {
           <div className="ml-auto flex items-center gap-1">
             <div className="group relative">
               <button type="button" aria-haspopup="true" className={`${bandLinkClass} gap-1.5`}>
-                More
+                {t("More")}
                 <ChevronDown className="size-4" />
               </button>
               <ul className="text-foreground bg-background invisible absolute top-full right-0 z-40 w-56 translate-y-1 rounded-b-lg border p-1.5 opacity-0 shadow-lg transition group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 motion-reduce:transition-none">
@@ -273,21 +286,21 @@ export async function PortalHeader() {
                       href={link.href}
                       className="hover:bg-muted flex h-10 items-center rounded-md px-3 text-sm"
                     >
-                      {link.label}
+                      {t(link.label)}
                     </Link>
                   </li>
                 ))}
               </ul>
             </div>
             <Link href="/referrals" className={bandLinkClass}>
-              Refer and earn
+              {t("Refer and earn")}
             </Link>
             {session ? null : (
               <Link
                 href="/register"
                 className="text-primary hover:bg-background/90 bg-background ml-2 flex h-8 items-center rounded-full px-4 text-sm font-semibold outline-none focus-visible:ring-2 focus-visible:ring-white/70"
               >
-                Become a vendor
+                {t("Become a vendor")}
               </Link>
             )}
           </div>
@@ -301,8 +314,10 @@ function MegaColumn({
   heading,
   basePath,
   categories,
+  t,
 }: {
   heading: string;
+  t: TFunction;
   basePath: "/products" | "/services";
   categories: CategoryWithCount[];
 }) {
@@ -311,12 +326,12 @@ function MegaColumn({
       <div className="mb-3 flex items-baseline justify-between border-b pb-2">
         <p className="text-sm font-semibold">{heading}</p>
         <Link href={basePath} className="text-primary text-xs font-medium hover:underline">
-          View all
+          {t("View all")}
         </Link>
       </div>
       {categories.length === 0 ? (
         <p className="text-muted-foreground text-sm">
-          Categories will appear as vendors list items.
+          {t("Categories will appear as vendors list items.")}
         </p>
       ) : (
         <ul className="grid grid-cols-1 gap-x-6 gap-y-1 sm:grid-cols-2">

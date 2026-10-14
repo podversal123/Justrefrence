@@ -1,3 +1,4 @@
+import { getFormat, getT } from "@/i18n/server";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { CalendarClock, Crown } from "lucide-react";
@@ -13,7 +14,10 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { RedeemEpinForm } from "./redeem-epin-form";
 
-export const metadata: Metadata = { title: "My subscription" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("My subscription") };
+}
 
 /** "TIME_BOUND" -> "Time bound" — same enum-display convention used elsewhere. */
 function formatLabel(value: string): string {
@@ -24,6 +28,8 @@ function formatLabel(value: string): string {
 }
 
 export default async function SubscriptionPage() {
+  const t = await getT();
+  const { formatDate } = await getFormat();
   const session = await getAuthSession();
   if (!session) redirect("/login");
 
@@ -36,12 +42,14 @@ export default async function SubscriptionPage() {
     return (
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8">
         <div>
-          <h1>My subscription</h1>
+          <h1>{t("My subscription")}</h1>
         </div>
         <EmptyState
           icon={Crown}
-          title="No member profile yet"
-          description="Your member profile needs to be set up before you can hold a subscription. Contact support if this doesn't resolve on its own."
+          title={t("No member profile yet")}
+          description={t(
+            "Your member profile needs to be set up before you can hold a subscription. Contact support if this doesn't resolve on its own.",
+          )}
         />
       </div>
     );
@@ -65,15 +73,17 @@ export default async function SubscriptionPage() {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 py-8">
       <div>
-        <h1>My subscription</h1>
-        <p className="text-muted-foreground">Your subscription status and e-pin redemption.</p>
+        <h1>{t("My subscription")}</h1>
+        <p className="text-muted-foreground">
+          {t("Your subscription status and e-pin redemption.")}
+        </p>
       </div>
 
       <section className="rounded-xl border p-4 sm:p-5">
-        <h2 className="text-base font-semibold">Current subscription</h2>
+        <h2 className="text-base font-semibold">{t("Current subscription")}</h2>
         <div className="mt-4">
           {activeError ? (
-            <ErrorState title="Couldn't load your subscription" />
+            <ErrorState title={t("Couldn't load your subscription")} />
           ) : activeSubscription ? (
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
@@ -87,8 +97,8 @@ export default async function SubscriptionPage() {
                 </p>
                 <p className="text-muted-foreground text-sm">
                   {activeSubscription.expiresAt
-                    ? `Expires ${activeSubscription.expiresAt.toLocaleDateString()}`
-                    : "Lifetime, never expires"}
+                    ? t("Expires {date}", { date: formatDate(activeSubscription.expiresAt) })
+                    : t("Lifetime, never expires")}
                 </p>
               </div>
               <StatusBadge status={activeSubscription.status} />
@@ -96,30 +106,30 @@ export default async function SubscriptionPage() {
           ) : (
             <EmptyState
               icon={Crown}
-              title="No active subscription"
-              description="Redeem an e-pin below to activate a subscription."
+              title={t("No active subscription")}
+              description={t("Redeem an e-pin below to activate a subscription.")}
             />
           )}
         </div>
       </section>
 
       <section className="rounded-xl border p-4 sm:p-5">
-        <h2 className="text-base font-semibold">Redeem an e-pin</h2>
+        <h2 className="text-base font-semibold">{t("Redeem an e-pin")}</h2>
         <p className="text-muted-foreground mb-4 text-sm">
-          Enter the e-pin code you received to activate or renew your subscription.
+          {t("Enter the e-pin code you received to activate or renew your subscription.")}
         </p>
         <RedeemEpinForm />
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-base font-semibold">Subscription history</h2>
+        <h2 className="text-base font-semibold">{t("Subscription history")}</h2>
         {historyError ? (
-          <ErrorState title="Couldn't load your subscription history" />
+          <ErrorState title={t("Couldn't load your subscription history")} />
         ) : history.length === 0 ? (
           <EmptyState
             icon={CalendarClock}
-            title="Nothing here yet"
-            description="Past and expired subscriptions will show up here."
+            title={t("Nothing here yet")}
+            description={t("Past and expired subscriptions will show up here.")}
           />
         ) : (
           <div className="bg-surface-sunken divide-border divide-y rounded-xl border">
@@ -128,8 +138,8 @@ export default async function SubscriptionPage() {
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium">{sub.plan.code}</p>
                   <p className="text-muted-foreground text-xs">
-                    {sub.startsAt.toLocaleDateString()} –{" "}
-                    {sub.expiresAt ? sub.expiresAt.toLocaleDateString() : "Lifetime"}
+                    {formatDate(sub.startsAt)} –{" "}
+                    {sub.expiresAt ? formatDate(sub.expiresAt) : t("Lifetime")}
                   </p>
                 </div>
                 <StatusBadge status={sub.status} />

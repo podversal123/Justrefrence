@@ -5,7 +5,8 @@
  * provider. This uses the Supabase Admin API to create a confirmed user with
  * a known password directly, then mirrors createAdminAction()'s DB writes.
  *
- * Run once: npx tsx scripts/bootstrap-admin.ts
+ * Run once, giving the password in the environment (it is never kept in the code):
+ *   BOOTSTRAP_ADMIN_PASSWORD="a-strong-password" npx tsx scripts/bootstrap-admin.ts
  * Not part of the app's action layer — delete after first use if desired.
  */
 import { config as loadEnv } from "dotenv";
@@ -15,11 +16,14 @@ import { createClient } from "@supabase/supabase-js";
 import { PrismaClient } from "../src/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 
-const EMAIL = "admin@justreference.in";
-const PASSWORD = "Admin@12345";
+const EMAIL = process.env["BOOTSTRAP_ADMIN_EMAIL"] ?? "admin@justreference.in";
+const PASSWORD = process.env["BOOTSTRAP_ADMIN_PASSWORD"] ?? "";
 const FULL_NAME = "Super Admin";
 
 async function main() {
+  if (PASSWORD.length < 12) {
+    throw new Error("Set BOOTSTRAP_ADMIN_PASSWORD to a strong password of at least 12 characters.");
+  }
   const supabaseUrl = process.env["NEXT_PUBLIC_SUPABASE_URL"];
   const serviceRoleKey = process.env["SUPABASE_SERVICE_ROLE_KEY"];
   const databaseUrl = process.env["DATABASE_URL"];

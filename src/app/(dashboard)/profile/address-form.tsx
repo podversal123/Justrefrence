@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
@@ -24,10 +25,11 @@ interface AddressValue {
 }
 
 function SubmitButton() {
+  const t = useT();
   const { pending } = useFormStatus();
   return (
     <Button type="submit" disabled={pending}>
-      {pending ? "Saving…" : "Save address"}
+      {pending ? t("Saving…") : t("Save address")}
     </Button>
   );
 }
@@ -39,6 +41,7 @@ export function AddressForm({
   type: "RESIDENCE" | "OFFICE" | "BILLING";
   address: AddressValue | null;
 }) {
+  const t = useT();
   const [state, formAction] = useActionState(upsertAddressAction, initialState);
   const submitted = state !== initialState;
 
@@ -49,38 +52,38 @@ export function AddressForm({
       {submitted && !state.success ? (
         <Alert variant="destructive">
           <AlertCircle className="size-4" />
-          <AlertDescription>{state.error.message}</AlertDescription>
+          <AlertDescription>{t(state.error.message)}</AlertDescription>
         </Alert>
       ) : null}
       {submitted && state.success ? (
         <Alert>
           <CheckCircle2 className="size-4" />
-          <AlertDescription>Address saved.</AlertDescription>
+          <AlertDescription>{t("Address saved.")}</AlertDescription>
         </Alert>
       ) : null}
 
       <FormGrid>
         <div className={`space-y-2 ${FULL_ROW}`}>
-          <Label htmlFor={`${type}-line1`}>Address line 1</Label>
+          <Label htmlFor={`${type}-line1`}>{t("Address line 1")}</Label>
           <Input id={`${type}-line1`} name="line1" defaultValue={address?.line1 ?? ""} required />
         </div>
 
         <div className={`space-y-2 ${FULL_ROW}`}>
-          <Label htmlFor={`${type}-line2`}>Address line 2</Label>
+          <Label htmlFor={`${type}-line2`}>{t("Address line 2")}</Label>
           <Input id={`${type}-line2`} name="line2" defaultValue={address?.line2 ?? ""} />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor={`${type}-city`}>City</Label>
+          <Label htmlFor={`${type}-city`}>{t("City")}</Label>
           <Input id={`${type}-city`} name="city" defaultValue={address?.city ?? ""} required />
         </div>
         <div className="space-y-2">
-          <Label htmlFor={`${type}-state`}>State</Label>
+          <Label htmlFor={`${type}-state`}>{t("State")}</Label>
           <Input id={`${type}-state`} name="state" defaultValue={address?.state ?? ""} required />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor={`${type}-postalCode`}>PIN code</Label>
+          <Label htmlFor={`${type}-postalCode`}>{t("PIN code")}</Label>
           <Input
             id={`${type}-postalCode`}
             name="postalCode"
@@ -90,7 +93,7 @@ export function AddressForm({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor={`${type}-country`}>Country</Label>
+          <Label htmlFor={`${type}-country`}>{t("Country")}</Label>
           <Input
             id={`${type}-country`}
             name="country"
@@ -101,7 +104,7 @@ export function AddressForm({
         </div>
 
         <div className={`space-y-2 ${FULL_ROW}`}>
-          <Label htmlFor={`${type}-phone`}>Contact number (optional)</Label>
+          <Label htmlFor={`${type}-phone`}>{t("Contact number (optional)")}</Label>
           <Input
             id={`${type}-phone`}
             name="phone"
@@ -110,7 +113,7 @@ export function AddressForm({
             placeholder="+919876543210"
           />
           <p className="text-muted-foreground text-xs">
-            Who to call at this address, with country code.
+            {t("Who to call at this address, with country code.")}
           </p>
         </div>
       </FormGrid>

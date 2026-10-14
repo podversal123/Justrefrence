@@ -1,3 +1,5 @@
+import { msg } from "@/i18n/locales";
+import { getFormat, getT } from "@/i18n/server";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { TicketPercent } from "lucide-react";
@@ -8,14 +10,18 @@ import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { couponState, describeDiscount } from "@/lib/coupon-display";
-import { formatDate } from "@/lib/format";
 import { formatPaise } from "@/lib/money";
 
-export const metadata: Metadata = { title: "My coupons" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("My coupons") };
+}
 
 type Bucket = "available" | "used" | "unavailable";
 
 export default async function MyCouponsPage() {
+  const t = await getT();
+  const { formatDate } = await getFormat();
   const session = await getAuthSession();
   if (!session) redirect("/login");
   if (!session.permissions.has("coupon:redeem")) redirect("/unauthorized");
@@ -24,11 +30,11 @@ export default async function MyCouponsPage() {
   if (!member) {
     return (
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-        <h1>My coupons</h1>
+        <h1>{t("My coupons")}</h1>
         <EmptyState
           icon={TicketPercent}
-          title="No member profile yet"
-          description="Coupons are available to member accounts."
+          title={t("No member profile yet")}
+          description={t("Coupons are available to member accounts.")}
         />
       </div>
     );
@@ -46,28 +52,33 @@ export default async function MyCouponsPage() {
   }
 
   const sections: { key: Bucket; title: string; empty: string }[] = [
-    { key: "available", title: "Available to use", empty: "No coupons are available right now." },
-    { key: "used", title: "Used", empty: "You haven't used any coupons yet." },
-    { key: "unavailable", title: "Expired or not started", empty: "Nothing here." },
+    {
+      key: "available",
+      title: msg("Available to use"),
+      empty: msg("No coupons are available right now."),
+    },
+    { key: "used", title: msg("Used"), empty: msg("You haven't used any coupons yet.") },
+    { key: "unavailable", title: msg("Expired or not started"), empty: msg("Nothing here.") },
   ];
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-8">
       <div>
-        <h1>My coupons</h1>
+        <h1>{t("My coupons")}</h1>
         <p className="text-muted-foreground">
-          Enter a code at checkout to apply it. Each coupon has its own dates, minimum order and
-          limits.
+          {t(
+            "Enter a code at checkout to apply it. Each coupon has its own dates, minimum order and limits.",
+          )}
         </p>
       </div>
 
       {sections.map((section) => (
         <section key={section.key} aria-labelledby={`coupons-${section.key}`} className="space-y-3">
           <h2 id={`coupons-${section.key}`} className="text-base font-semibold">
-            {section.title} ({buckets[section.key].length})
+            {t(section.title)} ({buckets[section.key].length})
           </h2>
           {buckets[section.key].length === 0 ? (
-            <p className="text-muted-foreground text-sm">{section.empty}</p>
+            <p className="text-muted-foreground text-sm">{t(section.empty)}</p>
           ) : (
             <ul className="grid gap-3 sm:grid-cols-2">
               {buckets[section.key].map((coupon) => {
@@ -84,14 +95,16 @@ export default async function MyCouponsPage() {
                             <StatusBadge status={state} />
                           )}
                         </div>
-                        <p className="text-sm font-medium">{describeDiscount(coupon)}</p>
+                        <p className="text-sm font-medium">{describeDiscount(coupon, t)}</p>
                         <p className="text-muted-foreground text-xs">
                           {coupon.minOrderAmount > 0n
-                            ? `On orders of ${formatPaise(coupon.minOrderAmount.toString(), "INR")} or more. `
-                            : "No minimum order. "}
+                            ? t("On orders of {amount} or more. ", {
+                                amount: formatPaise(coupon.minOrderAmount.toString(), "INR"),
+                              })
+                            : t("No minimum order. ")}
                           {coupon.expiresAt
-                            ? `Valid until ${formatDate(coupon.expiresAt)}.`
-                            : "No end date."}
+                            ? t("Valid until {date}.", { date: formatDate(coupon.expiresAt) })
+                            : t("No end date.")}
                         </p>
                       </CardContent>
                     </Card>

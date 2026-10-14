@@ -1,3 +1,4 @@
+import { getT } from "@/i18n/server";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getAuthSession } from "@/server/auth/session";
@@ -17,7 +18,10 @@ import { AddressForm } from "./address-form";
 import { BankAccountForm } from "./bank-account-form";
 import { KycDocumentsCard } from "@/components/kyc/kyc-documents-card";
 
-export const metadata: Metadata = { title: "My profile" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("My profile") };
+}
 
 const TABS = ["personal", "addresses", "bank", "kyc", "password"] as const;
 type ProfileTab = (typeof TABS)[number];
@@ -33,6 +37,7 @@ export default async function ProfilePage({
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
+  const t = await getT();
   const session = await getAuthSession();
   if (!session) redirect("/login");
 
@@ -57,32 +62,34 @@ export default async function ProfilePage({
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
       <div>
-        <h1>My profile</h1>
-        <p className="text-muted-foreground">Your details, addresses, bank account and password.</p>
+        <h1>{t("My profile")}</h1>
+        <p className="text-muted-foreground">
+          {t("Your details, addresses, bank account and password.")}
+        </p>
       </div>
 
       <Tabs defaultValue={activeTab} className="gap-6">
         <TabsList className="h-auto w-full justify-start overflow-x-auto sm:w-fit">
           <TabsTrigger value="personal" className={TAB_TRIGGER}>
-            Personal
+            {t("Personal")}
           </TabsTrigger>
           {memberProfile ? (
             <TabsTrigger value="addresses" className={TAB_TRIGGER}>
-              Addresses
+              {t("Addresses")}
             </TabsTrigger>
           ) : null}
           {memberProfile ? (
             <TabsTrigger value="bank" className={TAB_TRIGGER}>
-              Bank
+              {t("Bank")}
             </TabsTrigger>
           ) : null}
           {memberProfile ? (
             <TabsTrigger value="kyc" className={TAB_TRIGGER}>
-              KYC
+              {t("KYC")}
             </TabsTrigger>
           ) : null}
           <TabsTrigger value="password" className={TAB_TRIGGER}>
-            Password
+            {t("Password")}
           </TabsTrigger>
         </TabsList>
 
@@ -90,8 +97,8 @@ export default async function ProfilePage({
           <div className="grid items-start gap-6 lg:grid-cols-2">
             <Card>
               <CardHeader>
-                <CardTitle>Account</CardTitle>
-                <CardDescription>How you sign in and appear to others.</CardDescription>
+                <CardTitle>{t("Account")}</CardTitle>
+                <CardDescription>{t("How you sign in and appear to others.")}</CardDescription>
               </CardHeader>
               <CardContent>
                 <ProfileForm
@@ -107,12 +114,13 @@ export default async function ProfilePage({
               <Card>
                 <CardHeader>
                   <div className="flex items-center justify-between gap-3">
-                    <CardTitle>Member details</CardTitle>
+                    <CardTitle>{t("Member details")}</CardTitle>
                     <StatusBadge status={memberProfile.kycStatus} />
                   </div>
                   <CardDescription>
-                    Member ID <span className="font-mono">{memberProfile.memberId}</span> · Referral
-                    code <span className="font-mono">{memberProfile.referralCode}</span>
+                    {t("Member ID")} <span className="font-mono">{memberProfile.memberId}</span> ·{" "}
+                    {t("Referral code")}{" "}
+                    <span className="font-mono">{memberProfile.referralCode}</span>
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -120,7 +128,7 @@ export default async function ProfilePage({
                     href="/api/welcome-letter"
                     className="text-primary mb-4 inline-block text-sm font-medium underline-offset-4 hover:underline"
                   >
-                    Download your welcome letter (PDF)
+                    {t("Download your welcome letter (PDF)")}
                   </a>
                   <MemberDetailsForm
                     fullName={session.fullName}
@@ -146,7 +154,7 @@ export default async function ProfilePage({
             <div className="grid items-start gap-6 lg:grid-cols-2">
               <Card>
                 <CardHeader>
-                  <CardTitle>Residence address</CardTitle>
+                  <CardTitle>{t("Residence address")}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <AddressForm type="RESIDENCE" address={residence} />
@@ -155,7 +163,7 @@ export default async function ProfilePage({
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Office / business address</CardTitle>
+                  <CardTitle>{t("Office / business address")}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <AddressForm type="OFFICE" address={office} />
@@ -164,8 +172,8 @@ export default async function ProfilePage({
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Billing address</CardTitle>
-                  <CardDescription>Shown on your invoices.</CardDescription>
+                  <CardTitle>{t("Billing address")}</CardTitle>
+                  <CardDescription>{t("Shown on your invoices.")}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <AddressForm type="BILLING" address={billing} />
@@ -179,9 +187,9 @@ export default async function ProfilePage({
           <TabsContent value="bank">
             <Card className="max-w-3xl">
               <CardHeader>
-                <CardTitle>Bank details</CardTitle>
+                <CardTitle>{t("Bank details")}</CardTitle>
                 <CardDescription>
-                  Used for payouts. Your account number is stored encrypted.
+                  {t("Used for payouts. Your account number is stored encrypted.")}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -200,8 +208,10 @@ export default async function ProfilePage({
         <TabsContent value="password">
           <Card className="max-w-3xl">
             <CardHeader>
-              <CardTitle>Change password</CardTitle>
-              <CardDescription>You need your current password to set a new one.</CardDescription>
+              <CardTitle>{t("Change password")}</CardTitle>
+              <CardDescription>
+                {t("You need your current password to set a new one.")}
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <ChangePasswordForm />

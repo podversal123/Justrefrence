@@ -1,3 +1,4 @@
+import { getT } from "@/i18n/server";
 import { Fragment } from "react";
 import type { Route } from "next";
 import Link from "next/link";
@@ -25,13 +26,14 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { NotificationBell, type BellNotification } from "@/components/layout/notification-bell";
 import { logoutAction } from "@/server/services/auth-actions";
+import { LanguageSwitch } from "@/components/layout/language-switch";
 
 export interface BreadcrumbEntry {
   label: string;
   href?: Route;
 }
 
-export function SiteHeader({
+export async function SiteHeader({
   userEmail,
   panelLabel,
   roleLabel,
@@ -50,6 +52,7 @@ export function SiteHeader({
   unreadCount: number;
 }) {
   const initial = userEmail.charAt(0).toUpperCase();
+  const t = await getT();
 
   return (
     <header className="bg-background/95 flex h-14 shrink-0 items-center gap-2 border-b px-4 backdrop-blur">
@@ -79,6 +82,7 @@ export function SiteHeader({
         <AutoBreadcrumbs />
       )}
       <div className="ml-auto flex items-center gap-1">
+        <LanguageSwitch />
         <NotificationBell notifications={notifications} unreadCount={unreadCount} />
         <DropdownMenu>
           <DropdownMenuTrigger
@@ -102,7 +106,7 @@ export function SiteHeader({
               render={
                 <Link href="/profile">
                   <User />
-                  Profile
+                  {t("Profile")}
                 </Link>
               }
             />
@@ -112,7 +116,7 @@ export function SiteHeader({
                 render={
                   <button type="submit" className="w-full cursor-pointer">
                     <LogOut />
-                    Log out
+                    {t("Log out")}
                   </button>
                 }
               />

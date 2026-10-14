@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
@@ -21,10 +22,11 @@ function toDateInputValue(date: Date | null): string {
 }
 
 function SubmitButton() {
+  const t = useT();
   const { pending } = useFormStatus();
   return (
     <Button type="submit" disabled={pending}>
-      {pending ? "Saving…" : "Save details"}
+      {pending ? t("Saving…") : t("Save details")}
     </Button>
   );
 }
@@ -46,6 +48,7 @@ export function MemberDetailsForm({
   socialLinks: string | null;
   telephone: string | null;
 }) {
+  const t = useT();
   const [state, formAction] = useActionState(updateMemberDetailsAction, initialState);
   const submitted = state !== initialState;
 
@@ -54,13 +57,13 @@ export function MemberDetailsForm({
       {submitted && !state.success ? (
         <Alert variant="destructive">
           <AlertCircle className="size-4" />
-          <AlertDescription>{state.error.message}</AlertDescription>
+          <AlertDescription>{t(state.error.message)}</AlertDescription>
         </Alert>
       ) : null}
       {submitted && state.success ? (
         <Alert>
           <CheckCircle2 className="size-4" />
-          <AlertDescription>Member details updated.</AlertDescription>
+          <AlertDescription>{t("Member details updated.")}</AlertDescription>
         </Alert>
       ) : null}
 
@@ -68,25 +71,32 @@ export function MemberDetailsForm({
 
       <FormGrid>
         <div className="space-y-2">
-          <Label htmlFor="dob">Date of birth</Label>
+          <Label htmlFor="dob">{t("Date of birth")}</Label>
           <Input id="dob" name="dob" type="date" defaultValue={toDateInputValue(dob)} />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="pan">PAN</Label>
-          <Input id="pan" name="pan" defaultValue={pan ?? ""} placeholder="ABCDE1234F" />
+          <Label htmlFor="pan">{t("PAN")}</Label>
+          <Input id="pan" name="pan" defaultValue={pan ?? ""} placeholder={t("ABCDE1234F")} />
           {pan ? (
-            <p className="text-muted-foreground text-xs">Currently on file: {maskPan(pan)}</p>
+            <p className="text-muted-foreground text-xs">
+              {t("Currently on file: {pan}", { pan: maskPan(pan) })}
+            </p>
           ) : null}
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="gstin">GSTIN</Label>
-          <Input id="gstin" name="gstin" defaultValue={gstin ?? ""} placeholder="29ABCDE1234F1Z5" />
+          <Label htmlFor="gstin">{t("GSTIN")}</Label>
+          <Input
+            id="gstin"
+            name="gstin"
+            defaultValue={gstin ?? ""}
+            placeholder={t("29ABCDE1234F1Z5")}
+          />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="telephone">Telephone (optional)</Label>
+          <Label htmlFor="telephone">{t("Telephone (optional)")}</Label>
           <Input
             id="telephone"
             name="telephone"
@@ -97,7 +107,7 @@ export function MemberDetailsForm({
         </div>
 
         <div className={`space-y-2 ${FULL_ROW}`}>
-          <Label htmlFor="websiteUrl">Website</Label>
+          <Label htmlFor="websiteUrl">{t("Website")}</Label>
           <Input
             id="websiteUrl"
             name="websiteUrl"
@@ -108,12 +118,12 @@ export function MemberDetailsForm({
         </div>
 
         <div className={`space-y-2 ${FULL_ROW}`}>
-          <Label htmlFor="socialLinks">Social links</Label>
+          <Label htmlFor="socialLinks">{t("Social links")}</Label>
           <Textarea
             id="socialLinks"
             name="socialLinks"
             defaultValue={socialLinks ?? ""}
-            placeholder="One link per line"
+            placeholder={t("One link per line")}
             rows={2}
           />
         </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { useEffect } from "react";
 import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
@@ -15,10 +16,11 @@ import type { ApiResult } from "@/lib/api-response";
 const initialState: ApiResult<null> = { success: true, data: null, meta: { requestId: "" } };
 
 function SubmitButton() {
+  const t = useT();
   const { pending } = useFormStatus();
   return (
     <Button type="submit" size="touch" disabled={pending}>
-      {pending ? "Activating…" : "Redeem e-pin"}
+      {pending ? t("Activating…") : t("Redeem e-pin")}
     </Button>
   );
 }
@@ -33,13 +35,16 @@ function SubmitButton() {
  * the new active subscription on next render.
  */
 export function RedeemEpinForm() {
+  const t = useT();
   const [state, formAction] = useActionState(redeemEpinAction, initialState);
   const submitted = state !== initialState;
 
   useEffect(() => {
     if (submitted && state.success) {
-      toast.success("Subscription activated", "Your new subscription is now active.");
+      toast.success(t("Subscription activated"), t("Your new subscription is now active."));
     }
+    // `t` only changes when the language does; that must not announce the success a second time.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, submitted]);
 
   return (
@@ -47,13 +52,13 @@ export function RedeemEpinForm() {
       {submitted && !state.success ? (
         <Alert variant="destructive">
           <AlertCircle className="size-4" />
-          <AlertDescription>{state.error.message}</AlertDescription>
+          <AlertDescription>{t(state.error.message)}</AlertDescription>
         </Alert>
       ) : null}
 
       <div className="space-y-2">
-        <Label htmlFor="code">E-pin code</Label>
-        <Input id="code" name="code" placeholder="e.g. AB12CD34EF56GH78" required />
+        <Label htmlFor="code">{t("E-pin code")}</Label>
+        <Input id="code" name="code" placeholder={t("e.g. AB12CD34EF56GH78")} required />
       </div>
 
       <SubmitButton />

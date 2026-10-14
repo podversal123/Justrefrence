@@ -20,6 +20,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { useT } from "@/i18n/provider";
+import { msg } from "@/i18n/locales";
 import { MAX_UPLOAD_BYTES, MAX_UPLOAD_LABEL } from "@/lib/upload-limits";
 import type { ApiResult } from "@/lib/api-response";
 import type { FieldErrors } from "@/components/ui/action-form";
@@ -34,25 +36,77 @@ export interface EditableBanner {
   ctaHref: string;
 }
 
-function SubmitButton({ editing }: { editing: boolean }) {
+type Noun = "banner" | "ad";
+
+/** The words that change with what is being added; written out whole so each one can be translated. */
+const WORDS: Record<
+  Noun,
+  { add: string; addA: string; edit: string; saved: string; added: string }
+> = {
+  banner: {
+    add: msg("Add banner"),
+    addA: msg("Add a banner"),
+    edit: msg("Edit banner"),
+    saved: msg("Banner saved"),
+    added: msg("Banner added"),
+  },
+  ad: {
+    add: msg("Add ad"),
+    addA: msg("Add an ad"),
+    edit: msg("Edit ad"),
+    saved: msg("Ad saved"),
+    added: msg("Ad added"),
+  },
+};
+
+type SaveAction = (prev: ApiResult<null>, formData: FormData) => Promise<ApiResult<null>>;
+
+/** What differs between a home page banner and a vendor's ad; the form itself is the same. */
+export interface BannerDialogOptions {
+  /** "banner" or "ad": used in the button, title and messages. */
+  noun?: Noun;
+  createAction?: SaveAction;
+  updateAction?: SaveAction;
+  description?: string;
+  /** Text under the photo field. */
+  photoHint?: string;
+  /** Shown after a save, e.g. to say an edited ad goes back for approval. */
+  savedMessage?: string;
+}
+
+function SubmitButton({ editing, noun }: { editing: boolean; noun: Noun }) {
   const { pending } = useFormStatus();
+  const t = useT();
   return (
     <Button type="submit" disabled={pending}>
-      {pending ? "Saving…" : editing ? "Save changes" : "Add banner"}
+      {pending ? t("Saving…") : editing ? t("Save changes") : t(WORDS[noun].add)}
     </Button>
   );
 }
 
 /** Add a banner, or edit one. When editing, a new photo is optional: without one the current photo stays. */
-export function BannerDialog({ banner }: { banner?: EditableBanner }) {
+export function BannerDialog({
+  banner,
+  options = {},
+}: {
+  banner?: EditableBanner;
+  options?: BannerDialogOptions;
+}) {
+  const t = useT();
+  const noun = options.noun ?? "banner";
+  const createAction = options.createAction ?? createBannerAction;
+  const updateAction = options.updateAction ?? updateBannerAction;
   const editing = Boolean(banner);
   const [open, setOpen] = useState(false);
   const [state, formAction] = useActionState(
     async (prev: ApiResult<null>, formData: FormData): Promise<ApiResult<null>> => {
-      const result = await (editing ? updateBannerAction : createBannerAction)(prev, formData);
+      const result = await (editing ? updateAction : createAction)(prev, formData);
       if (result.success) {
         setOpen(false);
-        toast.success(editing ? "Banner saved" : "Banner added");
+        toast.success(
+          t(editing ? WORDS[noun].saved : WORDS[noun].added),
+          options.savedMessage ? t(options.savedMessage) : undefined,
+        );
       }
       return result;
     },
@@ -67,7 +121,9 @@ export function BannerDialog({ banner }: { banner?: EditableBanner }) {
   function checkFile(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (file && file.size > MAX_UPLOAD_BYTES) {
-      event.target.setCustomValidity(`This photo is too large. Use one up to ${MAX_UPLOAD_LABEL}.`);
+      event.target.setCustomValidity(
+        t("This photo is too large. Use one up to {size}.", { size: MAX_UPLOAD_LABEL }),
+      );
       event.target.reportValidity();
       event.target.value = "";
     } else {
@@ -82,12 +138,12 @@ export function BannerDialog({ banner }: { banner?: EditableBanner }) {
           editing ? (
             <Button variant="outline" size="sm">
               <Pencil />
-              Edit
+              {t("Edit")}
             </Button>
           ) : (
             <Button>
               <Plus />
-              Add banner
+              {t(WORDS[noun].add)}
             </Button>
           )
         }
@@ -95,17 +151,19 @@ export function BannerDialog({ banner }: { banner?: EditableBanner }) {
       <DialogContent className="sm:max-w-xl">
         <form action={formAction} className="space-y-4" noValidate>
           <DialogHeader>
-            <DialogTitle>{editing ? "Edit banner" : "Add a banner"}</DialogTitle>
+            <DialogTitle>{t(editing ? WORDS[noun].edit : WORDS[noun].addA)}</DialogTitle>
             <DialogDescription>
-              Shown on the home page. The words appear on the left of the photo, so choose a photo
-              that is calm on that side.
+              {t(
+                options.description ??
+                  "Shown on the home page. The words appear on the left of the photo, so choose a photo that is calm on that side.",
+              )}
             </DialogDescription>
           </DialogHeader>
 
           {submitted && !state.success ? (
             <Alert variant="destructive">
               <AlertCircle className="size-4" />
-              <AlertDescription>{state.error.message}</AlertDescription>
+              <AlertDescription>{t(state.error.message)}</AlertDescription>
             </Alert>
           ) : null}
 
@@ -114,7 +172,7 @@ export function BannerDialog({ banner }: { banner?: EditableBanner }) {
           <FormGrid>
             <FormField
               htmlFor="bn-headline"
-              label="Headline"
+              label={t("Headline")}
               error={errors["headline"]}
               className={FULL_ROW}
             >
@@ -122,25 +180,25 @@ export function BannerDialog({ banner }: { banner?: EditableBanner }) {
             </FormField>
             <FormField
               htmlFor="bn-subline"
-              label="Line below it (optional)"
+              label={t("Line below it (optional)")}
               error={errors["subline"]}
               className={FULL_ROW}
             >
               <Input id="bn-subline" name="subline" defaultValue={banner?.subline ?? ""} />
             </FormField>
-            <FormField htmlFor="bn-cta" label="Button text" error={errors["ctaLabel"]}>
+            <FormField htmlFor="bn-cta" label={t("Button text")} error={errors["ctaLabel"]}>
               <Input
                 id="bn-cta"
                 name="ctaLabel"
                 defaultValue={banner?.ctaLabel}
-                placeholder="Browse products"
+                placeholder={t("Browse products")}
                 required
               />
             </FormField>
             <FormField
               htmlFor="bn-href"
-              label="Button goes to"
-              hint="A page like /products, or a link starting with https://"
+              label={t("Button goes to")}
+              hint={t("A page like /products, or a link starting with https://")}
               error={errors["ctaHref"]}
             >
               <Input
@@ -153,8 +211,14 @@ export function BannerDialog({ banner }: { banner?: EditableBanner }) {
             </FormField>
             <FormField
               htmlFor="bn-image"
-              label={editing ? "Replace the photo (optional)" : "Photo"}
-              hint={`A wide photo at least 1200px across. JPEG, PNG or WebP, up to ${MAX_UPLOAD_LABEL}.`}
+              label={editing ? t("Replace the photo (optional)") : t("Photo")}
+              hint={
+                options.photoHint
+                  ? t(options.photoHint)
+                  : t("A wide photo at least 1200px across. JPEG, PNG or WebP, up to {size}.", {
+                      size: MAX_UPLOAD_LABEL,
+                    })
+              }
               className={FULL_ROW}
             >
               <div className="flex items-center gap-2">
@@ -173,7 +237,7 @@ export function BannerDialog({ banner }: { banner?: EditableBanner }) {
           </FormGrid>
 
           <DialogFooter>
-            <SubmitButton editing={editing} />
+            <SubmitButton editing={editing} noun={noun} />
           </DialogFooter>
         </form>
       </DialogContent>

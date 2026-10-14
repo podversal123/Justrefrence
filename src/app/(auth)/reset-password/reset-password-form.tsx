@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
 import { AlertCircle } from "lucide-react";
@@ -17,15 +18,17 @@ const initialState: ApiResult<null> = {
 };
 
 function SubmitButton() {
+  const t = useT();
   const { pending } = useFormStatus();
   return (
     <Button type="submit" className="w-full" disabled={pending}>
-      {pending ? "Updating…" : "Update password"}
+      {pending ? t("Updating…") : t("Update password")}
     </Button>
   );
 }
 
 export function ResetPasswordForm() {
+  const t = useT();
   const [state, formAction] = useActionState(resetPasswordAction, initialState);
 
   return (
@@ -33,20 +36,20 @@ export function ResetPasswordForm() {
       {!state.success ? (
         <Alert variant="destructive">
           <AlertCircle className="size-4" />
-          <AlertDescription>{state.error.message}</AlertDescription>
+          <AlertDescription>{t(state.error.message)}</AlertDescription>
         </Alert>
       ) : null}
 
       <div className="space-y-2">
-        <Label htmlFor="password">New password</Label>
+        <Label htmlFor="password">{t("New password")}</Label>
         <Input id="password" name="password" type="password" autoComplete="new-password" required />
         <p className="text-muted-foreground text-xs">
-          At least 10 characters, with an uppercase letter, a lowercase letter, and a number.
+          {t("At least 10 characters, with an uppercase letter, a lowercase letter, and a number.")}
         </p>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="confirmPassword">Confirm new password</Label>
+        <Label htmlFor="confirmPassword">{t("Confirm new password")}</Label>
         <Input
           id="confirmPassword"
           name="confirmPassword"

@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
 import Link from "next/link";
@@ -18,15 +19,17 @@ const initialState: ApiResult<null> = {
 };
 
 function SubmitButton() {
+  const t = useT();
   const { pending } = useFormStatus();
   return (
     <Button type="submit" className="w-full" disabled={pending}>
-      {pending ? "Signing in…" : "Sign in"}
+      {pending ? t("Signing in…") : t("Sign in")}
     </Button>
   );
 }
 
-export function LoginForm() {
+export function LoginForm({ next }: { next?: string }) {
+  const t = useT();
   const [state, formAction] = useActionState(loginAction, initialState);
 
   return (
@@ -34,30 +37,32 @@ export function LoginForm() {
       {!state.success ? (
         <Alert variant="destructive">
           <AlertCircle className="size-4" />
-          <AlertDescription>{state.error.message}</AlertDescription>
+          <AlertDescription>{t(state.error.message)}</AlertDescription>
         </Alert>
       ) : null}
 
+      {next ? <input type="hidden" name="next" value={next} /> : null}
+
       <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="email">{t("Email")}</Label>
         <Input
           id="email"
           name="email"
           type="email"
           autoComplete="email"
           required
-          placeholder="you@example.com"
+          placeholder={t("you@example.com")}
         />
       </div>
 
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <Label htmlFor="password">Password</Label>
+          <Label htmlFor="password">{t("Password")}</Label>
           <Link
             href="/forgot-password"
             className="text-muted-foreground hover:text-foreground text-xs underline underline-offset-4"
           >
-            Forgot password?
+            {t("Forgot password?")}
           </Link>
         </div>
         <Input

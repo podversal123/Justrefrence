@@ -1,3 +1,4 @@
+import { getT } from "@/i18n/server";
 import { redirect } from "next/navigation";
 import { getAuthSession } from "@/server/auth/session";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
@@ -23,6 +24,7 @@ import {
  */
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await getAuthSession();
+  const t = await getT();
 
   if (!session) {
     redirect("/login");
@@ -55,15 +57,18 @@ export default async function DashboardLayout({ children }: { children: React.Re
     isStaff(session) && !session.roles.some((r) => r === "CUSTOMER" || r === "VENDOR");
 
   const visibleGroups = NAV_GROUPS.map((group) => ({
-    label: group.label,
+    label: t(group.label),
     items: group.items
       .filter((item) => !(staffOnly && item.memberOnly))
       .filter((item) => item.visible(session))
-      .map((item) => ({ title: item.title, href: item.href, icon: <item.icon /> })),
+      .map((item) => ({ title: t(item.title), href: item.href, icon: <item.icon /> })),
   })).filter((group) => group.items.length > 0);
 
-  const roleLabel = describeRoles(session.roles);
-  const panelLabel = PANEL_LABELS[panel];
+  const roleLabel = describeRoles(session.roles)
+    .split(", ")
+    .map((role) => t(role))
+    .join(", ");
+  const panelLabel = t(PANEL_LABELS[panel]);
 
   const [notifications, unreadCount] = await Promise.all([
     listRecentNotifications(session.userId),

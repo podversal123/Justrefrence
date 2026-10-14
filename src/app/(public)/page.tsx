@@ -1,3 +1,4 @@
+import { getT } from "@/i18n/server";
 import type { Metadata, Route } from "next";
 import { Suspense } from "react";
 import Image from "next/image";
@@ -17,6 +18,7 @@ import {
   type CatalogKind,
   type CatalogListItem,
 } from "@/server/domain/catalog/types";
+import { SponsoredStrip } from "@/components/ads/sponsored-strip";
 import { listClosingSoon } from "@/server/repositories/bidding/bidding-repository";
 import {
   getProductCategoriesWithCounts,
@@ -28,10 +30,13 @@ import { catalogImagePublicUrlClient } from "@/lib/catalog-image-url";
 import { listActiveBanners } from "@/server/repositories/content/banner-repository";
 import { cn } from "@/lib/utils";
 
-export const metadata: Metadata = {
-  title: `${BRAND.name}: ${BRAND.tagline}`,
-  description: BRAND.description,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return {
+    title: `${BRAND.name}: ${t(BRAND.tagline)}`,
+    description: t(BRAND.description),
+  };
+}
 
 const FEATURED_LIMIT = 4;
 
@@ -63,7 +68,8 @@ async function HomeHero() {
   return <HeroStage slides={slides} />;
 }
 
-export default function HomePage() {
+export default async function HomePage() {
+  const t = await getT();
   return (
     <>
       <HomeHero />
@@ -72,31 +78,35 @@ export default function HomePage() {
         <LiveBidsSection />
       </Suspense>
 
+      <Suspense fallback={null}>
+        <SponsoredStrip />
+      </Suspense>
+
       <Suspense fallback={<CategoriesSkeleton />}>
-        <CategoryTiles kind="PRODUCT" heading="Shop by category" basePath="/products" />
+        <CategoryTiles kind="PRODUCT" heading={t("Shop by category")} basePath="/products" />
       </Suspense>
 
       <Suspense fallback={<FeaturedGridSkeleton count={FEATURED_LIMIT} />}>
         <FeaturedSection
           kind="PRODUCT"
-          heading="Featured products"
-          blurb="Fresh from approved vendors."
+          heading={t("Featured products")}
+          blurb={t("Fresh from approved vendors.")}
         />
       </Suspense>
 
       <Suspense fallback={<FeaturedGridSkeleton count={FEATURED_LIMIT} />}>
         <FeaturedSection
           kind="SERVICE"
-          heading="Popular services"
-          blurb="Vetted providers, priced upfront or on request."
+          heading={t("Popular services")}
+          blurb={t("Vetted providers, priced upfront or on request.")}
         />
       </Suspense>
 
       <Suspense fallback={<FeaturedGridSkeleton count={FEATURED_LIMIT} />}>
         <FeaturedSection
           kind="PROJECT"
-          heading="Projects in motion"
-          blurb="Larger engagements scoped and delivered by vendors."
+          heading={t("Projects in motion")}
+          blurb={t("Larger engagements scoped and delivered by vendors.")}
         />
       </Suspense>
 
@@ -109,11 +119,11 @@ export default function HomePage() {
 
 /* ------------------------------------------------------------------------ */
 
-function SectionHeading({
+async function SectionHeading({
   title,
   blurb,
   href,
-  linkLabel = "View all",
+  linkLabel,
   live = false,
 }: {
   title: string;
@@ -122,6 +132,7 @@ function SectionHeading({
   linkLabel?: string;
   live?: boolean;
 }) {
+  const t = await getT();
   return (
     <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
       <div className="space-y-1.5">
@@ -130,7 +141,7 @@ function SectionHeading({
           {live ? (
             <span className="bg-success/10 text-success inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-sans text-xs font-medium">
               <span className="bg-success size-1.5 animate-pulse rounded-full motion-reduce:animate-none" />
-              Live
+              {t("Live")}
             </span>
           ) : null}
         </h2>
@@ -141,7 +152,7 @@ function SectionHeading({
           href={href as Route}
           className="text-primary inline-flex items-center gap-1 text-sm font-semibold hover:underline"
         >
-          {linkLabel}
+          {linkLabel ?? t("View all")}
           <ArrowRight className="size-4" aria-hidden="true" />
         </Link>
       ) : null}
@@ -150,6 +161,7 @@ function SectionHeading({
 }
 
 async function LiveBidsSection() {
+  const t = await getT();
   let requirements: Awaited<ReturnType<typeof listClosingSoon>> = [];
   try {
     requirements = await listClosingSoon(3);
@@ -163,10 +175,10 @@ async function LiveBidsSection() {
   return (
     <section className="mx-auto w-full max-w-7xl px-4 pt-20">
       <SectionHeading
-        title="Bids closing soon"
-        blurb="Open requirements from buyers. Approved vendors can bid right now."
+        title={t("Bids closing soon")}
+        blurb={t("Open requirements from buyers. Approved vendors can bid right now.")}
         href="/bids"
-        linkLabel="All bids and auctions"
+        linkLabel={t("All bids and auctions")}
         live
       />
       <ul className="grid gap-4 lg:grid-cols-3">
@@ -193,6 +205,7 @@ async function CategoryTiles({
   heading: string;
   basePath: "/products" | "/services";
 }) {
+  const t = await getT();
   let categories: CategoryWithCount[] = [];
   let failed = false;
   try {
@@ -211,7 +224,7 @@ async function CategoryTiles({
     <section className="mx-auto w-full max-w-7xl px-4 pt-20">
       <SectionHeading title={heading} href={basePath} />
       {failed ? (
-        <ErrorState description="We couldn't load categories right now." />
+        <ErrorState description={t("We couldn't load categories right now.")} />
       ) : (
         <ul className="grid grid-cols-2 gap-4 md:grid-cols-4">
           {popular.map((category) => {
@@ -236,7 +249,9 @@ async function CategoryTiles({
                       {category.name}
                     </span>
                     <span className="text-muted-foreground mt-0.5 flex items-center justify-between text-xs">
-                      {category.itemCount} {category.itemCount === 1 ? "listing" : "listings"}
+                      {category.itemCount === 1
+                        ? t("1 listing")
+                        : t("{count} listings", { count: category.itemCount })}
                       <ArrowRight
                         className="group-hover:text-primary size-4 transition-transform group-hover:translate-x-0.5"
                         aria-hidden="true"
@@ -262,6 +277,7 @@ async function FeaturedSection({
   heading: string;
   blurb: string;
 }) {
+  const t = await getT();
   const segment = CATALOG_ROUTE_SEGMENTS[kind];
   let items: CatalogListItem[] = [];
   let failed = false;
@@ -280,12 +296,12 @@ async function FeaturedSection({
     <section className="mx-auto w-full max-w-7xl px-4 pt-14">
       <SectionHeading title={heading} blurb={blurb} href={`/${segment}`} />
       {failed ? (
-        <ErrorState description={`We couldn't load ${heading.toLowerCase()} right now.`} />
+        <ErrorState description={t("We couldn't load this section right now.")} />
       ) : items.length === 0 ? (
         <EmptyState
           icon={Package}
-          title={`No ${heading.toLowerCase()} yet`}
-          description="Check back soon as vendors add their catalog."
+          title={t("Nothing here yet")}
+          description={t("Check back soon as vendors add their catalog.")}
         />
       ) : (
         <ul className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -300,7 +316,8 @@ async function FeaturedSection({
   );
 }
 
-function GetStartedBand() {
+async function GetStartedBand() {
+  const t = await getT();
   return (
     <section className="mx-auto w-full max-w-7xl px-4 py-24">
       <div className="grid gap-4 lg:grid-cols-2">
@@ -320,13 +337,14 @@ function GetStartedBand() {
             aria-hidden="true"
             className="bg-marigold/30 absolute -right-10 -bottom-16 size-56 rounded-full blur-3xl"
           />
-          <p className="text-marigold text-sm font-medium">For vendors</p>
+          <p className="text-marigold text-sm font-medium">{t("For vendors")}</p>
           <h2 className="font-display mt-2 max-w-md text-3xl font-bold tracking-tight sm:text-4xl">
-            Start your own business here.
+            {t("Start your own business here.")}
           </h2>
           <p className="mt-3 max-w-md text-white/85">
-            List products, services and projects, and bid on what buyers post. Get approved once,
-            sell to everyone.
+            {t(
+              "List products, services and projects, and bid on what buyers post. Get approved once, sell to everyone.",
+            )}
           </p>
           <Link
             href={"/register" as Route}
@@ -336,7 +354,7 @@ function GetStartedBand() {
               className: "mt-6 px-5",
             })}
           >
-            Become a vendor
+            {t("Become a vendor")}
             <ArrowRight />
           </Link>
         </div>
@@ -356,20 +374,21 @@ function GetStartedBand() {
             aria-hidden="true"
             className="bg-primary/30 absolute -top-16 -right-10 size-56 rounded-full blur-3xl"
           />
-          <p className="text-marigold text-sm font-medium">Refer and earn</p>
+          <p className="text-marigold text-sm font-medium">{t("Refer and earn")}</p>
           <h2 className="font-display mt-2 max-w-md text-3xl font-bold tracking-tight sm:text-4xl">
-            Earn by introducing buyers and vendors.
+            {t("Earn by introducing buyers and vendors.")}
           </h2>
           <p className="text-ink-foreground/80 mt-3 max-w-md">
-            Introduce a buyer or a vendor. When their orders complete, a commission is recorded for
-            you.
+            {t(
+              "Introduce a buyer or a vendor. When their orders complete, a commission is recorded for you.",
+            )}
           </p>
           <Link
             href={"/referrals" as Route}
             className={buttonVariants({ size: "touch", className: "mt-6 px-5" })}
           >
             <Handshake />
-            Start referring
+            {t("Start referring")}
           </Link>
         </div>
       </div>

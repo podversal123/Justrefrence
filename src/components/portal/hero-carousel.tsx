@@ -8,6 +8,7 @@ import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { HeroSlide } from "@/lib/brand";
+import { useT } from "@/i18n/provider";
 
 const ROTATE_MS = 7000;
 
@@ -20,6 +21,7 @@ const ROTATE_MS = 7000;
  * focused (WCAG 2.2.2); photos are decorative.
  */
 export function HeroStage({ slides }: { slides: readonly HeroSlide[] }) {
+  const t = useT();
   const [index, setIndex] = useState(0);
   const [hovering, setHovering] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
@@ -57,7 +59,7 @@ export function HeroStage({ slides }: { slides: readonly HeroSlide[] }) {
   return (
     <section
       aria-roledescription="carousel"
-      aria-label="Justreference highlights"
+      aria-label={t("Justreference highlights")}
       onMouseEnter={() => setHovering(true)}
       onMouseLeave={() => setHovering(false)}
       onFocusCapture={() => setHovering(true)}
@@ -104,24 +106,24 @@ export function HeroStage({ slides }: { slides: readonly HeroSlide[] }) {
             key={slide.id}
             className="font-display animate-in fade-in slide-in-from-bottom-2 text-4xl leading-[1.1] font-bold tracking-[-0.02em] text-balance duration-700 motion-reduce:animate-none sm:text-5xl lg:text-[3.5rem]"
           >
-            {slide.headline}
+            {t(slide.headline)}
           </Heading>
           {slide.subline ? (
             <p
               key={`${slide.id}-sub`}
               className="animate-in fade-in mt-5 max-w-xl text-lg leading-relaxed text-white/90 delay-150 duration-700 motion-reduce:animate-none sm:text-xl"
             >
-              {slide.subline}
+              {t(slide.subline)}
             </p>
           ) : null}
           {external ? (
             <a href={slide.cta.href} target="_blank" rel="noopener noreferrer" className={ctaClass}>
-              {slide.cta.label}
+              {t(slide.cta.label)}
               <ArrowRight />
             </a>
           ) : (
             <Link href={slide.cta.href as Route} className={ctaClass}>
-              {slide.cta.label}
+              {t(slide.cta.label)}
               <ArrowRight />
             </Link>
           )}
@@ -132,11 +134,11 @@ export function HeroStage({ slides }: { slides: readonly HeroSlide[] }) {
         <div className="mx-auto flex w-full max-w-7xl justify-end gap-2 px-4 pb-8">
           <button type="button" onClick={() => go(index - 1)} className={control}>
             <ChevronLeft className="size-5" />
-            <span className="sr-only">Previous slide</span>
+            <span className="sr-only">{t("Previous slide")}</span>
           </button>
           <button type="button" onClick={() => go(index + 1)} className={control}>
             <ChevronRight className="size-5" />
-            <span className="sr-only">Next slide</span>
+            <span className="sr-only">{t("Next slide")}</span>
           </button>
         </div>
       </div>

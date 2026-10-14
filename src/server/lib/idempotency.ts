@@ -18,7 +18,8 @@
  * key-independent server-side duplicate guard (see payout-service.ts,
  * payment-service.ts, wallet-actions.ts).
  */
-export type IdempotencyScope = "checkout" | "payment-order" | "payout" | "admin-topup";
+export type IdempotencyScope =
+  "checkout" | "payment-order" | "payout" | "admin-topup" | "auction" | "reward" | "sms";
 
 export function scopedIdempotencyKey(
   scope: IdempotencyScope,

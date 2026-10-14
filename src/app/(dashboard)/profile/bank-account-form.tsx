@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
 import { AlertCircle, CheckCircle2, ShieldCheck } from "lucide-react";
@@ -21,15 +22,17 @@ interface BankAccountValue {
 }
 
 function SubmitButton({ hasExisting }: { hasExisting: boolean }) {
+  const t = useT();
   const { pending } = useFormStatus();
   return (
     <Button type="submit" disabled={pending}>
-      {pending ? "Saving…" : hasExisting ? "Replace bank account" : "Add bank account"}
+      {pending ? t("Saving…") : hasExisting ? t("Replace bank account") : t("Add bank account")}
     </Button>
   );
 }
 
 export function BankAccountForm({ bankAccount }: { bankAccount: BankAccountValue | null }) {
+  const t = useT();
   const [state, formAction] = useActionState(upsertBankAccountAction, initialState);
   const submitted = state !== initialState;
 
@@ -45,10 +48,11 @@ export function BankAccountForm({ bankAccount }: { bankAccount: BankAccountValue
           </div>
           {bankAccount.verifiedAt ? (
             <span className="text-muted-foreground flex items-center gap-1 text-xs">
-              <ShieldCheck className="size-3.5" /> Verified
+              <ShieldCheck className="size-3.5" />
+              {t("Verified")}
             </span>
           ) : (
-            <span className="text-muted-foreground text-xs">Pending verification</span>
+            <span className="text-muted-foreground text-xs">{t("Pending verification")}</span>
           )}
         </div>
       ) : null}
@@ -57,34 +61,36 @@ export function BankAccountForm({ bankAccount }: { bankAccount: BankAccountValue
         {submitted && !state.success ? (
           <Alert variant="destructive">
             <AlertCircle className="size-4" />
-            <AlertDescription>{state.error.message}</AlertDescription>
+            <AlertDescription>{t(state.error.message)}</AlertDescription>
           </Alert>
         ) : null}
         {submitted && state.success ? (
           <Alert>
             <CheckCircle2 className="size-4" />
-            <AlertDescription>Bank account saved. It will need to be re-verified.</AlertDescription>
+            <AlertDescription>
+              {t("Bank account saved. It will need to be re-verified.")}
+            </AlertDescription>
           </Alert>
         ) : null}
 
         <FormGrid>
           <div className="space-y-2">
-            <Label htmlFor="accountHolderName">Account holder name</Label>
+            <Label htmlFor="accountHolderName">{t("Account holder name")}</Label>
             <Input id="accountHolderName" name="accountHolderName" required />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="accountNumber">Account number</Label>
+            <Label htmlFor="accountNumber">{t("Account number")}</Label>
             <Input id="accountNumber" name="accountNumber" inputMode="numeric" required />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="ifsc">IFSC code</Label>
-            <Input id="ifsc" name="ifsc" placeholder="HDFC0001234" required />
+            <Label htmlFor="ifsc">{t("IFSC code")}</Label>
+            <Input id="ifsc" name="ifsc" placeholder={t("HDFC0001234")} required />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="branchAddress">Branch address</Label>
+            <Label htmlFor="branchAddress">{t("Branch address")}</Label>
             <Input id="branchAddress" name="branchAddress" />
           </div>
         </FormGrid>

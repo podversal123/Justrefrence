@@ -1,3 +1,4 @@
+import { getT } from "@/i18n/server";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { getAuthSession } from "@/server/auth/session";
@@ -23,7 +24,7 @@ interface PageProps {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { kind: kindSegment, id } = await params;
   const kind = kindFromRouteSegment(kindSegment);
-  if (!kind) return { title: "Catalog" };
+  if (!kind) return { title: (await getT())("Catalog") };
   const listing = await getCatalogRepository(kind).getById(id);
   return { title: listing?.title ?? CATALOG_LABELS[kind].singular };
 }
@@ -36,6 +37,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
  * access requirement.
  */
 export default async function VendorListingDetailPage({ params }: PageProps) {
+  const t = await getT();
   const { kind: kindSegment, id } = await params;
   const kind = kindFromRouteSegment(kindSegment);
   if (!kind) notFound();
@@ -69,13 +71,13 @@ export default async function VendorListingDetailPage({ params }: PageProps) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Status</CardTitle>
+          <CardTitle>{t("Status")}</CardTitle>
           <CardDescription>
             {listing.approvalStatus === "REJECTED" && listing.rejectedReason
               ? `Rejected: ${listing.rejectedReason}`
               : listing.approvalStatus === "PENDING"
-                ? "Awaiting admin review."
-                : "Live in the catalog when active."}
+                ? t("Awaiting admin review.")
+                : t("Live in the catalog when active.")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -91,8 +93,10 @@ export default async function VendorListingDetailPage({ params }: PageProps) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Images</CardTitle>
-          <CardDescription>The first image is used as the listing thumbnail.</CardDescription>
+          <CardTitle>{t("Images")}</CardTitle>
+          <CardDescription>
+            {t("The first image is used as the listing thumbnail.")}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <ImageUploader kind={kind} itemId={listing.id} images={listing.images} />
@@ -102,9 +106,9 @@ export default async function VendorListingDetailPage({ params }: PageProps) {
       {canUpdate ? (
         <Card>
           <CardHeader>
-            <CardTitle>Details</CardTitle>
+            <CardTitle>{t("Details")}</CardTitle>
             <CardDescription>
-              Editing an approved listing sends it back for re-review.
+              {t("Editing an approved listing sends it back for re-review.")}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -124,7 +128,7 @@ export default async function VendorListingDetailPage({ params }: PageProps) {
                 pricingType:
                   "pricingType" in listing ? (listing.pricingType as "FIXED" | "QUOTE") : undefined,
               }}
-              submitLabel="Save changes"
+              submitLabel={t("Save changes")}
             />
           </CardContent>
         </Card>
@@ -133,7 +137,7 @@ export default async function VendorListingDetailPage({ params }: PageProps) {
       {canDelete ? (
         <Card>
           <CardHeader>
-            <CardTitle className="text-destructive text-sm">Danger zone</CardTitle>
+            <CardTitle className="text-destructive text-sm">{t("Danger zone")}</CardTitle>
           </CardHeader>
           <CardContent>
             <DeleteListingButton

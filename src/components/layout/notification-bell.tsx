@@ -1,5 +1,6 @@
 "use client";
 
+import { useFormat, useT } from "@/i18n/provider";
 import { describeNotification } from "@/lib/notification-labels";
 import { useActionState } from "@/lib/use-action-state";
 import { Bell } from "lucide-react";
@@ -27,18 +28,16 @@ export interface BellNotification {
   createdAt: Date;
 }
 
-const describe = (notification: { type: string }): string =>
-  describeNotification(notification.type);
-
 const nullState: ApiResult<null> = { success: true, data: null, meta: { requestId: "" } };
 
 function MarkReadButton({ notificationId }: { notificationId: string }) {
+  const t = useT();
   const [, action] = useActionState(markNotificationReadAction, nullState);
   return (
     <form action={action}>
       <input type="hidden" name="notificationId" value={notificationId} />
       <button type="submit" className="w-full text-left">
-        Mark read
+        {t("Mark read")}
       </button>
     </form>
   );
@@ -52,6 +51,8 @@ export function NotificationBell({
   unreadCount: number;
 }) {
   const [, markAllAction] = useActionState(markAllNotificationsReadAction, nullState);
+  const t = useT();
+  const { formatDateTime } = useFormat();
 
   return (
     <DropdownMenu>
@@ -72,11 +73,13 @@ export function NotificationBell({
       />
       <DropdownMenuContent align="end" className="w-80">
         <div className="flex items-center justify-between px-2 py-1.5">
-          <DropdownMenuLabel className="p-0 text-xs font-normal">Notifications</DropdownMenuLabel>
+          <DropdownMenuLabel className="p-0 text-xs font-normal">
+            {t("Notifications")}
+          </DropdownMenuLabel>
           {unreadCount > 0 ? (
             <form action={markAllAction}>
               <button type="submit" className="text-muted-foreground hover:text-foreground text-xs">
-                Mark all read
+                {t("Mark all read")}
               </button>
             </form>
           ) : null}
@@ -84,7 +87,7 @@ export function NotificationBell({
         <DropdownMenuSeparator />
         {notifications.length === 0 ? (
           <div className="text-muted-foreground px-2 py-6 text-center text-xs">
-            No notifications yet.
+            {t("No notifications yet.")}
           </div>
         ) : (
           notifications.map((notification) => (
@@ -95,14 +98,14 @@ export function NotificationBell({
             >
               <div className="flex w-full items-center justify-between gap-2">
                 <span className={notification.readAt ? "text-muted-foreground" : "font-medium"}>
-                  {describe(notification)}
+                  {t(describeNotification(notification.type))}
                 </span>
                 {!notification.readAt ? (
                   <span className="bg-primary size-1.5 rounded-full" />
                 ) : null}
               </div>
               <span className="text-muted-foreground text-xs">
-                {notification.createdAt.toLocaleString("en-IN")}
+                {formatDateTime(notification.createdAt)}
               </span>
               {!notification.readAt ? (
                 <div className="text-muted-foreground hover:text-foreground text-xs underline underline-offset-2">

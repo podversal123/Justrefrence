@@ -1,16 +1,21 @@
+import { getT } from "@/i18n/server";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getAuthSession } from "@/server/auth/session";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PayNowClient } from "./pay-now-client";
 
-export const metadata: Metadata = { title: "Pay for your order" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("Pay for your order") };
+}
 
 interface PageProps {
   searchParams: Promise<{ checkoutId?: string }>;
 }
 
 export default async function CheckoutPayPage({ searchParams }: PageProps) {
+  const t = await getT();
   const session = await getAuthSession();
   if (!session) redirect("/login");
 
@@ -21,9 +26,9 @@ export default async function CheckoutPayPage({ searchParams }: PageProps) {
     <div className="mx-auto flex w-full max-w-md flex-col gap-6 px-4 py-16">
       <Card>
         <CardHeader>
-          <CardTitle>Complete your payment</CardTitle>
+          <CardTitle>{t("Complete your payment")}</CardTitle>
           <CardDescription>
-            Your order is placed. Complete the payment to confirm it.
+            {t("Your order is placed. Complete the payment to confirm it.")}
           </CardDescription>
         </CardHeader>
         <CardContent>

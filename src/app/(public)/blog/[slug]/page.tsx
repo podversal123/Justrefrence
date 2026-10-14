@@ -1,9 +1,9 @@
+import { getFormat, getT } from "@/i18n/server";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { getPublishedPostBySlug } from "@/server/repositories/content/blog-repository";
-import { formatDate } from "@/lib/format";
 
 export const revalidate = 60;
 
@@ -14,11 +14,13 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const post = await getPublishedPostBySlug(slug).catch(() => null);
-  if (!post) return { title: "Post not found" };
+  if (!post) return { title: (await getT())("Post not found") };
   return { title: post.title, description: post.excerpt ?? undefined };
 }
 
 export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
+  const t = await getT();
+  const { formatDate } = await getFormat();
   const { slug } = await params;
   const post = await getPublishedPostBySlug(slug).catch(() => null);
   if (!post) notFound();
@@ -37,7 +39,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
         className="text-muted-foreground hover:text-foreground mb-6 inline-flex items-center gap-1 text-sm"
       >
         <ArrowLeft className="size-4" />
-        All posts
+        {t("All posts")}
       </Link>
       <h1 className="mb-2">{post.title}</h1>
       <p className="text-muted-foreground mb-8 text-sm">

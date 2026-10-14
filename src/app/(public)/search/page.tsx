@@ -1,3 +1,5 @@
+import { msg } from "@/i18n/locales";
+import { getT } from "@/i18n/server";
 import type { Metadata, Route } from "next";
 import Link from "next/link";
 import { ArrowRight, SearchX } from "lucide-react";
@@ -17,10 +19,10 @@ import { formatPaise } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
 const SCOPES = [
-  { key: "all", label: "All" },
-  { key: "products", label: "Products" },
-  { key: "services", label: "Services" },
-  { key: "projects", label: "Projects" },
+  { key: "all", label: msg("All") },
+  { key: "products", label: msg("Products") },
+  { key: "services", label: msg("Services") },
+  { key: "projects", label: msg("Projects") },
 ] as const;
 type Scope = (typeof SCOPES)[number]["key"];
 
@@ -39,7 +41,7 @@ export async function generateMetadata({
   };
 }
 
-function Group({
+async function Group({
   title,
   segment,
   query,
@@ -50,6 +52,7 @@ function Group({
   query: string;
   hits: SearchHit[];
 }) {
+  const t = await getT();
   if (hits.length === 0) return null;
   return (
     <section aria-labelledby={`g-${segment}`} className="space-y-3">
@@ -65,7 +68,7 @@ function Group({
           href={`/${segment}?search=${encodeURIComponent(query)}` as Route}
           className="text-primary inline-flex items-center gap-1 text-sm font-medium hover:underline"
         >
-          See all {title.toLowerCase()}
+          {t("See all {section}", { section: title.toLowerCase() })}
           <ArrowRight className="size-4" />
         </Link>
       </div>
@@ -84,7 +87,7 @@ function Group({
                 </span>
               </span>
               <span className="shrink-0 text-sm font-semibold tabular-nums">
-                {hit.price === null ? "Quote on request" : formatPaise(hit.price, hit.currency)}
+                {hit.price === null ? t("Quote on request") : formatPaise(hit.price, hit.currency)}
               </span>
             </Link>
           </li>
@@ -99,6 +102,7 @@ export default async function SearchPage({
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
+  const t = await getT();
   const params = await searchParams;
   const rawQuery = params["q"] ?? "";
   const query = normalizeQuery(rawQuery);
@@ -135,14 +139,16 @@ export default async function SearchPage({
     <div className="mx-auto w-full max-w-4xl px-4 py-10">
       {query ? (
         <>
-          <h1 className="mb-1">Results for &ldquo;{query}&rdquo;</h1>
+          <h1 className="mb-1">{t("Results for “{query}”", { query })}</h1>
           <p className="text-muted-foreground mb-6 text-sm">
             {failed
-              ? "Search is unavailable right now."
-              : `${counts.all} listing${counts.all === 1 ? "" : "s"} found`}
+              ? t("Search is unavailable right now.")
+              : counts.all === 1
+                ? t("1 listing found")
+                : t("{count} listings found", { count: counts.all })}
           </p>
 
-          <nav aria-label="Result type" className="mb-8 flex flex-wrap gap-2">
+          <nav aria-label={t("Result type")} className="mb-8 flex flex-wrap gap-2">
             {SCOPES.map((s) => (
               <Link
                 key={s.key}
@@ -157,19 +163,21 @@ export default async function SearchPage({
                     : "hover:bg-accent",
                 )}
               >
-                {s.label} <span className="tabular-nums opacity-70">{counts[s.key]}</span>
+                {t(s.label)} <span className="tabular-nums opacity-70">{counts[s.key]}</span>
               </Link>
             ))}
           </nav>
 
           {failed ? (
-            <ErrorState description="We couldn't run that search. Please try again in a moment." />
+            <ErrorState
+              description={t("We couldn't run that search. Please try again in a moment.")}
+            />
           ) : (
             <div className="space-y-10">
               {result && result.categories.length > 0 ? (
                 <section aria-labelledby="g-cats" className="space-y-3">
                   <h2 id="g-cats" className="text-lg">
-                    Matching categories
+                    {t("Matching categories")}
                   </h2>
                   <ul className="flex flex-wrap gap-2">
                     {result.categories.map((c) => (
@@ -180,7 +188,7 @@ export default async function SearchPage({
                         >
                           {c.name}
                           <span className="text-muted-foreground ml-1.5 text-xs">
-                            {c.kind === "PRODUCT" ? "Products" : "Services"}
+                            {c.kind === "PRODUCT" ? t("Products") : t("Services")}
                           </span>
                         </Link>
                       </li>
@@ -189,21 +197,38 @@ export default async function SearchPage({
                 </section>
               ) : null}
 
-              <Group title="Products" segment="products" query={query} hits={visible.products} />
-              <Group title="Services" segment="services" query={query} hits={visible.services} />
-              <Group title="Projects" segment="projects" query={query} hits={visible.projects} />
+              <Group
+                title={t("Products")}
+                segment="products"
+                query={query}
+                hits={visible.products}
+              />
+              <Group
+                title={t("Services")}
+                segment="services"
+                query={query}
+                hits={visible.services}
+              />
+              <Group
+                title={t("Projects")}
+                segment="projects"
+                query={query}
+                hits={visible.projects}
+              />
 
               {total === 0 && (!result || result.categories.length === 0) ? (
                 <EmptyState
                   icon={SearchX}
-                  title={`Nothing found for "${query}"`}
-                  description="Check the spelling, try a shorter or more general word, or browse everything by category."
+                  title={t("Nothing found for “{query}”", { query })}
+                  description={t(
+                    "Check the spelling, try a shorter or more general word, or browse everything by category.",
+                  )}
                   action={
                     <Link
                       href={"/products" as Route}
                       className="text-primary text-sm font-medium hover:underline"
                     >
-                      Browse all products
+                      {t("Browse all products")}
                     </Link>
                   }
                 />
@@ -213,11 +238,13 @@ export default async function SearchPage({
         </>
       ) : (
         <>
-          <h1 className="mb-2">Search</h1>
+          <h1 className="mb-2">{t("Search")}</h1>
           <p className="text-muted-foreground max-w-xl">
             {rawQuery.trim().length > 0
               ? `Type at least ${MIN_QUERY_LENGTH} characters (up to ${MAX_QUERY_LENGTH}) in the search box above.`
-              : "Search products, services and projects from approved vendors using the search box above."}
+              : t(
+                  "Search products, services and projects from approved vendors using the search box above.",
+                )}
           </p>
           <p className="text-muted-foreground mt-6 text-sm">{BRAND.tagline}</p>
         </>

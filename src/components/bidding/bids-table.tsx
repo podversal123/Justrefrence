@@ -1,3 +1,5 @@
+import { bidderLabelText } from "@/lib/bidder-label";
+import { getT } from "@/i18n/server";
 import { Trophy } from "lucide-react";
 import { AwardButton } from "@/components/bidding/bid-actions";
 import { BidStatusBadge } from "@/components/bidding/badges";
@@ -19,7 +21,7 @@ import type { RequirementViewModel } from "@/server/domain/bidding/view";
  * until bidding ends, live auctions show anonymous ranked prices, and the
  * Award button only exists once bidding is over.
  */
-export function BidsTable({
+export async function BidsTable({
   requirementId,
   view,
   quantity,
@@ -30,13 +32,19 @@ export function BidsTable({
   quantity: number;
   canAward: boolean;
 }) {
+  const t = await getT();
   if (view.listMode === "COUNT_ONLY") {
     return (
       <div className="rounded-lg border border-dashed p-6 text-center">
         <p className="text-3xl font-semibold tabular-nums">{view.bidCount}</p>
         <p className="text-muted-foreground mt-1 text-sm">
-          {view.bidCount === 1 ? "bid received" : "bids received"} so far. Offers are sealed —
-          prices and vendor names appear here when bidding closes.
+          {view.bidCount === 1
+            ? t(
+                "bid received so far. Offers are sealed — prices and vendor names appear here when bidding closes.",
+              )
+            : t(
+                "bids received so far. Offers are sealed — prices and vendor names appear here when bidding closes.",
+              )}
         </p>
       </div>
     );
@@ -45,7 +53,7 @@ export function BidsTable({
   if (view.visibleBids.length === 0) {
     return (
       <div className="text-muted-foreground rounded-lg border border-dashed p-6 text-center text-sm">
-        No bids yet.
+        {t("No bids yet.")}
       </div>
     );
   }
@@ -57,21 +65,23 @@ export function BidsTable({
     <div className="space-y-2">
       {anonymous ? (
         <p className="text-muted-foreground text-xs">
-          Live ranking. Bidder identities are hidden until the auction closes.
+          {t("Live ranking. Bidder identities are hidden until the auction closes.")}
         </p>
       ) : null}
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Rank</TableHead>
-            <TableHead>Bidder</TableHead>
-            <TableHead className="text-right">Per unit</TableHead>
-            <TableHead className="text-right">Total ({quantity.toLocaleString("en-IN")})</TableHead>
-            <TableHead>Delivery</TableHead>
-            <TableHead>Status</TableHead>
+            <TableHead>{t("Rank")}</TableHead>
+            <TableHead>{t("Bidder")}</TableHead>
+            <TableHead className="text-right">{t("Per unit")}</TableHead>
+            <TableHead className="text-right">
+              {t("Total ({quantity})", { quantity: quantity.toLocaleString("en-IN") })}
+            </TableHead>
+            <TableHead>{t("Delivery")}</TableHead>
+            <TableHead>{t("Status")}</TableHead>
             {awardable ? (
               <TableHead>
-                <span className="sr-only">Award</span>
+                <span className="sr-only">{t("Award")}</span>
               </TableHead>
             ) : null}
           </TableRow>
@@ -90,14 +100,16 @@ export function BidsTable({
                   {formatRank(bid.rank)}
                 </span>
               </TableCell>
-              <TableCell>{bid.bidderLabel}</TableCell>
+              <TableCell>{bidderLabelText(bid.bidderLabel, t)}</TableCell>
               <TableCell className="text-right tabular-nums">
                 {formatPaise(bid.unitPrice.toString(), "INR")}
               </TableCell>
               <TableCell className="text-right font-medium tabular-nums">
                 {formatPaise(bid.totalPrice.toString(), "INR")}
               </TableCell>
-              <TableCell className="text-sm">{bid.deliveryDays} days</TableCell>
+              <TableCell className="text-sm">
+                {t("{days} days", { days: bid.deliveryDays })}
+              </TableCell>
               <TableCell>
                 <BidStatusBadge status={bid.status} />
               </TableCell>
@@ -107,7 +119,7 @@ export function BidsTable({
                     <AwardButton
                       requirementId={requirementId}
                       bidId={bid.bidId}
-                      bidderLabel={bid.bidderLabel}
+                      bidderLabel={bidderLabelText(bid.bidderLabel, t)}
                       total={formatPaise(bid.totalPrice.toString(), "INR")}
                     />
                   ) : null}

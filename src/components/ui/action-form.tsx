@@ -1,5 +1,7 @@
 "use client";
 
+import { msg } from "@/i18n/locales";
+import { useT } from "@/i18n/provider";
 import { useEffect, useRef, useState } from "react";
 import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
@@ -29,10 +31,11 @@ function fieldErrorsOf<T>(state: ApiResult<T> | null): FieldErrors {
 }
 
 function SubmitButton({ label, pendingLabel }: { label: string; pendingLabel: string }) {
+  const t = useT();
   const { pending } = useFormStatus();
   return (
     <Button type="submit" disabled={pending}>
-      {pending ? pendingLabel : label}
+      {pending ? t(pendingLabel) : t(label)}
     </Button>
   );
 }
@@ -46,7 +49,7 @@ function SubmitButton({ label, pendingLabel }: { label: string; pendingLabel: st
 export function ActionForm<T>({
   action,
   submitLabel,
-  pendingLabel = "Working…",
+  pendingLabel = msg("Working…"),
   successMessage,
   resetOnSuccess = true,
   onSuccess,
@@ -65,6 +68,7 @@ export function ActionForm<T>({
   footer?: React.ReactNode;
   children: React.ReactNode | ((errors: FieldErrors) => React.ReactNode);
 }) {
+  const t = useT();
   const [state, formAction] = useActionState<ApiResult<T> | null, FormData>(
     (prev, formData) => action(prev, formData),
     null,
@@ -82,9 +86,12 @@ export function ActionForm<T>({
     if (!state?.success) return;
     if (handled.current === state.meta.requestId) return;
     handled.current = state.meta.requestId;
-    toast.success(messageAtSubmit.current);
+    toast.success(t(messageAtSubmit.current));
     if (resetOnSuccess) formRef.current?.reset();
     onSuccess?.(state.data);
+    // `t` is left out on purpose: this runs once per result (guarded by the request id), and a
+    // language switch must not show the toast again.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, resetOnSuccess, onSuccess]);
 
   const errors = fieldErrorsOf(state);
@@ -102,7 +109,7 @@ export function ActionForm<T>({
       {state && !state.success ? (
         <Alert variant="destructive">
           <AlertCircle className="size-4" />
-          <AlertDescription>{state.error.message}</AlertDescription>
+          <AlertDescription>{t(state.error.message)}</AlertDescription>
         </Alert>
       ) : null}
       {typeof children === "function" ? children(errors) : children}

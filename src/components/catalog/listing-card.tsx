@@ -1,3 +1,4 @@
+import { getT } from "@/i18n/server";
 import Image from "next/image";
 import Link from "next/link";
 import type { Route } from "next";
@@ -13,7 +14,7 @@ import type { CatalogListItem } from "@/server/domain/catalog/types";
  * chip, title, approved-vendor line, then the price. The whole card is one
  * link so the target is large and the focus ring is obvious.
  */
-export function ListingCard({
+export async function ListingCard({
   item,
   href,
   priority = false,
@@ -22,6 +23,7 @@ export function ListingCard({
   href: string;
   priority?: boolean;
 }) {
+  const t = await getT();
   const visual = categoryVisual(item.categoryName);
   const Icon = visual.icon;
 
@@ -59,13 +61,15 @@ export function ListingCard({
         <div className="mt-auto flex items-end justify-between pt-3">
           <p className="text-lg leading-none font-semibold tabular-nums">
             {item.price === null ? (
-              <span className="text-muted-foreground text-sm font-medium">Quote on request</span>
+              <span className="text-muted-foreground text-sm font-medium">
+                {t("Quote on request")}
+              </span>
             ) : (
               formatPaise(item.price, item.currency)
             )}
           </p>
           <span className="text-primary text-xs font-medium opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100 motion-reduce:opacity-100">
-            View details
+            {t("View details")}
           </span>
         </div>
       </div>

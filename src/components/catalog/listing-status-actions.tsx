@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { useState } from "react";
 import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
@@ -53,6 +54,7 @@ function SimpleActionForm({
   icon: React.ReactNode;
   variant: "default" | "outline";
 }) {
+  const t = useT();
   const [state, formAction] = useActionState(updateListingStatusAction, initialState);
   return (
     <form action={formAction} className="inline-flex flex-col items-start gap-2">
@@ -66,7 +68,7 @@ function SimpleActionForm({
       {state !== initialState && !state.success ? (
         <Alert variant="destructive">
           <AlertCircle className="size-4" />
-          <AlertDescription>{state.error.message}</AlertDescription>
+          <AlertDescription>{t(state.error.message)}</AlertDescription>
         </Alert>
       ) : null}
     </form>
@@ -74,6 +76,7 @@ function SimpleActionForm({
 }
 
 function RejectDialog({ kind, id }: { kind: CatalogKind; id: string }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [state, formAction] = useActionState(updateListingStatusAction, initialState);
 
@@ -83,15 +86,15 @@ function RejectDialog({ kind, id }: { kind: CatalogKind; id: string }) {
         render={
           <Button size="sm" variant="destructive">
             <X />
-            Reject
+            {t("Reject")}
           </Button>
         }
       />
       <DialogContent>
         <form action={formAction} className="space-y-4" noValidate>
           <DialogHeader>
-            <DialogTitle>Reject this listing</DialogTitle>
-            <DialogDescription>The vendor will see this reason.</DialogDescription>
+            <DialogTitle>{t("Reject this listing")}</DialogTitle>
+            <DialogDescription>{t("The vendor will see this reason.")}</DialogDescription>
           </DialogHeader>
           <input type="hidden" name="kind" value={kind} />
           <input type="hidden" name="id" value={id} />
@@ -100,17 +103,17 @@ function RejectDialog({ kind, id }: { kind: CatalogKind; id: string }) {
           {state !== initialState && !state.success ? (
             <Alert variant="destructive">
               <AlertCircle className="size-4" />
-              <AlertDescription>{state.error.message}</AlertDescription>
+              <AlertDescription>{t(state.error.message)}</AlertDescription>
             </Alert>
           ) : null}
 
           <div className="space-y-2">
-            <Label htmlFor="reason">Reason</Label>
+            <Label htmlFor="reason">{t("Reason")}</Label>
             <Textarea id="reason" name="reason" required rows={3} />
           </div>
 
           <DialogFooter>
-            <ActionButton variant="destructive">Reject</ActionButton>
+            <ActionButton variant="destructive">{t("Reject")}</ActionButton>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -138,6 +141,7 @@ export function ListingStatusActions({
   isActive: boolean;
   canApprove: boolean;
 }) {
+  const t = useT();
   return (
     <div className="flex flex-wrap gap-2">
       {approvalStatus === "PENDING" && canApprove ? (
@@ -145,7 +149,7 @@ export function ListingStatusActions({
           kind={kind}
           id={id}
           action="approve"
-          label="Approve"
+          label={t("Approve")}
           icon={<Check />}
           variant="default"
         />
@@ -156,7 +160,7 @@ export function ListingStatusActions({
           kind={kind}
           id={id}
           action="resubmit"
-          label="Resubmit for review"
+          label={t("Resubmit for review")}
           icon={<RotateCcw />}
           variant="outline"
         />
@@ -166,7 +170,7 @@ export function ListingStatusActions({
           kind={kind}
           id={id}
           action="deactivate"
-          label="Deactivate"
+          label={t("Deactivate")}
           icon={<Ban />}
           variant="outline"
         />
@@ -176,7 +180,7 @@ export function ListingStatusActions({
           kind={kind}
           id={id}
           action="activate"
-          label="Activate"
+          label={t("Activate")}
           icon={<Play />}
           variant="default"
         />

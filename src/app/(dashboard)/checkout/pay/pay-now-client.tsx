@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
@@ -28,6 +29,7 @@ type Phase = "creating" | "ready" | "verifying" | "done" | "error";
  * server to verify — it is never trusted on its own.
  */
 export function PayNowClient({ checkoutId }: { checkoutId: string }) {
+  const t = useT();
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>("creating");
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +45,7 @@ export function PayNowClient({ checkoutId }: { checkoutId: string }) {
       const result = await createPaymentOrderAction(undefined, formData);
 
       if (!result.success) {
-        setError(result.error.message);
+        setError(t(result.error.message));
         setPhase("error");
         return;
       }
@@ -65,7 +67,7 @@ export function PayNowClient({ checkoutId }: { checkoutId: string }) {
           setPhase("done");
           setTimeout(() => router.push("/orders"), 1200);
         } else {
-          setError(verified.error.message);
+          setError(t(verified.error.message));
           setPhase("error");
         }
         return;
@@ -98,7 +100,7 @@ export function PayNowClient({ checkoutId }: { checkoutId: string }) {
                 setPhase("done");
                 setTimeout(() => router.push("/orders"), 1200);
               } else {
-                setError(verified.error.message);
+                setError(t(verified.error.message));
                 setPhase("error");
               }
             });
@@ -124,7 +126,7 @@ export function PayNowClient({ checkoutId }: { checkoutId: string }) {
     return (
       <Alert>
         <CheckCircle2 className="size-4" />
-        <AlertDescription>Payment confirmed. Redirecting to your orders…</AlertDescription>
+        <AlertDescription>{t("Payment confirmed. Redirecting to your orders…")}</AlertDescription>
       </Alert>
     );
   }

@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { Toast as ToastPrimitive } from "@base-ui/react/toast";
 import { CheckCircle2, Info, TriangleAlert, XCircle, X } from "lucide-react";
 import { cn } from "cn";
@@ -54,6 +55,7 @@ function ToastProvider({ children }: { children: React.ReactNode }) {
 }
 
 function Toaster() {
+  const t = useT();
   const { toasts } = ToastPrimitive.useToastManager();
 
   return (
@@ -77,7 +79,7 @@ function Toaster() {
               </div>
               <ToastPrimitive.Close
                 className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 -m-1 flex size-7 shrink-0 items-center justify-center rounded-md focus-visible:ring-2 focus-visible:outline-none"
-                aria-label="Dismiss notification"
+                aria-label={t("Dismiss notification")}
               >
                 <X className="size-4" />
               </ToastPrimitive.Close>

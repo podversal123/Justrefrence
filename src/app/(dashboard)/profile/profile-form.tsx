@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
@@ -14,10 +15,11 @@ import type { ApiResult } from "@/lib/api-response";
 const initialState: ApiResult<null> = { success: true, data: null, meta: { requestId: "" } };
 
 function SubmitButton() {
+  const t = useT();
   const { pending } = useFormStatus();
   return (
     <Button type="submit" disabled={pending}>
-      {pending ? "Saving…" : "Save changes"}
+      {pending ? t("Saving…") : t("Save changes")}
     </Button>
   );
 }
@@ -33,6 +35,7 @@ export function ProfileForm({
   mobile: string | null;
   mobileVerified: boolean;
 }) {
+  const t = useT();
   const [state, formAction] = useActionState(updateProfileAction, initialState);
   const submitted = state !== initialState;
 
@@ -41,29 +44,29 @@ export function ProfileForm({
       {submitted && !state.success ? (
         <Alert variant="destructive">
           <AlertCircle className="size-4" />
-          <AlertDescription>{state.error.message}</AlertDescription>
+          <AlertDescription>{t(state.error.message)}</AlertDescription>
         </Alert>
       ) : null}
       {submitted && state.success ? (
         <Alert>
           <CheckCircle2 className="size-4" />
-          <AlertDescription>Profile updated.</AlertDescription>
+          <AlertDescription>{t("Profile updated.")}</AlertDescription>
         </Alert>
       ) : null}
 
       <FormGrid>
         <div className="space-y-2">
-          <Label htmlFor="fullName">Full name</Label>
+          <Label htmlFor="fullName">{t("Full name")}</Label>
           <Input id="fullName" name="fullName" defaultValue={fullName ?? ""} required />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="email-display">Email</Label>
+          <Label htmlFor="email-display">{t("Email")}</Label>
           <Input id="email-display" value={email} disabled readOnly />
         </div>
 
         <div className={`space-y-2 ${FULL_ROW}`}>
-          <Label htmlFor="mobile-display">Mobile</Label>
+          <Label htmlFor="mobile-display">{t("Mobile")}</Label>
           <Input
             id="mobile-display"
             value={mobile ?? "Not added"}
@@ -73,8 +76,10 @@ export function ProfileForm({
           />
           <p id="mobile-help" className="text-muted-foreground text-xs">
             {mobile
-              ? `${mobileVerified ? "Verified. " : "Not verified yet. "}To change your mobile number, contact support.`
-              : "Add a mobile number by contacting support."}
+              ? mobileVerified
+                ? t("Verified. To change your mobile number, contact support.")
+                : t("Not verified yet. To change your mobile number, contact support.")
+              : t("Add a mobile number by contacting support.")}
           </p>
         </div>
       </FormGrid>

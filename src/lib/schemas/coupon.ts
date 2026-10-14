@@ -2,7 +2,7 @@ import { z } from "zod";
 
 /** Coupon administration — shared client+server validation. Amounts are typed in rupees / percent and converted exactly (no floats). */
 
-const rupees = z
+export const couponRupees = z
   .string()
   .trim()
   .regex(/^\d{1,9}(\.\d{1,2})?$/, "Enter an amount in rupees, e.g. 200 or 199.50.")
@@ -12,7 +12,7 @@ const rupees = z
   });
 
 /** "10" -> 1000 basis points, "7.5" -> 750; must be within (0, 100]. */
-const percentToBps = z
+export const couponPercentToBps = z
   .string()
   .trim()
   .regex(/^\d{1,3}(\.\d{1,2})?$/, "Enter a percentage, e.g. 10 or 7.5.")
@@ -30,7 +30,7 @@ const optionalInt = (min: number, message: string) =>
     .transform((value) => (value ? Number(value) : undefined))
     .refine((value) => value === undefined || (Number.isInteger(value) && value >= min), message);
 
-const dateOnly = z
+export const couponDateOnly = z
   .string()
   .trim()
   .regex(/^\d{4}-\d{2}-\d{2}$/, "Choose a date.");
@@ -46,14 +46,14 @@ export const createCouponSchema = z
     percent: z.string().trim().optional(),
     fixedRupees: z.string().trim().optional(),
     minOrderRupees: z.string().trim().optional(),
-    startsOn: dateOnly,
+    startsOn: couponDateOnly,
     expiresOn: z.string().trim().optional(),
     usageLimit: optionalInt(1, "Total uses must be a whole number of 1 or more."),
     usageLimitPerMember: optionalInt(1, "Uses per member must be 1 or more."),
   })
   .superRefine((data, ctx) => {
     if (data.discountType === "PERCENT") {
-      const parsed = percentToBps.safeParse(data.percent ?? "");
+      const parsed = couponPercentToBps.safeParse(data.percent ?? "");
       if (!parsed.success)
         ctx.addIssue({
           code: "custom",
@@ -61,7 +61,7 @@ export const createCouponSchema = z
           message: parsed.error.issues[0]?.message ?? "Enter a percentage.",
         });
     } else {
-      const parsed = rupees.safeParse(data.fixedRupees ?? "");
+      const parsed = couponRupees.safeParse(data.fixedRupees ?? "");
       if (!parsed.success)
         ctx.addIssue({
           code: "custom",
@@ -76,7 +76,7 @@ export const createCouponSchema = z
         });
     }
     if (data.minOrderRupees) {
-      const parsed = rupees.safeParse(data.minOrderRupees);
+      const parsed = couponRupees.safeParse(data.minOrderRupees);
       if (!parsed.success)
         ctx.addIssue({
           code: "custom",
@@ -85,7 +85,7 @@ export const createCouponSchema = z
         });
     }
     if (data.expiresOn) {
-      if (!dateOnly.safeParse(data.expiresOn).success)
+      if (!couponDateOnly.safeParse(data.expiresOn).success)
         ctx.addIssue({ code: "custom", path: ["expiresOn"], message: "Choose a date." });
       else if (data.expiresOn < data.startsOn)
         ctx.addIssue({
@@ -98,9 +98,10 @@ export const createCouponSchema = z
   .transform((data) => ({
     code: data.code,
     discountType: data.discountType,
-    valuePercentBps: data.discountType === "PERCENT" ? percentToBps.parse(data.percent) : null,
-    valueFixed: data.discountType === "FIXED" ? rupees.parse(data.fixedRupees) : null,
-    minOrderAmount: data.minOrderRupees ? rupees.parse(data.minOrderRupees) : 0n,
+    valuePercentBps:
+      data.discountType === "PERCENT" ? couponPercentToBps.parse(data.percent) : null,
+    valueFixed: data.discountType === "FIXED" ? couponRupees.parse(data.fixedRupees) : null,
+    minOrderAmount: data.minOrderRupees ? couponRupees.parse(data.minOrderRupees) : 0n,
     startsAt: new Date(`${data.startsOn}T00:00:00.000Z`),
     // Valid THROUGH the chosen day: expires at the end of it.
     expiresAt: data.expiresOn ? new Date(`${data.expiresOn}T23:59:59.999Z`) : null,

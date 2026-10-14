@@ -16,6 +16,8 @@ export interface CouponRow {
   usageLimit: number | null;
   usageLimitPerMember: number;
   deletedAt: Date | null;
+  /** Set on a coupon paid out as a reward: only that member (a MemberProfile id) can use it. */
+  assignedMemberId?: string | null;
 }
 
 export interface CouponUsage {
@@ -58,7 +60,12 @@ export function validateCoupon(
   cartSubtotal: bigint,
   usage: CouponUsage,
   now: Date = new Date(),
+  /** The member checking out. A coupon assigned to someone else is reported as not found, so it can't be probed. */
+  memberId?: string | null,
 ): CouponValidationResult {
+  if (coupon.assignedMemberId && coupon.assignedMemberId !== memberId) {
+    return { valid: false, failure: "NOT_FOUND" };
+  }
   if (coupon.deletedAt) return { valid: false, failure: "DELETED" };
   if (now < coupon.startsAt) return { valid: false, failure: "NOT_STARTED" };
   if (coupon.expiresAt && now >= coupon.expiresAt) return { valid: false, failure: "EXPIRED" };

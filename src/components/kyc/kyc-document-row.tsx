@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { useRef } from "react";
 import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
@@ -23,11 +24,12 @@ export interface KycDocumentView {
 }
 
 function UploadButton({ replacing }: { replacing: boolean }) {
+  const t = useT();
   const { pending } = useFormStatus();
   return (
     <Button type="submit" size="sm" disabled={pending}>
       <Upload />
-      {pending ? "Uploading…" : replacing ? "Upload again" : "Upload"}
+      {pending ? t("Uploading…") : replacing ? t("Upload again") : t("Upload")}
     </Button>
   );
 }
@@ -54,6 +56,7 @@ export function KycDocumentRow({
   hint: string;
   document: KycDocumentView | null;
 }) {
+  const t = useT();
   const [state, formAction] = useActionState(uploadKycDocumentAction, initialState);
   const inputRef = useRef<HTMLInputElement>(null);
   const submitted = state !== initialState;
@@ -89,12 +92,12 @@ export function KycDocumentRow({
             rel="noopener noreferrer"
             className="text-primary inline-flex items-center gap-1 font-medium hover:underline"
           >
-            View
+            {t("View")}
             <ExternalLink className="size-3.5" aria-hidden="true" />
           </a>
         </div>
       ) : (
-        <p className="text-muted-foreground text-sm">Not uploaded yet.</p>
+        <p className="text-muted-foreground text-sm">{t("Not uploaded yet.")}</p>
       )}
 
       {document ? (
@@ -108,13 +111,13 @@ export function KycDocumentRow({
       {submitted && !state.success ? (
         <Alert variant="destructive">
           <AlertCircle className="size-4" />
-          <AlertDescription>{state.error.message}</AlertDescription>
+          <AlertDescription>{t(state.error.message)}</AlertDescription>
         </Alert>
       ) : null}
       {submitted && state.success ? (
         <Alert>
           <CheckCircle2 className="size-4" />
-          <AlertDescription>Uploaded. We will check it soon.</AlertDescription>
+          <AlertDescription>{t("Uploaded. We will check it soon.")}</AlertDescription>
         </Alert>
       ) : null}
 
@@ -122,7 +125,7 @@ export function KycDocumentRow({
         <form action={formAction} className="flex flex-wrap items-center gap-3">
           <input type="hidden" name="type" value={type} />
           <label htmlFor={inputId} className="sr-only">
-            {label} file
+            {t("{label} file", { label })}
           </label>
           <input
             ref={inputRef}

@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
 import Link from "next/link";
@@ -21,15 +22,17 @@ import type { ApiResult } from "@/lib/api-response";
 const initialState: ApiResult<null> = { success: true, data: null, meta: { requestId: "" } };
 
 function SubmitButton() {
+  const t = useT();
   const { pending } = useFormStatus();
   return (
     <Button type="submit" className="w-full" disabled={pending}>
-      {pending ? "Creating account…" : "Create account"}
+      {pending ? t("Creating account…") : t("Create account")}
     </Button>
   );
 }
 
 export function RegisterForm({ initialReferralCode }: { initialReferralCode?: string }) {
+  const t = useT();
   const [state, formAction] = useActionState(requestRegistrationAction, initialState);
 
   return (
@@ -37,29 +40,29 @@ export function RegisterForm({ initialReferralCode }: { initialReferralCode?: st
       {!state.success ? (
         <Alert variant="destructive">
           <AlertCircle className="size-4" />
-          <AlertDescription>{state.error.message}</AlertDescription>
+          <AlertDescription>{t(state.error.message)}</AlertDescription>
         </Alert>
       ) : null}
 
       <div className="space-y-2">
-        <Label htmlFor="fullName">Full name</Label>
+        <Label htmlFor="fullName">{t("Full name")}</Label>
         <Input id="fullName" name="fullName" autoComplete="name" required />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="email">{t("Email")}</Label>
         <Input
           id="email"
           name="email"
           type="email"
           autoComplete="email"
           required
-          placeholder="you@example.com"
+          placeholder={t("you@example.com")}
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="phone">Mobile number</Label>
+        <Label htmlFor="phone">{t("Mobile number")}</Label>
         <Input
           id="phone"
           name="phone"
@@ -71,12 +74,12 @@ export function RegisterForm({ initialReferralCode }: { initialReferralCode?: st
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="password">Password</Label>
+        <Label htmlFor="password">{t("Password")}</Label>
         <Input id="password" name="password" type="password" autoComplete="new-password" required />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="confirmPassword">Confirm password</Label>
+        <Label htmlFor="confirmPassword">{t("Confirm password")}</Label>
         <Input
           id="confirmPassword"
           name="confirmPassword"
@@ -87,21 +90,25 @@ export function RegisterForm({ initialReferralCode }: { initialReferralCode?: st
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="channel">Verify via</Label>
+        <Label htmlFor="channel">{t("Verify via")}</Label>
         <Select name="channel" defaultValue="EMAIL" required>
           <SelectTrigger id="channel" className="w-full">
-            <SelectValue placeholder="Choose a channel" />
+            <SelectValue placeholder={t("Choose a channel")}>
+              {(value: string) =>
+                value === "SMS" ? t("SMS") : value === "WHATSAPP" ? t("WhatsApp") : t("Email")
+              }
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="EMAIL">Email</SelectItem>
-            <SelectItem value="SMS">SMS</SelectItem>
-            <SelectItem value="WHATSAPP">WhatsApp</SelectItem>
+            <SelectItem value="EMAIL">{t("Email")}</SelectItem>
+            <SelectItem value="SMS">{t("SMS")}</SelectItem>
+            <SelectItem value="WHATSAPP">{t("WhatsApp")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="referralCode">Referral code (optional)</Label>
+        <Label htmlFor="referralCode">{t("Referral code (optional)")}</Label>
         <Input
           id="referralCode"
           name="referralCode"
@@ -113,9 +120,9 @@ export function RegisterForm({ initialReferralCode }: { initialReferralCode?: st
       <SubmitButton />
 
       <p className="text-muted-foreground text-center text-xs">
-        Already have an account?{" "}
+        {t("Already have an account?")}{" "}
         <Link href="/login" className="underline underline-offset-4">
-          Sign in
+          {t("Sign in")}
         </Link>
       </p>
     </form>

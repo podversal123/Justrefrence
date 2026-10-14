@@ -1,3 +1,5 @@
+import { msg } from "@/i18n/locales";
+import { getT } from "@/i18n/server";
 import Link from "next/link";
 import type { Route } from "next";
 import { Package, Search } from "lucide-react";
@@ -16,10 +18,10 @@ import {
 import { cn } from "@/lib/utils";
 
 const SORTS = [
-  { key: "newest", label: "Newest", sortBy: "createdAt", sortDir: "desc" },
-  { key: "price-asc", label: "Price: low to high", sortBy: "price", sortDir: "asc" },
-  { key: "price-desc", label: "Price: high to low", sortBy: "price", sortDir: "desc" },
-  { key: "name", label: "Name: A to Z", sortBy: "title", sortDir: "asc" },
+  { key: "newest", label: msg("Newest"), sortBy: "createdAt", sortDir: "desc" },
+  { key: "price-asc", label: msg("Price: low to high"), sortBy: "price", sortDir: "asc" },
+  { key: "price-desc", label: msg("Price: high to low"), sortBy: "price", sortDir: "desc" },
+  { key: "name", label: msg("Name: A to Z"), sortBy: "title", sortDir: "asc" },
 ] as const;
 
 /**
@@ -39,6 +41,7 @@ export async function PublicCatalogList({
   kind: CatalogKind;
   searchParams: Record<string, string | undefined>;
 }) {
+  const t = await getT();
   const sort = SORTS.find((s) => s.key === searchParams["sort"]) ?? SORTS[0];
   const parsed = catalogListQuerySchema.safeParse({
     ...searchParams,
@@ -82,21 +85,24 @@ export async function PublicCatalogList({
           className="bg-primary/25 absolute -top-32 -right-24 -z-10 size-96 rounded-full blur-3xl"
         />
         <div className="mx-auto w-full max-w-7xl px-4 py-10 sm:py-14">
-          <nav aria-label="Breadcrumb" className="text-ink-foreground/70 mb-4 text-xs">
+          <nav aria-label={t("Breadcrumb")} className="text-ink-foreground/70 mb-4 text-xs">
             <Link href="/" className="hover:text-ink-foreground">
-              Home
+              {t("Home")}
             </Link>{" "}
-            / <span aria-current="page">{labels.plural}</span>
+            / <span aria-current="page">{t(labels.plural)}</span>
             {activeCategory ? ` / ${activeCategory.name}` : ""}
           </nav>
           <div className="flex flex-wrap items-end justify-between gap-6">
             <div className="max-w-xl space-y-2">
               <h1 className="font-display text-4xl font-bold tracking-tight sm:text-5xl">
-                {activeCategory ? activeCategory.name : labels.plural}
+                {activeCategory ? activeCategory.name : t(labels.plural)}
               </h1>
               <p className="text-ink-foreground/75">
-                {activeCategory ? labels.plural : `Browse ${labels.plural.toLowerCase()}`} from
-                approved vendors. Every seller is reviewed before they can list.
+                {t("{what} from approved vendors. Every seller is reviewed before they can list.", {
+                  what: activeCategory
+                    ? t(labels.plural)
+                    : t("Browse {kind}", { kind: t(labels.plural).toLowerCase() }),
+                })}
               </p>
             </div>
             <form method="get" role="search" className="flex w-full max-w-md gap-2">
@@ -105,7 +111,7 @@ export async function PublicCatalogList({
               ) : null}
               {sort.key !== "newest" ? <input type="hidden" name="sort" value={sort.key} /> : null}
               <label htmlFor="catalog-search" className="sr-only">
-                Search {labels.plural.toLowerCase()}
+                {t("Search {kind}", { kind: t(labels.plural).toLowerCase() })}
               </label>
               <div className="relative flex-1">
                 <Search
@@ -116,12 +122,12 @@ export async function PublicCatalogList({
                   id="catalog-search"
                   name="search"
                   defaultValue={query.search}
-                  placeholder={`Search ${labels.plural.toLowerCase()}`}
+                  placeholder={t("Search {kind}", { kind: t(labels.plural).toLowerCase() })}
                   className="bg-background text-foreground h-11 w-full rounded-lg border-0 pr-3 pl-9 text-sm shadow-sm outline-none focus-visible:ring-3 focus-visible:ring-white/40"
                 />
               </div>
               <Button type="submit" size="touch">
-                Search
+                {t("Search")}
               </Button>
             </form>
           </div>
@@ -129,9 +135,9 @@ export async function PublicCatalogList({
       </header>
 
       <div className="mx-auto grid w-full max-w-7xl gap-8 px-4 py-8 lg:grid-cols-[15rem_1fr]">
-        <aside aria-label="Categories" className="lg:sticky lg:top-32 lg:self-start">
+        <aside aria-label={t("Categories")} className="lg:sticky lg:top-32 lg:self-start">
           <div className="surface-card overflow-hidden">
-            <p className="border-b px-4 py-3 text-sm font-semibold">Categories</p>
+            <p className="border-b px-4 py-3 text-sm font-semibold">{t("Categories")}</p>
             <ul className="p-2">
               <li>
                 <Link
@@ -145,7 +151,7 @@ export async function PublicCatalogList({
                   <span className="bg-muted text-muted-foreground flex size-7 items-center justify-center rounded-md">
                     <Package className="size-4" aria-hidden="true" />
                   </span>
-                  All {labels.plural.toLowerCase()}
+                  {t("All {kind}", { kind: t(labels.plural).toLowerCase() })}
                 </Link>
               </li>
               {categories.map((category: { id: string; name: string }) => {
@@ -179,16 +185,15 @@ export async function PublicCatalogList({
           </div>
         </aside>
 
-        <section aria-label={labels.plural} className="min-w-0 space-y-5">
+        <section aria-label={t(labels.plural)} className="min-w-0 space-y-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-muted-foreground text-sm">
-              {items.length}{" "}
-              {items.length === 1 ? labels.singular.toLowerCase() : labels.plural.toLowerCase()}
+              {items.length} {t(items.length === 1 ? labels.singular : labels.plural).toLowerCase()}
               {nextCursor ? "+" : ""}
-              {query.search ? ` for “${query.search}”` : ""}
+              {query.search ? ` ${t("for “{query}”", { query: query.search })}` : ""}
             </p>
-            <nav aria-label="Sort" className="flex flex-wrap items-center gap-1.5 text-sm">
-              <span className="text-muted-foreground mr-1">Sort</span>
+            <nav aria-label={t("Sort")} className="flex flex-wrap items-center gap-1.5 text-sm">
+              <span className="text-muted-foreground mr-1">{t("Sort")}</span>
               {SORTS.map((option) => (
                 <Link
                   key={option.key}
@@ -201,7 +206,7 @@ export async function PublicCatalogList({
                       : "bg-background hover:bg-accent",
                   )}
                 >
-                  {option.label}
+                  {t(option.label)}
                 </Link>
               ))}
             </nav>
@@ -212,13 +217,13 @@ export async function PublicCatalogList({
               icon={Package}
               title={
                 hasActiveFilters
-                  ? `No ${labels.plural.toLowerCase()} match your filters`
-                  : `No ${labels.plural.toLowerCase()} yet`
+                  ? t("No {kind} match your filters", { kind: t(labels.plural).toLowerCase() })
+                  : t("No {kind} yet", { kind: t(labels.plural).toLowerCase() })
               }
               description={
                 hasActiveFilters
-                  ? "Try a different search term or clear the filters."
-                  : "Check back soon."
+                  ? t("Try a different search term or clear the filters.")
+                  : t("Check back soon.")
               }
               action={
                 hasActiveFilters ? (
@@ -226,7 +231,7 @@ export async function PublicCatalogList({
                     href={`/${segment}` as Route}
                     className="text-primary text-sm font-medium hover:underline"
                   >
-                    Clear filters
+                    {t("Clear filters")}
                   </Link>
                 ) : undefined
               }

@@ -1,5 +1,7 @@
 "use client";
 
+import { msg } from "@/i18n/locales";
+import { useT } from "@/i18n/provider";
 import { useRouter } from "next/navigation";
 import type { Route } from "next";
 import { Fragment, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
@@ -24,10 +26,10 @@ import type { MarketplaceSearchResult, SearchHit } from "@/server/domain/search/
  */
 
 const SCOPES = [
-  { value: "all", label: "All" },
-  { value: "products", label: "Products" },
-  { value: "services", label: "Services" },
-  { value: "projects", label: "Projects" },
+  { value: "all", label: msg("All") },
+  { value: "products", label: msg("Products") },
+  { value: "services", label: msg("Services") },
+  { value: "projects", label: msg("Projects") },
 ] as const;
 type Scope = (typeof SCOPES)[number]["value"];
 
@@ -91,7 +93,7 @@ function searchUrl(scope: Scope, query: string): string {
   return scope === "all" ? `/search?q=${q}` : `/${scope}?search=${q}`;
 }
 
-function hitOption(hit: SearchHit, query: string): Option {
+function hitOption(hit: SearchHit, query: string, t: (text: string) => string): Option {
   return {
     id: `${hit.kind}-${hit.id}`,
     href: hit.href,
@@ -108,7 +110,7 @@ function hitOption(hit: SearchHit, query: string): Option {
           </span>
         </span>
         <span className="shrink-0 text-xs font-medium tabular-nums">
-          {hit.price === null ? "Quote" : formatPaise(hit.price, hit.currency)}
+          {hit.price === null ? t("Quote") : formatPaise(hit.price, hit.currency)}
         </span>
       </>
     ),
@@ -127,6 +129,7 @@ export function PortalSearch({
   /** `hero` is the larger, elevated bar used on the homepage hero. */
   variant?: "header" | "hero";
 }) {
+  const t = useT();
   const router = useRouter();
   const reactId = useId();
   const listId = `${idPrefix}-${reactId}-list`;
@@ -229,7 +232,7 @@ export function PortalSearch({
       if (recent.length > 0) {
         out.push({
           key: "recent",
-          heading: "Recent searches",
+          heading: t("Recent searches"),
           options: recent.map((term) => ({
             id: `recent-${term}`,
             href: searchUrl(scope, term),
@@ -246,7 +249,7 @@ export function PortalSearch({
       if (popularCategories.length > 0) {
         out.push({
           key: "popular",
-          heading: "Popular categories",
+          heading: t("Popular categories"),
           options: popularCategories.map((c) => ({
             id: `pop-${c.id}`,
             href: c.href,
@@ -272,7 +275,7 @@ export function PortalSearch({
       if (cats.length > 0) {
         out.push({
           key: "cats",
-          heading: "Categories",
+          heading: t("Categories"),
           options: cats.map((c) => ({
             id: `cat-${c.kind}-${c.id}`,
             href: c.href,
@@ -284,7 +287,7 @@ export function PortalSearch({
                   <Highlight text={c.name} query={trimmed} />
                 </span>
                 <span className="text-muted-foreground ml-auto shrink-0 text-xs">
-                  {c.kind === "PRODUCT" ? "Products" : "Services"}
+                  {c.kind === "PRODUCT" ? t("Products") : t("Services")}
                 </span>
               </>
             ),
@@ -295,23 +298,23 @@ export function PortalSearch({
     if (show("products") && result.products.length > 0)
       out.push({
         key: "products",
-        heading: "Products",
-        options: result.products.map((h) => hitOption(h, trimmed)),
+        heading: t("Products"),
+        options: result.products.map((h) => hitOption(h, trimmed, t)),
       });
     if (show("services") && result.services.length > 0)
       out.push({
         key: "services",
-        heading: "Services",
-        options: result.services.map((h) => hitOption(h, trimmed)),
+        heading: t("Services"),
+        options: result.services.map((h) => hitOption(h, trimmed, t)),
       });
     if (show("projects") && result.projects.length > 0)
       out.push({
         key: "projects",
-        heading: "Projects",
-        options: result.projects.map((h) => hitOption(h, trimmed)),
+        heading: t("Projects"),
+        options: result.projects.map((h) => hitOption(h, trimmed, t)),
       });
     return out;
-  }, [searching, recent, popularCategories, result, scope, trimmed]);
+  }, [searching, recent, popularCategories, result, scope, trimmed, t]);
 
   // The final "see all results" option is always available when searching.
   const seeAll: Option | null = useMemo(
@@ -325,14 +328,14 @@ export function PortalSearch({
               <>
                 <Search className="text-primary size-4 shrink-0" aria-hidden="true" />
                 <span className="text-primary truncate text-sm font-medium">
-                  See all results for &ldquo;{trimmed}&rdquo;
+                  {t("See all results for “{query}”", { query: trimmed })}
                 </span>
                 <ArrowRight className="text-primary ml-auto size-4 shrink-0" aria-hidden="true" />
               </>
             ),
           }
         : null,
-    [searching, scope, trimmed],
+    [searching, scope, trimmed, t],
   );
 
   const flat: Option[] = useMemo(
@@ -398,7 +401,7 @@ export function PortalSearch({
         )}
       >
         <label htmlFor={`${idPrefix}-scope`} className="sr-only">
-          Search in
+          {t("Search in")}
         </label>
         <select
           id={`${idPrefix}-scope`}
@@ -411,12 +414,12 @@ export function PortalSearch({
         >
           {SCOPES.map((s) => (
             <option key={s.value} value={s.value}>
-              {s.label}
+              {t(s.label)}
             </option>
           ))}
         </select>
         <label htmlFor={`${idPrefix}-input`} className="sr-only">
-          Search the marketplace
+          {t("Search the marketplace")}
         </label>
         <input
           ref={inputRef}
@@ -439,7 +442,7 @@ export function PortalSearch({
             setOpen(true);
           }}
           onKeyDown={onKeyDown}
-          placeholder="Search products, services, projects"
+          placeholder={t("Search products, services, projects")}
           maxLength={80}
           enterKeyHint="search"
           className="min-w-0 flex-1 bg-transparent px-3 text-sm outline-none [&::-webkit-search-cancel-button]:hidden"
@@ -455,7 +458,7 @@ export function PortalSearch({
             className="text-muted-foreground hover:text-foreground px-2"
           >
             <X className="size-4" />
-            <span className="sr-only">Clear search</span>
+            <span className="sr-only">{t("Clear search")}</span>
           </button>
         ) : (
           <kbd
@@ -467,7 +470,7 @@ export function PortalSearch({
         )}
         <Button type="submit" className="h-full rounded-none px-4">
           <Search />
-          <span className="sr-only sm:not-sr-only">Search</span>
+          <span className="sr-only sm:not-sr-only">{t("Search")}</span>
         </Button>
       </div>
 
@@ -477,7 +480,7 @@ export function PortalSearch({
 
       {showPanel ? (
         <div className="bg-popover text-popover-foreground absolute top-full right-0 left-0 z-50 mt-1 max-h-[70vh] overflow-y-auto rounded-lg border shadow-lg">
-          <ul id={listId} role="listbox" aria-label="Search suggestions" className="py-1">
+          <ul id={listId} role="listbox" aria-label={t("Search suggestions")} className="py-1">
             {searching && status === "loading" && !result ? (
               <li
                 role="presentation"
@@ -487,17 +490,19 @@ export function PortalSearch({
                   className="size-4 animate-spin motion-reduce:animate-none"
                   aria-hidden="true"
                 />
-                Searching…
+                {t("Searching…")}
               </li>
             ) : null}
             {searching && status === "error" ? (
               <li role="presentation" className="text-muted-foreground px-3 py-3 text-sm">
-                Couldn&apos;t load suggestions. Press Enter to search anyway.
+                {t("Couldn't load suggestions. Press Enter to search anyway.")}
               </li>
             ) : null}
             {searching && status === "idle" && result && groups.length === 0 ? (
               <li role="presentation" className="text-muted-foreground px-3 py-3 text-sm">
-                No quick matches for &ldquo;{trimmed}&rdquo;. Press Enter to search everything.
+                {t("No quick matches for “{query}”. Press Enter to search everything.", {
+                  query: trimmed,
+                })}
               </li>
             ) : null}
 
@@ -518,7 +523,7 @@ export function PortalSearch({
                       }}
                       className="hover:text-foreground font-normal underline"
                     >
-                      Clear
+                      {t("Clear")}
                     </button>
                   ) : null}
                 </li>

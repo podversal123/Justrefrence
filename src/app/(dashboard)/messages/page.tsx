@@ -1,3 +1,5 @@
+import { msg } from "@/i18n/locales";
+import { getFormat, getT } from "@/i18n/server";
 import type { Metadata, Route } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -12,12 +14,14 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { ComposeForm, type Recipient } from "./compose-form";
 import { MarkReadButton } from "./mark-read-button";
 
-export const metadata: Metadata = { title: "Messages" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("Messages") };
+}
 
 type Box = "inbox" | "sent" | "team";
 
@@ -29,6 +33,8 @@ export default async function MessagesPage({
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
+  const t = await getT();
+  const { formatDateTime } = await getFormat();
   const session = await getAuthSession();
   if (!session) redirect("/login");
   if (!session.permissions.has("message:read")) redirect("/unauthorized");
@@ -58,26 +64,26 @@ export default async function MessagesPage({
   const preselected = params["to"];
 
   const tabs: { key: Box; label: string }[] = [
-    { key: "inbox", label: "Inbox" },
-    ...(isStaff ? [{ key: "team" as const, label: "Team inbox" }] : []),
-    { key: "sent", label: "Sent" },
+    { key: "inbox", label: msg("Inbox") },
+    ...(isStaff ? [{ key: "team" as const, label: msg("Team inbox") }] : []),
+    { key: "sent", label: msg("Sent") },
   ];
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
       <div>
-        <h1>Messages</h1>
+        <h1>{t("Messages")}</h1>
         <p className="text-muted-foreground">
           {isStaff
-            ? "Write to members and vendors, and read what they send the team."
-            : "Write to the Justreference team and read their replies."}
+            ? t("Write to members and vendors, and read what they send the team.")
+            : t("Write to the Justreference team and read their replies.")}
         </p>
       </div>
 
       {canSend ? (
         <Card>
           <CardHeader>
-            <CardTitle>New message</CardTitle>
+            <CardTitle>{t("New message")}</CardTitle>
           </CardHeader>
           <CardContent>
             <ComposeForm recipients={recipients} defaultRecipientId={preselected} />
@@ -85,7 +91,7 @@ export default async function MessagesPage({
         </Card>
       ) : null}
 
-      <nav aria-label="Message folders" className="flex gap-1 border-b">
+      <nav aria-label={t("Message folders")} className="flex gap-1 border-b">
         {tabs.map((tab) => (
           <Link
             key={tab.key}
@@ -98,7 +104,7 @@ export default async function MessagesPage({
                 : "text-muted-foreground hover:text-foreground border-transparent",
             )}
           >
-            {tab.label}
+            {t(tab.label)}
           </Link>
         ))}
       </nav>
@@ -106,11 +112,11 @@ export default async function MessagesPage({
       {messages.length === 0 ? (
         <EmptyState
           icon={MailOpen}
-          title={box === "sent" ? "Nothing sent yet" : "No messages"}
+          title={box === "sent" ? t("Nothing sent yet") : t("No messages")}
           description={
             box === "sent"
-              ? "Messages you send will be listed here."
-              : "Messages addressed to you will appear here."
+              ? t("Messages you send will be listed here.")
+              : t("Messages addressed to you will appear here.")
           }
         />
       ) : (
@@ -122,7 +128,7 @@ export default async function MessagesPage({
                 <details className="bg-card rounded-lg border">
                   <summary className="flex cursor-pointer flex-wrap items-center justify-between gap-2 px-4 py-3">
                     <span className="flex min-w-0 items-center gap-2">
-                      {unread ? <Badge>New</Badge> : null}
+                      {unread ? <Badge>{t("New")}</Badge> : null}
                       <span className={cn("truncate text-sm", unread && "font-semibold")}>
                         {message.subject}
                       </span>

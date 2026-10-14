@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,7 @@ export function DeleteListingButton({
   title: string;
   redirectTo: string;
 }) {
+  const t = useT();
   const router = useRouter();
 
   return (
@@ -25,13 +27,13 @@ export function DeleteListingButton({
       trigger={
         <Button variant="destructive" size="sm">
           <Trash2 />
-          Delete
+          {t("Delete")}
         </Button>
       }
       title={`Delete "${title}"?`}
-      description="This removes it from the catalog. This can't be undone from the UI."
+      description={t("This removes it from the catalog. This can't be undone from the UI.")}
       hiddenFields={{ kind, id }}
-      confirmLabel="Delete"
+      confirmLabel={t("Delete")}
       variant="destructive"
       action={async (prevState, formData) => {
         const result = await deleteListingAction(prevState, formData);

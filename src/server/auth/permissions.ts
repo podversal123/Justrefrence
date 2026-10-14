@@ -115,6 +115,11 @@ export const PERMISSIONS = [
   "bid:accept",
   "bid:read:any",
 
+  // Forward auctions (vendor sells, members bid up)
+  "auction:create",
+  "auction:bid",
+  "auction:read:any",
+
   // Messaging, support, content
   "message:send",
   "message:read",
@@ -127,6 +132,10 @@ export const PERMISSIONS = [
   "blog:create",
   "blog:publish",
   "banner:manage",
+  "ad:create",
+  "sms:send",
+  "sms:read",
+  "ad:review",
   "announcement:manage",
   "feedback:submit",
   "feedback:read",

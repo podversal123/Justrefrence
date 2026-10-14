@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { FormField } from "@/components/ui/form-field";
@@ -24,17 +25,18 @@ export function ComposeForm({
   recipients: Recipient[] | null;
   defaultRecipientId?: string;
 }) {
+  const t = useT();
   return (
     <ActionForm
       action={sendMessageAction}
-      submitLabel="Send message"
-      pendingLabel="Sending…"
-      successMessage="Message sent"
+      submitLabel={t("Send message")}
+      pendingLabel={t("Sending…")}
+      successMessage={t("Message sent")}
     >
       {(errors) => (
         <>
           {recipients ? (
-            <FormField htmlFor="msg-to" label="To" error={errors["toUserId"]}>
+            <FormField htmlFor="msg-to" label={t("To")} error={errors["toUserId"]}>
               <NativeSelect
                 id="msg-to"
                 name="toUserId"
@@ -42,7 +44,7 @@ export function ComposeForm({
                 required
               >
                 <option value="" disabled>
-                  Choose a member or vendor
+                  {t("Choose a member or vendor")}
                 </option>
                 {recipients.map((r) => (
                   <option key={r.id} value={r.id}>
@@ -53,13 +55,13 @@ export function ComposeForm({
             </FormField>
           ) : (
             <p className="text-muted-foreground text-sm">
-              This message goes to the Justreference team.
+              {t("This message goes to the Justreference team.")}
             </p>
           )}
-          <FormField htmlFor="msg-subject" label="Subject" error={errors["subject"]}>
+          <FormField htmlFor="msg-subject" label={t("Subject")} error={errors["subject"]}>
             <Input id="msg-subject" name="subject" maxLength={140} required />
           </FormField>
-          <FormField htmlFor="msg-body" label="Message" error={errors["body"]}>
+          <FormField htmlFor="msg-body" label={t("Message")} error={errors["body"]}>
             <Textarea id="msg-body" name="body" rows={5} maxLength={4000} required />
           </FormField>
         </>

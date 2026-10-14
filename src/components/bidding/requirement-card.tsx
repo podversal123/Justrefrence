@@ -1,3 +1,6 @@
+import { T } from "@/i18n/t-text";
+import { msg } from "@/i18n/locales";
+import { getT } from "@/i18n/server";
 import Link from "next/link";
 import type { Route } from "next";
 import { Clock, MapPin, Package, Users } from "lucide-react";
@@ -24,13 +27,13 @@ export interface RequirementCardData {
 }
 
 const KIND_LABEL: Record<string, string> = {
-  PRODUCT: "Product",
-  SERVICE: "Service",
-  PROJECT: "Project",
+  PRODUCT: msg("Product"),
+  SERVICE: msg("Service"),
+  PROJECT: msg("Project"),
 };
 
 /** One row in a bids list — shared by the public browse page, "my requirements", "my bids" and the admin list. */
-export function RequirementCard({
+export async function RequirementCard({
   requirement,
   serverNow,
   href,
@@ -39,6 +42,7 @@ export function RequirementCard({
   serverNow: Date;
   href: string;
 }) {
+  const t = await getT();
   const status = effectiveStatus(requirement, serverNow);
   const open = status === "OPEN";
   return (
@@ -62,7 +66,7 @@ export function RequirementCard({
               serverNow={serverNow.toISOString()}
             />
           ) : (
-            <span className="text-muted-foreground">Closed</span>
+            <span className="text-muted-foreground">{t("Closed")}</span>
           )}
         </span>
       </div>
@@ -72,30 +76,32 @@ export function RequirementCard({
       <dl className="text-muted-foreground mt-3 flex flex-wrap gap-x-6 gap-y-1 text-sm">
         <div className="flex items-center gap-1.5">
           <Package className="size-4" aria-hidden="true" />
-          <dt className="sr-only">Quantity</dt>
+          <dt className="sr-only">{t("Quantity")}</dt>
           <dd>
             {requirement.quantity.toLocaleString("en-IN")} {requirement.unit} ·{" "}
-            {KIND_LABEL[requirement.itemKind] ?? requirement.itemKind}
+            <T text={KIND_LABEL[requirement.itemKind] ?? requirement.itemKind} />
             {requirement.categoryLabel ? ` · ${requirement.categoryLabel}` : ""}
           </dd>
         </div>
         {requirement.deliveryCity ? (
           <div className="flex items-center gap-1.5">
             <MapPin className="size-4" aria-hidden="true" />
-            <dt className="sr-only">Deliver to</dt>
+            <dt className="sr-only">{t("Deliver to")}</dt>
             <dd>{requirement.deliveryCity}</dd>
           </div>
         ) : null}
         <div className="flex items-center gap-1.5">
           <Users className="size-4" aria-hidden="true" />
-          <dt className="sr-only">Bids</dt>
+          <dt className="sr-only">{t("Bids")}</dt>
           <dd>
-            {requirement._count.bids} bid{requirement._count.bids === 1 ? "" : "s"}
+            {requirement._count.bids === 1
+              ? t("1 bid")
+              : t("{count} bids", { count: requirement._count.bids })}
           </dd>
         </div>
         {requirement.estimatedValue !== null ? (
           <div>
-            <dt className="inline">Max budget </dt>
+            <dt className="inline">{t("Max budget")} </dt>
             <dd className="text-foreground inline font-medium tabular-nums">
               {formatPaise(requirement.estimatedValue.toString(), "INR")}
             </dd>

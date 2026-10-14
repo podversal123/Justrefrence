@@ -68,7 +68,10 @@ export function SelectFilter({
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>
-        {options.map((opt) => (
+        {[
+          { value: clearValue, label: placeholder },
+          ...options.filter((o) => o.value !== clearValue),
+        ].map((opt) => (
           <SelectItem key={opt.value} value={opt.value}>
             {opt.label}
           </SelectItem>
