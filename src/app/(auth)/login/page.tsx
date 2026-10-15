@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { getAuthSession } from "@/server/auth/session";
-import { PANEL_LABELS, describeRoles, getPanel } from "@/server/auth/panel";
+import { describeRoles, panelLabelFor } from "@/server/auth/panel";
 import { logoutAction } from "@/server/services/auth-actions";
 import { safeNextPath, DEFAULT_AFTER_LOGIN } from "@/lib/safe-next";
 import { LoginForm } from "./login-form";
@@ -39,7 +39,7 @@ export default async function LoginPage({
           <CardDescription>
             {t("{email} is signed in to the {panel}.", {
               email: session.email,
-              panel: t(PANEL_LABELS[getPanel(session)]),
+              panel: t(panelLabelFor(session)),
             })}{" "}
             {describeRoles(session.roles)
               .split(", ")

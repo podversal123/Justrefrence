@@ -2,7 +2,8 @@
 
 import { safeNextPath } from "@/lib/safe-next";
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
+import { PANEL_COOKIE } from "@/server/auth/panel";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/server/lib/prisma";
 import { forgotPasswordSchema, loginSchema, resetPasswordSchema } from "@/lib/schemas/auth";
@@ -284,6 +285,8 @@ export async function logoutAction(): Promise<void> {
   } = await supabase.auth.getUser();
 
   await supabase.auth.signOut();
+  // The remembered panel belongs to the person who just left, not to the next one on this browser.
+  (await cookies()).delete(PANEL_COOKIE);
 
   if (user) {
     await recordAudit({

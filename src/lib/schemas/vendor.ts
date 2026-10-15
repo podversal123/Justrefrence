@@ -17,6 +17,14 @@ export const createVendorSchema = z.object({
 });
 export type CreateVendorInput = z.infer<typeof createVendorSchema>;
 
+/** A member asking to start selling. The Super Admin decides; nothing opens up until then. */
+export const sellerApplicationSchema = z.object({
+  businessName: z.string().trim().min(2, "Enter your business or shop name.").max(200),
+  phone: mobileSchema,
+  gstin: optionalGstinSchema,
+});
+export type SellerApplicationInput = z.infer<typeof sellerApplicationSchema>;
+
 const VENDOR_STATUS_TRANSITIONS = [
   VendorApprovalStatus.APPROVED,
   VendorApprovalStatus.REJECTED,

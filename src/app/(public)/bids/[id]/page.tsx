@@ -232,7 +232,7 @@ export default async function BidDetailPage({ params }: { params: Promise<{ id: 
                     {t("Sign in")}
                   </Link>
                   <Link
-                    href={"/register" as Route}
+                    href={"/become-seller" as Route}
                     className={buttonVariants({ variant: "outline" })}
                   >
                     {t("Become a vendor")}

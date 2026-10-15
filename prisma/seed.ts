@@ -64,8 +64,6 @@ const ROLE_PERMISSIONS: Record<SystemRoleCode, Permission[]> = {
     "role:read",
     "permission:read",
     "vendor:apply",
-    "vendor:approve",
-    "vendor:reject",
     "vendor:suspend",
     "vendor:update:any",
     "product:create",

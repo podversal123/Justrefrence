@@ -347,7 +347,7 @@ async function GetStartedBand() {
             )}
           </p>
           <Link
-            href={"/register" as Route}
+            href={"/become-seller" as Route}
             className={buttonVariants({
               size: "touch",
               variant: "secondary",

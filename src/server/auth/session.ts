@@ -1,5 +1,7 @@
 import "server-only";
 import { cache } from "react";
+import { cookies } from "next/headers";
+import { PANEL_COOKIE, type SwitchablePanel } from "@/server/auth/panel";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/server/lib/prisma";
 import type { Permission, RoleCode } from "@/server/auth/permissions";
@@ -17,6 +19,8 @@ export interface AuthSession {
   hasMemberProfile: boolean;
   /** Null for non-vendors — used for catalog ownership checks (docs/adr/0011 §ownership). */
   vendorProfileId: string | null;
+  /** The panel a member who is also a seller last chose. Only used by getPanel() for such a person. */
+  preferredPanel?: SwitchablePanel | null;
 }
 
 /**
@@ -78,5 +82,10 @@ export const getAuthSession = cache(async (): Promise<AuthSession | null> => {
     hasVendorProfile: dbUser.vendorProfile !== null,
     hasMemberProfile: dbUser.memberProfile !== null,
     vendorProfileId: dbUser.vendorProfile?.id ?? null,
+    preferredPanel: preferredPanelFrom((await cookies()).get(PANEL_COOKIE)?.value),
   };
 });
+
+function preferredPanelFrom(value: string | undefined): SwitchablePanel | null {
+  return value === "VENDOR" || value === "CUSTOMER" ? value : null;
+}

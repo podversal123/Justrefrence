@@ -45,7 +45,7 @@ const COLUMNS: { heading: string; links: { href: string; label: string }[] }[] =
   {
     heading: msg("Vendors and partners"),
     links: [
-      { href: "/register", label: msg("Become a vendor") },
+      { href: "/become-seller", label: msg("Become a vendor") },
       { href: "/bids", label: msg("Open bids to quote on") },
       { href: "/referrals", label: msg("Referral program") },
     ],

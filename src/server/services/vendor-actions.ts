@@ -8,6 +8,7 @@ import { authorize } from "@/server/auth/authorize";
 import { recordAudit } from "@/server/domain/audit/record";
 import { logger } from "@/server/lib/logger";
 import { getVendorProfileByUserId } from "@/server/repositories/vendor-repository";
+import { createNotification } from "@/server/repositories/identity/notification-repository";
 import {
   adminUpdateVendorSchema,
   createVendorSchema,
@@ -223,18 +224,27 @@ export async function updateVendorStatusAction(
 
   // Conditional on the status we validated the transition against — a
   // concurrent change makes this match 0 rows instead of being clobbered.
-  const { count } = await prisma.vendorProfile.updateMany({
-    where: { id: vendorProfileId, approvalStatus: vendor.approvalStatus },
-    data: {
-      approvalStatus: parsed.data.status,
-      approvedBy: session.userId,
-      approvedAt: new Date(),
-      rejectedReason:
-        parsed.data.status === VendorApprovalStatus.REJECTED ? parsed.data.reason : null,
-    },
+  // Approving also gives the person the VENDOR role in the same transaction: a member who asked to
+  // become a seller has no vendor permissions until this moment.
+  const changed = await prisma.$transaction(async (tx) => {
+    const { count } = await tx.vendorProfile.updateMany({
+      where: { id: vendorProfileId, approvalStatus: vendor.approvalStatus },
+      data: {
+        approvalStatus: parsed.data.status,
+        approvedBy: session.userId,
+        approvedAt: new Date(),
+        rejectedReason:
+          parsed.data.status === VendorApprovalStatus.REJECTED ? parsed.data.reason : null,
+      },
+    });
+    if (count === 0) return false;
+    if (parsed.data.status === VendorApprovalStatus.APPROVED) {
+      await grantVendorRole(tx, vendor.userId, session.userId);
+    }
+    return true;
   });
 
-  if (count === 0) {
+  if (!changed) {
     return {
       success: false,
       error: {
@@ -254,10 +264,42 @@ export async function updateVendorStatusAction(
     after: { approvalStatus: parsed.data.status, reason: parsed.data.reason },
   });
 
+  await tellApplicant(vendor.userId, parsed.data.status, parsed.data.reason);
+
   revalidatePath("/admin/vendors");
   revalidatePath(`/admin/vendors/${vendorProfileId}`);
+  revalidatePath("/become-seller");
 
   return { success: true, data: null, meta: { requestId: requestId() } };
+}
+
+/** Gives the VENDOR role if the person does not hold it already. Safe to run twice. */
+async function grantVendorRole(
+  tx: Pick<typeof prisma, "role" | "userRole">,
+  userId: string,
+  grantedBy: string,
+) {
+  const role = await tx.role.findUnique({ where: { code: "VENDOR" } });
+  if (!role) throw new Error("The VENDOR role is not seeded. Run the seed script.");
+  const existing = await tx.userRole.findFirst({
+    where: { userId, roleId: role.id, revokedAt: null },
+    select: { id: true },
+  });
+  if (!existing) await tx.userRole.create({ data: { userId, roleId: role.id, grantedBy } });
+}
+
+/** A courtesy message: failing to deliver it never undoes the decision. */
+async function tellApplicant(userId: string, status: VendorApprovalStatus, reason?: string) {
+  const type =
+    status === VendorApprovalStatus.APPROVED
+      ? "SELLER_APPROVED"
+      : status === VendorApprovalStatus.REJECTED
+        ? "SELLER_REJECTED"
+        : null;
+  if (!type) return;
+  await createNotification({ userId, type, payload: reason ? { reason } : {} }).catch(
+    () => undefined,
+  );
 }
 
 /**

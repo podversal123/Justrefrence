@@ -52,7 +52,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     );
   }
 
-  if (session.hasVendorProfile) {
+  if (panel === "VENDOR") {
     return (
       <>
         {strip}

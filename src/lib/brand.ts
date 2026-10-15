@@ -76,6 +76,6 @@ export const HERO_SLIDES: readonly HeroSlide[] = [
     icon: "store",
     headline: msg("We help you start your own business."),
     subline: msg("We help you achieve your life goals."),
-    cta: { label: msg("Become a vendor"), href: "/register" },
+    cta: { label: msg("Become a vendor"), href: "/become-seller" },
   },
 ] as const;

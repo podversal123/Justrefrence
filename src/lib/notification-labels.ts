@@ -28,6 +28,9 @@ const NOTIFICATION_LABELS: Record<string, string> = {
   CHANGE_REQUESTED: msg("A change is waiting for your approval"),
   CHANGE_APPROVED: msg("Your change was approved"),
   CHANGE_REJECTED: msg("Your change was not approved"),
+  SELLER_REQUEST: msg("A member wants to become a seller"),
+  SELLER_APPROVED: msg("You are now a seller. Switch to the Seller / Vendor panel to start"),
+  SELLER_REJECTED: msg("Your request to become a seller was not approved"),
   KYC_VERIFIED: msg("Your document was verified"),
   KYC_REJECTED: msg("Your document needs to be uploaded again"),
 };

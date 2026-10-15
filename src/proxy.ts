@@ -14,6 +14,7 @@ import { updateSession } from "@/lib/supabase/middleware";
 
 const PROTECTED_PREFIXES = [
   "/dashboard",
+  "/become-seller",
   "/audit-log",
   "/profile",
   "/vendor",

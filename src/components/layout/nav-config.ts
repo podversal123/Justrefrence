@@ -50,9 +50,16 @@ export interface NavItem {
   icon: LucideIcon;
   /** Something a buyer or vendor does for themselves (cart, own orders, own wallet). Hidden from staff-only accounts. */
   memberOnly?: boolean;
+  /**
+   * Which panel a member or seller sees this link in. Left out, the link shows in every panel.
+   * A seller who has no member profile has no Member panel to switch to, so they still get the
+   * member links they need (wallet, orders, invoices) in the Seller / Vendor panel.
+   */
+  panels?: readonly ("CUSTOMER" | "VENDOR")[];
   /** Return true if this item should be visible for the given session. */
   visible: (
-    session: Pick<AuthSession, "permissions" | "hasVendorProfile" | "hasMemberProfile">,
+    session: Pick<AuthSession, "permissions" | "hasVendorProfile" | "hasMemberProfile"> &
+      Partial<Pick<AuthSession, "roles">>,
   ) => boolean;
 }
 
@@ -73,6 +80,7 @@ export const NAV_GROUPS: NavGroup[] = [
         title: msg("Cart"),
         memberOnly: true,
         href: "/cart",
+        panels: ["CUSTOMER"],
         icon: ShoppingCart,
         visible: (s) => s.permissions.has("cart:manage"),
       },
@@ -80,6 +88,7 @@ export const NAV_GROUPS: NavGroup[] = [
         title: msg("Orders"),
         memberOnly: true,
         href: "/orders",
+        panels: ["CUSTOMER"],
         icon: Receipt,
         visible: (s) => s.permissions.has("order:create"),
       },
@@ -87,12 +96,14 @@ export const NAV_GROUPS: NavGroup[] = [
         title: msg("Invoices"),
         memberOnly: true,
         href: "/invoices" as Route,
+        panels: ["CUSTOMER", "VENDOR"],
         icon: FileText,
         visible: (s) => s.permissions.has("invoice:read"),
       },
       {
         title: msg("Vendor orders"),
         href: "/vendor/orders",
+        panels: ["VENDOR"],
         icon: Receipt,
         visible: (s) => s.hasVendorProfile && s.permissions.has("order:update_status"),
       },
@@ -100,6 +111,7 @@ export const NAV_GROUPS: NavGroup[] = [
         title: msg("Referrals"),
         memberOnly: true,
         href: "/referrals",
+        panels: ["CUSTOMER"],
         icon: Users,
         visible: (s) => s.hasMemberProfile && s.permissions.has("referral:read"),
       },
@@ -107,6 +119,7 @@ export const NAV_GROUPS: NavGroup[] = [
         title: msg("Wallet"),
         memberOnly: true,
         href: "/wallet",
+        panels: ["CUSTOMER", "VENDOR"],
         icon: Wallet,
         visible: (s) => s.permissions.has("wallet:read"),
       },
@@ -114,6 +127,7 @@ export const NAV_GROUPS: NavGroup[] = [
         title: msg("Earnings"),
         memberOnly: true,
         href: "/earnings" as Route,
+        panels: ["CUSTOMER"],
         icon: TrendingUp,
         visible: (s) => s.hasMemberProfile && s.permissions.has("commission:read"),
       },
@@ -121,6 +135,7 @@ export const NAV_GROUPS: NavGroup[] = [
         title: msg("Account report"),
         memberOnly: true,
         href: "/account-report" as Route,
+        panels: ["CUSTOMER", "VENDOR"],
         icon: FileText,
         visible: (s) => s.permissions.has("wallet:read"),
       },
@@ -128,6 +143,7 @@ export const NAV_GROUPS: NavGroup[] = [
         title: msg("Coupons"),
         memberOnly: true,
         href: "/coupons" as Route,
+        panels: ["CUSTOMER"],
         icon: TicketPercent,
         visible: (s) => s.permissions.has("coupon:redeem"),
       },
@@ -135,6 +151,7 @@ export const NAV_GROUPS: NavGroup[] = [
         title: msg("Rewards"),
         memberOnly: true,
         href: "/rewards" as Route,
+        panels: ["CUSTOMER"],
         icon: Gift,
         visible: (s) => s.permissions.has("reward:read"),
       },
@@ -142,6 +159,7 @@ export const NAV_GROUPS: NavGroup[] = [
         title: msg("Subscription"),
         memberOnly: true,
         href: "/subscription",
+        panels: ["CUSTOMER"],
         icon: CreditCard,
         visible: (s) => s.permissions.has("subscription:read"),
       },
@@ -149,18 +167,21 @@ export const NAV_GROUPS: NavGroup[] = [
         title: msg("Requirements"),
         memberOnly: true,
         href: "/requirements" as Route,
+        panels: ["CUSTOMER"],
         icon: ClipboardList,
         visible: (s) => s.permissions.has("requirement:create"),
       },
       {
         title: msg("Bid opportunities"),
         href: "/bids" as Route,
+        panels: ["VENDOR"],
         icon: Gavel,
         visible: (s) => s.hasVendorProfile && s.permissions.has("bid:submit"),
       },
       {
         title: msg("Bids"),
         href: "/my-bids" as Route,
+        panels: ["VENDOR"],
         icon: Gavel,
         visible: (s) => s.hasVendorProfile && s.permissions.has("bid:submit"),
       },
@@ -168,18 +189,21 @@ export const NAV_GROUPS: NavGroup[] = [
         title: msg("Auction bids"),
         memberOnly: true,
         href: "/my-auctions" as Route,
+        panels: ["CUSTOMER"],
         icon: Gavel,
         visible: (s) => s.hasMemberProfile && s.permissions.has("auction:bid"),
       },
       {
         title: msg("Auctions"),
         href: "/vendor/auctions" as Route,
+        panels: ["VENDOR"],
         icon: Gavel,
         visible: (s) => s.hasVendorProfile && s.permissions.has("auction:create"),
       },
       {
         title: msg("Advertisements"),
         href: "/vendor/ads" as Route,
+        panels: ["VENDOR"],
         icon: Megaphone,
         visible: (s) => s.hasVendorProfile && s.permissions.has("ad:create"),
       },
@@ -187,12 +211,14 @@ export const NAV_GROUPS: NavGroup[] = [
         title: msg("SMS inbox"),
         memberOnly: true,
         href: "/sms" as Route,
+        panels: ["CUSTOMER"],
         icon: MessageSquareText,
         visible: (s) => s.hasMemberProfile && s.permissions.has("sms:read"),
       },
       {
         title: msg("Messages"),
         href: "/messages",
+        panels: ["CUSTOMER", "VENDOR"],
         icon: Mail,
         visible: (s) => s.permissions.has("message:read"),
       },
@@ -200,37 +226,52 @@ export const NAV_GROUPS: NavGroup[] = [
         title: msg("Blog"),
         memberOnly: true,
         href: "/blog" as Route,
+        panels: ["CUSTOMER"],
         icon: Newspaper,
         visible: (s) => s.hasMemberProfile,
+      },
+      {
+        title: msg("Become a seller"),
+        memberOnly: true,
+        href: "/become-seller" as Route,
+        panels: ["CUSTOMER"],
+        icon: Store,
+        visible: (s) =>
+          s.hasMemberProfile && s.permissions.has("vendor:apply") && !s.roles?.includes("VENDOR"),
       },
       {
         title: msg("Support"),
         memberOnly: true,
         href: "/support",
+        panels: ["CUSTOMER", "VENDOR"],
         icon: LifeBuoy,
         visible: (s) => s.permissions.has("ticket:read"),
       },
       {
         title: msg("Vendor profile"),
         href: "/vendor/profile",
+        panels: ["VENDOR"],
         icon: Store,
         visible: (s) => s.hasVendorProfile,
       },
       {
         title: msg("Products"),
         href: "/vendor/catalog/products" as Route,
+        panels: ["VENDOR"],
         icon: Package,
         visible: (s) => s.hasVendorProfile && s.permissions.has("product:read"),
       },
       {
         title: msg("Services"),
         href: "/vendor/catalog/services" as Route,
+        panels: ["VENDOR"],
         icon: Wrench,
         visible: (s) => s.hasVendorProfile && s.permissions.has("service:read"),
       },
       {
         title: msg("Projects"),
         href: "/vendor/catalog/projects" as Route,
+        panels: ["VENDOR"],
         icon: Briefcase,
         visible: (s) => s.hasVendorProfile && s.permissions.has("project:read"),
       },

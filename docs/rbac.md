@@ -78,7 +78,8 @@ Legend: ✅ granted by default · — not granted (can still be overridden per-u
 |---|:---:|:---:|:---:|:---:|:---:|:---:|
 | user:create / block / unblock | ✅ | ✅ | — | — | — | — |
 | role:assign / permission:update | ✅ | — | — | — | — | — |
-| vendor:approve / reject / suspend | ✅ | ✅ | — | — | — | — |
+| vendor:approve / reject | ✅ | — | — | — | — | — |
+| vendor:suspend | ✅ | ✅ | — | — | — | — |
 | vendor:apply | ✅ | ✅ | — | — | — | ✅ |
 | product/service/project:create/update/delete (own) | ✅ | ✅ | — | — | ✅ | — |
 | product/service/project:approve | ✅ | ✅ | — | — | — | — |

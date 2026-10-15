@@ -5,7 +5,7 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { SiteHeader } from "@/components/layout/site-header";
 import { NAV_GROUPS } from "@/components/layout/nav-config";
-import { PANEL_LABELS, describeRoles, getPanel, isStaff } from "@/server/auth/panel";
+import { canSwitchPanel, describeRoles, getPanel, isStaff, panelLabelFor } from "@/server/auth/panel";
 import { IdleLogout } from "@/components/layout/idle-logout";
 import { MaintenanceNotice } from "@/components/portal/maintenance-notice";
 import { canBypassMaintenance, getSiteSettings } from "@/server/lib/site-settings";
@@ -57,10 +57,20 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const staffOnly =
     isStaff(session) && !session.roles.some((r) => r === "CUSTOMER" || r === "VENDOR");
 
+  // A seller with no member profile has no Member panel to switch to, so the member links they rely
+  // on stay in their Seller / Vendor panel.
+  const sellerWithoutMemberPanel = panel === "VENDOR" && !session.hasMemberProfile;
+  const inThisPanel = (item: (typeof NAV_GROUPS)[number]["items"][number]) =>
+    panel === "ADMIN" ||
+    !item.panels ||
+    item.panels.includes(panel) ||
+    (sellerWithoutMemberPanel && item.panels.includes("CUSTOMER"));
+
   const visibleGroups = NAV_GROUPS.map((group) => ({
     label: t(group.label),
     items: group.items
       .filter((item) => !(staffOnly && item.memberOnly))
+      .filter(inThisPanel)
       .filter((item) => item.visible(session))
       .map((item) => ({ title: t(item.title), href: item.href, icon: <item.icon /> })),
   })).filter((group) => group.items.length > 0);
@@ -69,7 +79,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
     .split(", ")
     .map((role) => t(role))
     .join(", ");
-  const panelLabel = t(PANEL_LABELS[panel]);
+  const panelLabel = t(panelLabelFor(session));
+  const switchTo =
+    canSwitchPanel(session) ? (panel === "VENDOR" ? "CUSTOMER" : "VENDOR") : null;
 
   const [notifications, unreadCount] = await Promise.all([
     listRecentNotifications(session.userId),
@@ -84,6 +96,15 @@ export default async function DashboardLayout({ children }: { children: React.Re
         roleLabel={roleLabel}
         panel={panel}
         panelLabel={panelLabel}
+        isSuperAdmin={session.roles.includes("SUPER_ADMIN")}
+        switchTo={
+          switchTo
+            ? {
+                panel: switchTo,
+                label: switchTo === "VENDOR" ? t("Switch to Seller / Vendor panel") : t("Switch to Member panel"),
+              }
+            : null
+        }
       />
       <SidebarInset>
         <SiteHeader

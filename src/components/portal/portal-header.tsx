@@ -297,7 +297,7 @@ export async function PortalHeader() {
             </Link>
             {session ? null : (
               <Link
-                href="/register"
+                href={"/become-seller" as Route}
                 className="text-primary hover:bg-background/90 bg-background ml-2 flex h-8 items-center rounded-full px-4 text-sm font-semibold outline-none focus-visible:ring-2 focus-visible:ring-white/70"
               >
                 {t("Become a vendor")}

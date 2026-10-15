@@ -22,6 +22,11 @@ vi.mock("@/server/repositories/vendor-repository", () => ({
   getVendorProfileByUserId: mockGetVendorProfileByUserId,
 }));
 
+const mockCreateNotification = vi.fn();
+vi.mock("@/server/repositories/identity/notification-repository", () => ({
+  createNotification: mockCreateNotification,
+}));
+
 vi.mock("@/server/domain/approvals/change-service", () => ({
   submitChange: vi.fn(),
   reviewChange: vi.fn(),
@@ -52,7 +57,7 @@ const prismaMock = {
     updateMany: vi.fn(),
     create: vi.fn(),
   },
-  userRole: { create: vi.fn() },
+  userRole: { create: vi.fn(), findFirst: vi.fn() },
   $transaction: vi.fn(async (arg: unknown) => {
     if (typeof arg === "function") {
       return (arg as (tx: typeof prismaMock) => unknown)(prismaMock);
@@ -94,6 +99,9 @@ function formData(fields: Record<string, string>) {
 beforeEach(() => {
   vi.clearAllMocks();
   prismaMock.vendorProfile.updateMany.mockResolvedValue({ count: 1 });
+  prismaMock.role.findUnique.mockResolvedValue({ id: "role-vendor" });
+  prismaMock.userRole.findFirst.mockResolvedValue(null);
+  mockCreateNotification.mockResolvedValue({});
   prismaMock.$transaction.mockImplementation(async (arg: unknown) => {
     if (typeof arg === "function") {
       return (arg as (tx: typeof prismaMock) => unknown)(prismaMock);
@@ -225,6 +233,87 @@ describe("updateVendorStatusAction — state machine", () => {
         data: expect.objectContaining({ approvalStatus: "APPROVED", approvedBy: "admin-1" }),
       }),
     );
+  });
+
+  it("gives the applicant the VENDOR role when approving, and tells them", async () => {
+    mockAuthorize.mockResolvedValue(session());
+    prismaMock.vendorProfile.findUnique.mockResolvedValue({
+      id: "vp-1",
+      userId: "member-9",
+      approvalStatus: "PENDING",
+    });
+
+    const result = await updateVendorStatusAction(
+      undefined,
+      formData({ vendorProfileId: "vp-1", status: "APPROVED" }),
+    );
+
+    expect(result.success).toBe(true);
+    expect(prismaMock.userRole.create).toHaveBeenCalledWith({
+      data: { userId: "member-9", roleId: "role-vendor", grantedBy: "admin-1" },
+    });
+    expect(mockCreateNotification).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: "member-9", type: "SELLER_APPROVED" }),
+    );
+  });
+
+  it("does not add the role twice when the person already has it", async () => {
+    mockAuthorize.mockResolvedValue(session());
+    prismaMock.vendorProfile.findUnique.mockResolvedValue({
+      id: "vp-1",
+      userId: "vendor-2",
+      approvalStatus: "REJECTED",
+    });
+    prismaMock.userRole.findFirst.mockResolvedValue({ id: "ur-1" });
+
+    await updateVendorStatusAction(
+      undefined,
+      formData({ vendorProfileId: "vp-1", status: "APPROVED" }),
+    );
+
+    expect(prismaMock.userRole.create).not.toHaveBeenCalled();
+  });
+
+  it("gives no role when rejecting, and tells the applicant why", async () => {
+    mockAuthorize.mockResolvedValue(session());
+    prismaMock.vendorProfile.findUnique.mockResolvedValue({
+      id: "vp-1",
+      userId: "member-9",
+      approvalStatus: "PENDING",
+    });
+
+    const result = await updateVendorStatusAction(
+      undefined,
+      formData({ vendorProfileId: "vp-1", status: "REJECTED", reason: "Documents are unclear" }),
+    );
+
+    expect(result.success).toBe(true);
+    expect(prismaMock.userRole.create).not.toHaveBeenCalled();
+    expect(mockCreateNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: "member-9",
+        type: "SELLER_REJECTED",
+        payload: { reason: "Documents are unclear" },
+      }),
+    );
+  });
+
+  it("gives no role when the status changed under it (concurrent update)", async () => {
+    mockAuthorize.mockResolvedValue(session());
+    prismaMock.vendorProfile.findUnique.mockResolvedValue({
+      id: "vp-1",
+      userId: "member-9",
+      approvalStatus: "PENDING",
+    });
+    prismaMock.vendorProfile.updateMany.mockResolvedValue({ count: 0 });
+
+    await updateVendorStatusAction(
+      undefined,
+      formData({ vendorProfileId: "vp-1", status: "APPROVED" }),
+    );
+
+    expect(prismaMock.userRole.create).not.toHaveBeenCalled();
+    expect(mockCreateNotification).not.toHaveBeenCalled();
   });
 
   it("returns CONFLICT (no audit entry) when a concurrent change already moved the status", async () => {
