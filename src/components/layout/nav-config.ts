@@ -197,6 +197,13 @@ export const NAV_GROUPS: NavGroup[] = [
         visible: (s) => s.permissions.has("message:read"),
       },
       {
+        title: msg("Blog"),
+        memberOnly: true,
+        href: "/blog" as Route,
+        icon: Newspaper,
+        visible: (s) => s.hasMemberProfile,
+      },
+      {
         title: msg("Support"),
         memberOnly: true,
         href: "/support",

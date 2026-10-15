@@ -354,3 +354,47 @@ export async function createSubcategory(
   });
   return subcategory;
 }
+
+/** A category can only go once nothing sits inside it, so no listing or subcategory is left without a home. */
+export async function removeCategory(kind: CatalogKind, categoryId: string) {
+  const session = await authorize("category:manage");
+  const repo = getCatalogRepository(kind);
+
+  const category = await repo.getCategory(categoryId);
+  if (!category) throw new NotFoundError("That category no longer exists.");
+  if ((await repo.countSubcategories(categoryId)) > 0) {
+    throw new ConflictError("Remove its subcategories first.");
+  }
+  if ((await repo.countListingsInCategory(categoryId)) > 0) {
+    throw new ConflictError("Listings still use this category. Move or delete them first.");
+  }
+
+  await repo.deleteCategory(categoryId);
+  await recordAudit({
+    actorId: session.userId,
+    action: `${kind}_CATEGORY_REMOVED`,
+    entityType: kind.toLowerCase() + "_categories",
+    entityId: categoryId,
+    before: { name: category.name },
+  });
+}
+
+export async function removeSubcategory(kind: CatalogKind, subcategoryId: string) {
+  const session = await authorize("category:manage");
+  const repo = getCatalogRepository(kind);
+
+  const subcategory = await repo.getSubcategory(subcategoryId);
+  if (!subcategory) throw new NotFoundError("That subcategory no longer exists.");
+  if ((await repo.countListingsInSubcategory(subcategoryId)) > 0) {
+    throw new ConflictError("Listings still use this subcategory. Move or delete them first.");
+  }
+
+  await repo.deleteSubcategory(subcategoryId);
+  await recordAudit({
+    actorId: session.userId,
+    action: `${kind}_SUBCATEGORY_REMOVED`,
+    entityType: kind.toLowerCase() + "_subcategories",
+    entityId: subcategoryId,
+    before: { name: subcategory.name },
+  });
+}

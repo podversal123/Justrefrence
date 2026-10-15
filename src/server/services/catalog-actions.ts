@@ -10,6 +10,8 @@ import {
   deleteListingImage,
   createCategory,
   createSubcategory,
+  removeCategory,
+  removeSubcategory,
 } from "@/server/domain/catalog/listing-service";
 import {
   catalogKindSchema,
@@ -250,5 +252,41 @@ export async function createSubcategoryAction(
     return { success: true, data: { id: subcategory.id }, meta: { requestId: requestId() } };
   } catch (error) {
     return toFailure(error, "Could not create the subcategory.");
+  }
+}
+
+export async function removeCategoryAction(
+  _prevState: unknown,
+  formData: FormData,
+): Promise<ApiResult<null>> {
+  const kind = parseKind(formData);
+  const id = String(formData.get("id") ?? "");
+  if (!kind || !id) return toFailure(new Error("missing kind/id"), "Invalid request.");
+
+  try {
+    await removeCategory(kind, id);
+    revalidateCatalogPaths(kind);
+    revalidatePath(`/admin/catalog/${kind.toLowerCase()}s/categories`);
+    return { success: true, data: null, meta: { requestId: requestId() } };
+  } catch (error) {
+    return toFailure(error, "Could not remove the category.");
+  }
+}
+
+export async function removeSubcategoryAction(
+  _prevState: unknown,
+  formData: FormData,
+): Promise<ApiResult<null>> {
+  const kind = parseKind(formData);
+  const id = String(formData.get("id") ?? "");
+  if (!kind || !id) return toFailure(new Error("missing kind/id"), "Invalid request.");
+
+  try {
+    await removeSubcategory(kind, id);
+    revalidateCatalogPaths(kind);
+    revalidatePath(`/admin/catalog/${kind.toLowerCase()}s/categories`);
+    return { success: true, data: null, meta: { requestId: requestId() } };
+  } catch (error) {
+    return toFailure(error, "Could not remove the subcategory.");
   }
 }

@@ -9,6 +9,7 @@ import { formatPaise } from "@/lib/money";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Separator } from "@/components/ui/separator";
+import { OrderTracker } from "@/components/orders/order-tracker";
 import { OrderStatusActions } from "./order-status-actions";
 import { InvoiceDownloadButton } from "./invoice-download-button";
 
@@ -104,18 +105,10 @@ export default async function OrderDetailPage({ params }: PageProps) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">{t("Status history")}</CardTitle>
+          <CardTitle className="text-base">{t("Order tracking")}</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2">
-          {order.statusHistory.map((entry) => (
-            <div key={entry.id} className="flex justify-between text-sm">
-              <span>
-                {entry.fromStatus ? `${entry.fromStatus} → ${entry.toStatus}` : entry.toStatus}
-                {entry.reason ? `: ${entry.reason}` : ""}
-              </span>
-              <span className="text-muted-foreground">{entry.createdAt.toLocaleString()}</span>
-            </div>
-          ))}
+        <CardContent>
+          <OrderTracker status={order.status} history={order.statusHistory} />
         </CardContent>
       </Card>
 

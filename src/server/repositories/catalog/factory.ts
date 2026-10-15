@@ -139,12 +139,46 @@ export function createCatalogRepository(config: CatalogRepositoryConfig) {
     return subcategoryDelegate.create({ data });
   }
 
+  /**
+   * Removing keeps the row (listings and history may still point at it) but frees the slug,
+   * so the same name can be created again later.
+   */
   async function deleteCategory(id: string) {
-    return categoryDelegate.update({ where: { id }, data: { deletedAt: new Date() } });
+    const row = await categoryDelegate.findUnique({ where: { id }, select: { slug: true } });
+    const now = new Date();
+    return categoryDelegate.update({
+      where: { id },
+      data: { deletedAt: now, slug: `${row?.slug ?? "removed"}-removed-${now.getTime()}` },
+    });
   }
 
   async function deleteSubcategory(id: string) {
-    return subcategoryDelegate.update({ where: { id }, data: { deletedAt: new Date() } });
+    const row = await subcategoryDelegate.findUnique({ where: { id }, select: { slug: true } });
+    const now = new Date();
+    return subcategoryDelegate.update({
+      where: { id },
+      data: { deletedAt: now, slug: `${row?.slug ?? "removed"}-removed-${now.getTime()}` },
+    });
+  }
+
+  async function getCategory(id: string) {
+    return categoryDelegate.findFirst({ where: { id, deletedAt: null } });
+  }
+
+  async function getSubcategory(id: string) {
+    return subcategoryDelegate.findFirst({ where: { id, deletedAt: null } });
+  }
+
+  async function countListingsInCategory(categoryId: string): Promise<number> {
+    return delegate.count({ where: { categoryId, deletedAt: null } });
+  }
+
+  async function countListingsInSubcategory(subcategoryId: string): Promise<number> {
+    return delegate.count({ where: { subcategoryId, deletedAt: null } });
+  }
+
+  async function countSubcategories(categoryId: string): Promise<number> {
+    return subcategoryDelegate.count({ where: { categoryId, deletedAt: null } });
   }
 
   async function addImage(data: {
@@ -180,6 +214,11 @@ export function createCatalogRepository(config: CatalogRepositoryConfig) {
     createSubcategory,
     deleteCategory,
     deleteSubcategory,
+    getCategory,
+    getSubcategory,
+    countListingsInCategory,
+    countListingsInSubcategory,
+    countSubcategories,
     addImage,
     removeImage,
     getImage,

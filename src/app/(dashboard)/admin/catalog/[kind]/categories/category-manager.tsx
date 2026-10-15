@@ -4,12 +4,13 @@ import { useT } from "@/i18n/provider";
 import { useState } from "react";
 import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
-import { AlertCircle, FolderTree, Plus } from "lucide-react";
+import { AlertCircle, FolderTree, Plus, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
   Dialog,
@@ -26,7 +27,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { createCategoryAction, createSubcategoryAction } from "@/server/services/catalog-actions";
+import {
+  createCategoryAction,
+  createSubcategoryAction,
+  removeCategoryAction,
+  removeSubcategoryAction,
+} from "@/server/services/catalog-actions";
 import type { CatalogKind } from "@/server/domain/catalog/types";
 import type { ApiResult } from "@/lib/api-response";
 
@@ -180,14 +186,53 @@ export function CategoryManager({
         <div className="space-y-3">
           {categories.map((category) => (
             <div key={category.id} className="rounded-lg border p-4">
-              <p className="font-medium">{category.name}</p>
+              <div className="flex items-center justify-between gap-2">
+                <p className="font-medium">{category.name}</p>
+                <ConfirmationDialog
+                  trigger={
+                    <Button variant="ghost" size="sm" aria-label={t("Remove category")}>
+                      <Trash2 />
+                      {t("Remove")}
+                    </Button>
+                  }
+                  title={t("Remove this category?")}
+                  description={t(
+                    "It is taken off the list. A category with subcategories or listings can't be removed.",
+                  )}
+                  action={removeCategoryAction}
+                  hiddenFields={{ kind, id: category.id }}
+                  confirmLabel={t("Remove")}
+                  successMessage={t("Category removed")}
+                  variant="destructive"
+                />
+              </div>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {category.subcategories.length === 0 ? (
                   <span className="text-muted-foreground text-xs">{t("No subcategories")}</span>
                 ) : (
                   category.subcategories.map((sub) => (
-                    <Badge key={sub.id} variant="secondary">
+                    <Badge key={sub.id} variant="secondary" className="gap-1 pr-1">
                       {sub.name}
+                      <ConfirmationDialog
+                        trigger={
+                          <button
+                            type="button"
+                            aria-label={t("Remove subcategory {name}", { name: sub.name })}
+                            className="hover:bg-foreground/10 rounded-sm p-0.5"
+                          >
+                            <X className="size-3" />
+                          </button>
+                        }
+                        title={t("Remove this subcategory?")}
+                        description={t(
+                          "It is taken off the list. A subcategory that listings still use can't be removed.",
+                        )}
+                        action={removeSubcategoryAction}
+                        hiddenFields={{ kind, id: sub.id }}
+                        confirmLabel={t("Remove")}
+                        successMessage={t("Subcategory removed")}
+                        variant="destructive"
+                      />
                     </Badge>
                   ))
                 )}
