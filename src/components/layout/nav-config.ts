@@ -169,7 +169,7 @@ export const NAV_GROUPS: NavGroup[] = [
         memberOnly: true,
         href: "/my-auctions" as Route,
         icon: Gavel,
-        visible: (s) => s.permissions.has("auction:bid"),
+        visible: (s) => s.hasMemberProfile && s.permissions.has("auction:bid"),
       },
       {
         title: msg("Auctions"),
@@ -188,7 +188,7 @@ export const NAV_GROUPS: NavGroup[] = [
         memberOnly: true,
         href: "/sms" as Route,
         icon: MessageSquareText,
-        visible: (s) => s.permissions.has("sms:read"),
+        visible: (s) => s.hasMemberProfile && s.permissions.has("sms:read"),
       },
       {
         title: msg("Messages"),

@@ -29,3 +29,29 @@ describe("My referrals menu link", () => {
     ).toBe(false);
   });
 });
+
+describe("menu links whose page needs a member profile", () => {
+  const cases: [string, Permission][] = [
+    ["/my-auctions", "auction:bid"],
+    ["/sms", "sms:read"],
+    ["/earnings", "commission:read"],
+    ["/referrals", "referral:read"],
+  ];
+
+  for (const [href, permission] of cases) {
+    const item = NAV_GROUPS.flatMap((g) => g.items).find((i) => i.href === href)!;
+    const permissions = new Set<Permission>([permission]);
+
+    it(`${href} is hidden for a vendor-only account, so the link never leads to a blocked page`, () => {
+      expect(item.visible({ permissions, hasVendorProfile: true, hasMemberProfile: false })).toBe(
+        false,
+      );
+    });
+
+    it(`${href} shows for an account with a member profile`, () => {
+      expect(item.visible({ permissions, hasVendorProfile: false, hasMemberProfile: true })).toBe(
+        true,
+      );
+    });
+  }
+});
