@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Wallet as WalletIcon } from "lucide-react";
@@ -21,6 +22,7 @@ import type { ApiResult } from "@/lib/api-response";
  * to verify against, the admin is asserting a credit already happened.
  */
 export function WalletTopUpForm({ userId, memberLabel }: { userId: string; memberLabel: string }) {
+  const t = useT();
   const router = useRouter();
   const [amountRupees, setAmountRupees] = useState("");
   const [reference, setReference] = useState("");
@@ -35,7 +37,7 @@ export function WalletTopUpForm({ userId, memberLabel }: { userId: string; membe
     const result = await adminCreditWalletAction(prevState, formData);
     if (result.success) {
       toast.success(
-        "Wallet credited",
+        t("Wallet credited"),
         `${memberLabel}'s wallet was credited with ${formatPaise(amountPaise)}.`,
       );
       setAmountRupees("");
@@ -49,16 +51,17 @@ export function WalletTopUpForm({ userId, memberLabel }: { userId: string; membe
   return (
     <div className="space-y-3 rounded-lg border p-4">
       <div>
-        <h2 className="text-sm font-medium">Credit this wallet</h2>
+        <h2 className="text-sm font-medium">{t("Credit this wallet")}</h2>
         <p className="text-muted-foreground text-xs">
-          Manual reconciliation only. This records a credit you&apos;re asserting already happened
-          (e.g. a bank transfer). It is not verified against a payment gateway.
+          {t(
+            "Manual reconciliation only. This records a credit you're asserting already happened (e.g. a bank transfer). It is not verified against a payment gateway.",
+          )}
         </p>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1.5">
-          <Label htmlFor="topup-amount">Amount (₹)</Label>
+          <Label htmlFor="topup-amount">{t("Amount (₹)")}</Label>
           <Input
             id="topup-amount"
             type="number"
@@ -70,12 +73,12 @@ export function WalletTopUpForm({ userId, memberLabel }: { userId: string; membe
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="topup-reference">Reference</Label>
+          <Label htmlFor="topup-reference">{t("Reference")}</Label>
           <Input
             id="topup-reference"
             value={reference}
             onChange={(event) => setReference(event.target.value)}
-            placeholder="e.g. Bank transfer dated 2026-01-15"
+            placeholder={t("e.g. Bank transfer dated 2026-01-15")}
           />
         </div>
       </div>
@@ -84,13 +87,13 @@ export function WalletTopUpForm({ userId, memberLabel }: { userId: string; membe
         trigger={
           <Button size="sm" disabled={!canSubmit}>
             <WalletIcon />
-            Review &amp; credit wallet
+            {t("Review & credit wallet")}
           </Button>
         }
-        title="Credit this member's wallet?"
+        title={t("Credit this member's wallet?")}
         description={`You're recording a ${amountPaise ? formatPaise(amountPaise) : "₹0"} credit to ${memberLabel} with reference "${reference}". Justreference does not check this against a bank or payment gateway, so confirm only if you have already verified it.`}
         hiddenFields={{ userId, amountRupees, reference, idempotencyKey }}
-        confirmLabel="Credit wallet"
+        confirmLabel={t("Credit wallet")}
         action={handleAction}
       />
     </div>

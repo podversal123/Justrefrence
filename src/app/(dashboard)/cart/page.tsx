@@ -16,7 +16,7 @@ import { CartLineControls } from "./cart-line-controls";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
-  return { title: t("My cart") };
+  return { title: t("Cart") };
 }
 
 export default async function CartPage() {
@@ -41,7 +41,7 @@ export default async function CartPage() {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8">
       <div>
-        <h1>{t("My cart")}</h1>
+        <h1>{t("Cart")}</h1>
         <p className="text-muted-foreground">
           {view.groups.length > 1
             ? `Items from ${view.groups.length} vendors will be split into separate orders at checkout.`

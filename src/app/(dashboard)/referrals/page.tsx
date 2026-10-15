@@ -12,7 +12,7 @@ import { CopyLinkButton } from "./copy-link-button";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
-  return { title: t("My referrals") };
+  return { title: t("Referrals") };
 }
 
 export default async function ReferralsPage() {
@@ -33,7 +33,7 @@ export default async function ReferralsPage() {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8">
       <div>
-        <h1>{t("My referrals")}</h1>
+        <h1>{t("Referrals")}</h1>
         <p className="text-muted-foreground">
           {t("Member ID")} <span className="font-mono">{dashboard.memberId}</span> ·{" "}
           {t("Referral code")} <span className="font-mono">{dashboard.referralCode}</span>

@@ -87,7 +87,7 @@ export default async function VendorCatalogListPage({ params, searchParams }: Pa
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1>{t("My {kind}", { kind: t(labels.plural).toLowerCase() })}</h1>
+          <h1>{t(labels.plural)}</h1>
           <p className="text-muted-foreground">{t("Only you can manage these listings.")}</p>
         </div>
         {canCreate ? (

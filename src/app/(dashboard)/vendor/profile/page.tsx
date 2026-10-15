@@ -10,7 +10,7 @@ import { KycDocumentsCard } from "@/components/kyc/kyc-documents-card";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
-  return { title: t("My vendor profile") };
+  return { title: t("Vendor profile") };
 }
 
 export default async function VendorProfilePage() {
@@ -28,7 +28,7 @@ export default async function VendorProfilePage() {
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
       <div>
-        <h1>{t("My vendor profile")}</h1>
+        <h1>{t("Vendor profile")}</h1>
         <p className="text-muted-foreground">
           {t("Your business details, visible to Justreference admins.")}
         </p>

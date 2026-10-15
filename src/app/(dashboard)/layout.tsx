@@ -6,6 +6,7 @@ import { AppSidebar } from "@/components/layout/app-sidebar";
 import { SiteHeader } from "@/components/layout/site-header";
 import { NAV_GROUPS } from "@/components/layout/nav-config";
 import { PANEL_LABELS, describeRoles, getPanel, isStaff } from "@/server/auth/panel";
+import { IdleLogout } from "@/components/layout/idle-logout";
 import { MaintenanceNotice } from "@/components/portal/maintenance-notice";
 import { canBypassMaintenance, getSiteSettings } from "@/server/lib/site-settings";
 import {
@@ -94,6 +95,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
         />
         {/* SidebarInset above already renders the page's single <main> landmark. */}
         <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">{children}</div>
+        {siteSettings.idleLogoutMinutes > 0 ? (
+          <IdleLogout minutes={siteSettings.idleLogoutMinutes} />
+        ) : null}
       </SidebarInset>
     </SidebarProvider>
   );

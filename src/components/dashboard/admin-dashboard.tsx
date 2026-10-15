@@ -1,3 +1,5 @@
+import { msg } from "@/i18n/locales";
+import { getT } from "@/i18n/server";
 import {
   Briefcase,
   Headset,
@@ -27,22 +29,22 @@ import { RecentOrdersTable } from "./recent-orders-table";
 import { PendingApprovalsTable } from "./pending-approvals-table";
 
 const WIDGETS = [
-  { id: "total-members", label: "Total members" },
-  { id: "active-members", label: "Active members" },
-  { id: "vendors", label: "Vendors" },
-  { id: "products", label: "Products" },
-  { id: "services", label: "Services" },
-  { id: "projects", label: "Projects" },
-  { id: "orders", label: "Orders" },
-  { id: "revenue", label: "Revenue" },
-  { id: "pending-payouts", label: "Pending payouts" },
-  { id: "referral-activity", label: "Referral activity" },
-  { id: "commissions", label: "Commissions" },
-  { id: "support-tickets", label: "Support tickets" },
-  { id: "pending-approvals-stat", label: "Pending approvals" },
-  { id: "revenue-chart", label: "Revenue chart" },
-  { id: "order-status-chart", label: "Orders-by-status chart" },
-  { id: "wallet-activity-chart", label: "Wallet activity chart" },
+  { id: "total-members", label: msg("Total members") },
+  { id: "active-members", label: msg("Active members") },
+  { id: "vendors", label: msg("Vendors") },
+  { id: "products", label: msg("Products") },
+  { id: "services", label: msg("Services") },
+  { id: "projects", label: msg("Projects") },
+  { id: "orders", label: msg("Orders") },
+  { id: "revenue", label: msg("Revenue") },
+  { id: "pending-payouts", label: msg("Pending payouts") },
+  { id: "referral-activity", label: msg("Referral activity") },
+  { id: "commissions", label: msg("Commissions") },
+  { id: "support-tickets", label: msg("Support tickets") },
+  { id: "pending-approvals-stat", label: msg("Pending approvals") },
+  { id: "revenue-chart", label: msg("Revenue chart") },
+  { id: "order-status-chart", label: msg("Orders-by-status chart") },
+  { id: "wallet-activity-chart", label: msg("Wallet activity chart") },
 ];
 
 export async function AdminDashboard({
@@ -50,6 +52,7 @@ export async function AdminDashboard({
 }: {
   searchParams: Record<string, string | undefined>;
 }) {
+  const t = await getT();
   const range: DateRangePreset = isDateRangePreset(searchParams["range"])
     ? searchParams["range"]
     : "30D";
@@ -84,8 +87,8 @@ export async function AdminDashboard({
       <div className="flex flex-col gap-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1>Dashboard</h1>
-            <p className="text-muted-foreground">An overview of the platform.</p>
+            <h1>{t("Dashboard")}</h1>
+            <p className="text-muted-foreground">{t("An overview of the platform.")}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <DateRangeSelector current={data.range.preset} />
@@ -97,104 +100,112 @@ export async function AdminDashboard({
           <Widget id="total-members">
             <StatCard
               icon={Users}
-              label="Total members"
+              label={t("Total members")}
               value={data.totalMembers.toLocaleString()}
             />
           </Widget>
           <Widget id="active-members">
             <StatCard
               icon={UserCheck}
-              label="Active members"
+              label={t("Active members")}
               value={data.activeMembers.toLocaleString()}
             />
           </Widget>
           <Widget id="vendors">
             <StatCard
               icon={Store}
-              label="Vendors"
+              label={t("Vendors")}
               value={data.vendors.total.toLocaleString()}
-              sublabel={`${data.vendors.pending} pending`}
+              sublabel={t("{count} pending", { count: data.vendors.pending })}
               tone={data.vendors.pending > 0 ? "warning" : "default"}
             />
           </Widget>
           <Widget id="products">
             <StatCard
               icon={Package}
-              label="Products"
+              label={t("Products")}
               value={data.catalog.products.total.toLocaleString()}
-              sublabel={`${data.catalog.products.active} live`}
+              sublabel={t("{count} live", { count: data.catalog.products.active })}
             />
           </Widget>
           <Widget id="services">
             <StatCard
               icon={Wrench}
-              label="Services"
+              label={t("Services")}
               value={data.catalog.services.total.toLocaleString()}
-              sublabel={`${data.catalog.services.active} live`}
+              sublabel={t("{count} live", { count: data.catalog.services.active })}
             />
           </Widget>
           <Widget id="projects">
             <StatCard
               icon={Briefcase}
-              label="Projects"
+              label={t("Projects")}
               value={data.catalog.projects.total.toLocaleString()}
-              sublabel={`${data.catalog.projects.active} live`}
+              sublabel={t("{count} live", { count: data.catalog.projects.active })}
             />
           </Widget>
           <Widget id="orders">
             <StatCard
               icon={ShoppingCart}
-              label="Orders"
+              label={t("Orders")}
               value={data.totalOrders.toLocaleString()}
-              sublabel="This period"
+              sublabel={t("This period")}
             />
           </Widget>
           <Widget id="revenue">
             <StatCard
               icon={LineChartIcon}
-              label="Revenue"
+              label={t("Revenue")}
               value={formatPaise(data.totalRevenue.toString())}
-              sublabel="This period"
+              sublabel={t("This period")}
             />
           </Widget>
           <Widget id="pending-payouts">
             <StatCard
               icon={PiggyBank}
-              label="Pending payouts"
+              label={t("Pending payouts")}
               value={formatPaise(data.pendingPayouts.amount.toString())}
-              sublabel={`${data.pendingPayouts.count} request${data.pendingPayouts.count === 1 ? "" : "s"}`}
+              sublabel={
+                data.pendingPayouts.count === 1
+                  ? t("1 request")
+                  : t("{count} requests", { count: data.pendingPayouts.count })
+              }
               tone={data.pendingPayouts.count > 0 ? "warning" : "default"}
             />
           </Widget>
           <Widget id="referral-activity">
             <StatCard
               icon={Receipt}
-              label="Referral activity"
+              label={t("Referral activity")}
               value={data.referralActivity.toLocaleString()}
-              sublabel="New referrals this period"
+              sublabel={t("New referrals this period")}
             />
           </Widget>
           <Widget id="commissions">
             <StatCard
               icon={Percent}
-              label="Commissions available"
+              label={t("Commissions available")}
               value={formatPaise(availableCommission.toString())}
-              sublabel={`${formatPaise(pendingCommission.toString())} pending`}
+              sublabel={t("{amount} pending", {
+                amount: formatPaise(pendingCommission.toString()),
+              })}
             />
           </Widget>
           <Widget id="support-tickets">
             <StatCard
               icon={Headset}
-              label="Support tickets"
+              label={t("Support tickets")}
               value={openTickets === null ? "—" : openTickets.toLocaleString()}
-              sublabel={openTickets === null ? "Unavailable right now" : "Open or in progress"}
+              sublabel={
+                openTickets === null ? t("Unavailable right now") : t("Open or in progress")
+              }
               tone={openTickets ? "warning" : "default"}
             />
           </Widget>
           <Widget id="pending-approvals-stat">
             <StatCard
               icon={ClipboardCheck}
-              label="Pending approvals"
+              label={t("Pending approvals")}
               value={data.pendingApprovalsTotal.toLocaleString()}
               tone={data.pendingApprovalsTotal > 0 ? "warning" : "default"}
             />

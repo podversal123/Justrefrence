@@ -1,3 +1,5 @@
+import { msg } from "@/i18n/locales";
+import { getFormat, getT } from "@/i18n/server";
 import type { Metadata, Route } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -13,23 +15,26 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CursorPagination } from "@/components/ui/pagination";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { formatDate } from "@/lib/format";
 import type { ChangeRequestStatus } from "@/generated/prisma/enums";
 import { ChangeReviewActions } from "./change-review-actions";
 
-export const metadata: Metadata = { title: "Approvals" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("Approvals") };
+}
 
 const STATUSES: { value: ChangeRequestStatus; label: string }[] = [
-  { value: "PENDING", label: "Waiting" },
-  { value: "APPROVED", label: "Approved" },
-  { value: "REJECTED", label: "Rejected" },
+  { value: "PENDING", label: msg("Waiting") },
+  { value: "APPROVED", label: msg("Approved") },
+  { value: "REJECTED", label: msg("Rejected") },
 ];
 
-function Value({ value }: { value: string | null }) {
+async function Value({ value }: { value: string | null }) {
+  const t = await getT();
   return value ? (
     <span className="break-words">{value}</span>
   ) : (
-    <span className="text-muted-foreground italic">empty</span>
+    <span className="text-muted-foreground italic">{t("empty")}</span>
   );
 }
 
@@ -38,6 +43,8 @@ export default async function ApprovalsPage({
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
+  const t = await getT();
+  const { formatDate } = await getFormat();
   const session = await getAuthSession();
   if (!session) redirect("/login");
   const canReview = session.permissions.has("change:review");
@@ -56,15 +63,15 @@ export default async function ApprovalsPage({
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
       <div>
-        <h1>Approvals</h1>
+        <h1>{t("Approvals")}</h1>
         <p className="text-muted-foreground">
           {canReview
-            ? "Changes asked for by admins. Read what changes, then approve it or reject it."
-            : "Changes you asked for. A Super Admin approves each one before it goes live."}
+            ? t("Changes asked for by admins. Read what changes, then approve it or reject it.")
+            : t("Changes you asked for. A Super Admin approves each one before it goes live.")}
         </p>
       </div>
 
-      <nav aria-label="Filter by status" className="flex flex-wrap gap-2">
+      <nav aria-label={t("Filter by status")} className="flex flex-wrap gap-2">
         {STATUSES.map((s) => (
           <Button
             key={s.value}
@@ -72,7 +79,7 @@ export default async function ApprovalsPage({
             nativeButton={false}
             render={
               <Link href={`/admin/approvals?status=${s.value}` as Route}>
-                {s.label} ({counts[s.value] ?? 0})
+                {t(s.label)} ({counts[s.value] ?? 0})
               </Link>
             }
           />
@@ -82,13 +89,13 @@ export default async function ApprovalsPage({
       {items.length === 0 ? (
         <EmptyState
           icon={ClipboardCheck}
-          title={status === "PENDING" ? "Nothing is waiting" : "Nothing here yet"}
+          title={status === "PENDING" ? t("Nothing is waiting") : t("Nothing here yet")}
           description={
             status === "PENDING"
               ? canReview
-                ? "When an admin asks for a change, it shows up here."
-                : "When you edit a member, vendor or listing, your request shows up here."
-              : "Decided requests are listed here."
+                ? t("When an admin asks for a change, it shows up here.")
+                : t("When you edit a member, vendor or listing, your request shows up here.")
+              : t("Decided requests are listed here.")
           }
         />
       ) : (
@@ -114,7 +121,10 @@ export default async function ApprovalsPage({
                       <ArrowRight className="size-4" aria-hidden="true" />
                     </Link>
                     <p className="text-muted-foreground text-sm">
-                      Asked by {by} on {formatDate(request.createdAt)}
+                      {t("Asked by {name} on {date}", {
+                        name: by,
+                        date: formatDate(request.createdAt),
+                      })}
                     </p>
                   </div>
                   {request.status !== "PENDING" ? <StatusBadge status={request.status} /> : null}
@@ -124,9 +134,9 @@ export default async function ApprovalsPage({
                   <table className="w-full text-sm">
                     <thead className="bg-muted/50 text-muted-foreground text-left text-xs">
                       <tr>
-                        <th className="px-3 py-2 font-medium">What</th>
-                        <th className="px-3 py-2 font-medium">Now</th>
-                        <th className="px-3 py-2 font-medium">Asked to become</th>
+                        <th className="px-3 py-2 font-medium">{t("What")}</th>
+                        <th className="px-3 py-2 font-medium">{t("Now")}</th>
+                        <th className="px-3 py-2 font-medium">{t("Asked to become")}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y">
@@ -147,7 +157,9 @@ export default async function ApprovalsPage({
 
                 {request.requestNote ? (
                   <p className="text-sm">
-                    <span className="text-muted-foreground">Note from {by}: </span>
+                    <span className="text-muted-foreground">
+                      {t("Note from {name}:", { name: by })}{" "}
+                    </span>
                     {request.requestNote}
                   </p>
                 ) : null}
@@ -156,14 +168,22 @@ export default async function ApprovalsPage({
                   canReview ? (
                     <ChangeReviewActions requestId={request.id} recordName={request.entityLabel} />
                   ) : (
-                    <p className="text-muted-foreground text-sm">Waiting for a Super Admin.</p>
+                    <p className="text-muted-foreground text-sm">
+                      {t("Waiting for a Super Admin.")}
+                    </p>
                   )
                 ) : (
                   <p className="text-muted-foreground text-sm">
-                    {request.status === "APPROVED" ? "Approved" : "Rejected"} by{" "}
-                    {reviewer ?? "a Super Admin"}
-                    {request.reviewedAt ? ` on ${formatDate(request.reviewedAt)}` : ""}.
-                    {request.reviewNote ? ` Note: ${request.reviewNote}` : ""}
+                    {request.status === "APPROVED"
+                      ? t("Approved by {name}", { name: reviewer ?? t("a Super Admin") })
+                      : t("Rejected by {name}", { name: reviewer ?? t("a Super Admin") })}
+                    {request.reviewedAt
+                      ? ` ${t("on {date}", { date: formatDate(request.reviewedAt) })}`
+                      : ""}
+                    .
+                    {request.reviewNote
+                      ? ` ${t("Note: {note}", { note: request.reviewNote })}`
+                      : ""}
                   </p>
                 )}
               </li>

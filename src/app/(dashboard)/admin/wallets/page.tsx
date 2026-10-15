@@ -1,3 +1,4 @@
+import { getFormat, getT } from "@/i18n/server";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Hourglass, Landmark, Search, UserX, Wallet as WalletIcon } from "lucide-react";
@@ -25,13 +26,18 @@ import {
 import { WalletTopUpForm } from "./wallet-topup-form";
 import { VerifyBankAccountButton } from "./verify-bank-account-button";
 
-export const metadata: Metadata = { title: "Wallets" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("Wallets") };
+}
 
 interface PageProps {
   searchParams: Promise<Record<string, string | undefined>>;
 }
 
 export default async function AdminWalletsPage({ searchParams }: PageProps) {
+  const t = await getT();
+  const { formatDate } = await getFormat();
   const session = await getAuthSession();
   if (!session) redirect("/login");
   // adminCreditWalletAction is separately gated on "wallet:topup" — this
@@ -52,9 +58,9 @@ export default async function AdminWalletsPage({ searchParams }: PageProps) {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
       <div>
-        <h1>Wallets</h1>
+        <h1>{t("Wallets")}</h1>
         <p className="text-muted-foreground">
-          Look up a member&apos;s wallet and record manual credits.
+          {t("Look up a member's wallet and record manual credits.")}
         </p>
       </div>
 
@@ -64,26 +70,26 @@ export default async function AdminWalletsPage({ searchParams }: PageProps) {
           <Input
             name="email"
             defaultValue={email}
-            placeholder="Search by member email…"
+            placeholder={t("Search by member email…")}
             className="pl-8"
-            aria-label="Search by member email"
+            aria-label={t("Search by member email")}
           />
         </div>
         <Button type="submit" size="sm">
-          Search
+          {t("Search")}
         </Button>
       </form>
 
       {!email ? (
         <EmptyState
           icon={Search}
-          title="Search for a member"
-          description="Enter a member's email above to view their wallet."
+          title={t("Search for a member")}
+          description={t("Enter a member's email above to view their wallet.")}
         />
       ) : !member ? (
         <EmptyState
           icon={UserX}
-          title="No member found"
+          title={t("No member found")}
           description={`No account matches "${email}".`}
         />
       ) : (
@@ -99,34 +105,34 @@ export default async function AdminWalletsPage({ searchParams }: PageProps) {
           <div className="grid grid-cols-2 gap-3">
             <StatCard
               icon={WalletIcon}
-              label="Balance"
+              label={t("Balance")}
               value={formatPaise(wallet!.balance.toString())}
             />
             <StatCard
               icon={Hourglass}
-              label="Pending (held for payout)"
+              label={t("Pending (held for payout)")}
               value={formatPaise(wallet!.pendingBalance.toString())}
               tone={wallet!.pendingBalance > 0n ? "warning" : "default"}
             />
           </div>
 
           <div className="space-y-2">
-            <h2 className="text-sm font-medium">Recent transactions</h2>
+            <h2 className="text-sm font-medium">{t("Recent transactions")}</h2>
             {transactions.length === 0 ? (
               <EmptyState
                 icon={WalletIcon}
-                title="No transactions yet"
-                description="Nothing has been credited or debited from this wallet."
+                title={t("No transactions yet")}
+                description={t("Nothing has been credited or debited from this wallet.")}
               />
             ) : (
               <div className="overflow-x-auto rounded-lg border">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Balance after</TableHead>
-                      <TableHead>Date</TableHead>
+                      <TableHead>{t("Type")}</TableHead>
+                      <TableHead>{t("Amount")}</TableHead>
+                      <TableHead>{t("Balance after")}</TableHead>
+                      <TableHead>{t("Date")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -149,7 +155,7 @@ export default async function AdminWalletsPage({ searchParams }: PageProps) {
                           {formatPaise(tx.balanceAfter.toString())}
                         </TableCell>
                         <TableCell className="text-muted-foreground text-xs">
-                          {tx.createdAt.toLocaleDateString()}
+                          {formatDate(tx.createdAt)}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -160,12 +166,12 @@ export default async function AdminWalletsPage({ searchParams }: PageProps) {
           </div>
 
           <div className="space-y-2">
-            <h2 className="text-sm font-medium">Bank account</h2>
+            <h2 className="text-sm font-medium">{t("Bank account")}</h2>
             {!bankAccount ? (
               <EmptyState
                 icon={Landmark}
-                title="No bank account on file"
-                description="This member hasn't added a payout bank account yet."
+                title={t("No bank account on file")}
+                description={t("This member hasn't added a payout bank account yet.")}
               />
             ) : (
               <div className="bg-surface-sunken flex items-center justify-between gap-3 rounded-lg border p-4">
@@ -176,11 +182,11 @@ export default async function AdminWalletsPage({ searchParams }: PageProps) {
                   </p>
                 </div>
                 {bankAccount.verifiedAt ? (
-                  <Badge variant="success">Verified</Badge>
+                  <Badge variant="success">{t("Verified")}</Badge>
                 ) : canVerifyBank ? (
                   <VerifyBankAccountButton bankAccountId={bankAccount.id} />
                 ) : (
-                  <Badge variant="warning">Unverified</Badge>
+                  <Badge variant="warning">{t("Unverified")}</Badge>
                 )}
               </div>
             )}
@@ -190,7 +196,7 @@ export default async function AdminWalletsPage({ searchParams }: PageProps) {
             <WalletTopUpForm userId={member.id} memberLabel={member.fullName ?? member.email} />
           ) : (
             <p className="text-muted-foreground text-sm">
-              You don&apos;t have permission to credit wallets.
+              {t("You don't have permission to credit wallets.")}
             </p>
           )}
         </>

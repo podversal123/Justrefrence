@@ -1,3 +1,4 @@
+import { getT } from "@/i18n/server";
 import { PendingChangeBanner } from "@/components/approvals/pending-change-banner";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
@@ -29,6 +30,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function AdminListingDetailPage({ params }: PageProps) {
+  const t = await getT();
   const { kind: kindSegment, id } = await params;
   const kind = kindFromRouteSegment(kindSegment);
   if (!kind) notFound();
@@ -73,13 +75,15 @@ export default async function AdminListingDetailPage({ params }: PageProps) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Status</CardTitle>
+          <CardTitle>{t("Status")}</CardTitle>
           <CardDescription>
             {listing.approvalStatus === "REJECTED" && listing.rejectedReason
-              ? `Rejected: ${listing.rejectedReason}`
+              ? t("Rejected: {reason}", { reason: listing.rejectedReason })
               : listing.approver
-                ? `Last reviewed by ${listing.approver.fullName ?? listing.approver.email}`
-                : "Awaiting review."}
+                ? t("Last reviewed by {name}", {
+                    name: listing.approver.fullName ?? listing.approver.email,
+                  })
+                : t("Awaiting review.")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -95,8 +99,10 @@ export default async function AdminListingDetailPage({ params }: PageProps) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Images</CardTitle>
-          <CardDescription>The first image is used as the listing thumbnail.</CardDescription>
+          <CardTitle>{t("Images")}</CardTitle>
+          <CardDescription>
+            {t("The first image is used as the listing thumbnail.")}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <ImageUploader kind={kind} itemId={listing.id} images={listing.images} />
@@ -106,11 +112,13 @@ export default async function AdminListingDetailPage({ params }: PageProps) {
       {canUpdate ? (
         <Card>
           <CardHeader>
-            <CardTitle>Details</CardTitle>
+            <CardTitle>{t("Details")}</CardTitle>
             <CardDescription>
               {session.permissions.has("change:apply_direct")
-                ? "Changes are saved straight away."
-                : "Your changes go to a Super Admin for approval. The live listing stays as it is until then."}
+                ? t("Changes are saved straight away.")
+                : t(
+                    "Your changes go to a Super Admin for approval. The live listing stays as it is until then.",
+                  )}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -130,7 +138,7 @@ export default async function AdminListingDetailPage({ params }: PageProps) {
                 pricingType:
                   "pricingType" in listing ? (listing.pricingType as "FIXED" | "QUOTE") : undefined,
               }}
-              submitLabel="Save changes"
+              submitLabel={t("Save changes")}
             />
           </CardContent>
         </Card>
@@ -139,7 +147,7 @@ export default async function AdminListingDetailPage({ params }: PageProps) {
       {canDelete ? (
         <Card>
           <CardHeader>
-            <CardTitle className="text-destructive text-sm">Danger zone</CardTitle>
+            <CardTitle className="text-destructive text-sm">{t("Danger zone")}</CardTitle>
           </CardHeader>
           <CardContent>
             <DeleteListingButton

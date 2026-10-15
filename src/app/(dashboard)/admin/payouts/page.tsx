@@ -1,3 +1,4 @@
+import { getT } from "@/i18n/server";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Hourglass, PiggyBank } from "lucide-react";
@@ -14,13 +15,17 @@ import { CursorPagination } from "@/components/ui/pagination";
 import { PayoutFilters } from "./payout-filters";
 import { PayoutsTable, type PayoutDetailRow } from "./payouts-table";
 
-export const metadata: Metadata = { title: "Payouts" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("Payouts") };
+}
 
 interface PageProps {
   searchParams: Promise<Record<string, string | undefined>>;
 }
 
 export default async function PayoutsPage({ searchParams }: PageProps) {
+  const t = await getT();
   const session = await getAuthSession();
   if (!session) redirect("/login");
   // No separate "payout:read" permission exists in the catalog (see
@@ -81,20 +86,22 @@ export default async function PayoutsPage({ searchParams }: PageProps) {
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
       <div>
-        <h1>Payouts</h1>
-        <p className="text-muted-foreground">Review, approve, and record member payout requests.</p>
+        <h1>{t("Payouts")}</h1>
+        <p className="text-muted-foreground">
+          {t("Review, approve, and record member payout requests.")}
+        </p>
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:max-w-md">
         <StatCard
           icon={Hourglass}
-          label="Pending requests"
+          label={t("Pending requests")}
           value={pending.count.toLocaleString()}
           tone={pending.count > 0 ? "warning" : "default"}
         />
         <StatCard
           icon={PiggyBank}
-          label="Pending amount"
+          label={t("Pending amount")}
           value={formatPaise(pending.amount.toString())}
           tone={pending.count > 0 ? "warning" : "default"}
         />

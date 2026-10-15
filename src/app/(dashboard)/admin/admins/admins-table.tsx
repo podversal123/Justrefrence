@@ -1,3 +1,4 @@
+import { getFormat, getT } from "@/i18n/server";
 import { StatusBadge } from "@/components/ui/status-badge";
 import Link from "next/link";
 import { UserCog } from "lucide-react";
@@ -21,13 +22,15 @@ export interface AdminRow {
   userRoles: { id: string; role: { code: string; label: string } }[];
 }
 
-export function AdminsTable({ admins }: { admins: AdminRow[] }) {
+export async function AdminsTable({ admins }: { admins: AdminRow[] }) {
+  const t = await getT();
+  const { formatDate } = await getFormat();
   if (admins.length === 0) {
     return (
       <EmptyState
         icon={UserCog}
-        title="No admin accounts yet"
-        description="Create the first admin, finance, or support account to get started."
+        title={t("No admin accounts yet")}
+        description={t("Create the first admin, finance, or support account to get started.")}
       />
     );
   }
@@ -39,11 +42,11 @@ export function AdminsTable({ admins }: { admins: AdminRow[] }) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Roles</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Created</TableHead>
+              <TableHead>{t("Name")}</TableHead>
+              <TableHead>{t("Email")}</TableHead>
+              <TableHead>{t("Roles")}</TableHead>
+              <TableHead>{t("Status")}</TableHead>
+              <TableHead>{t("Created")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -59,7 +62,7 @@ export function AdminsTable({ admins }: { admins: AdminRow[] }) {
                   <div className="flex flex-wrap gap-1">
                     {admin.userRoles.map((ur) => (
                       <Badge key={ur.id} variant="secondary">
-                        {ur.role.label}
+                        {t(ur.role.label)}
                       </Badge>
                     ))}
                   </div>
@@ -68,7 +71,7 @@ export function AdminsTable({ admins }: { admins: AdminRow[] }) {
                   <StatusBadge status={admin.status} />
                 </TableCell>
                 <TableCell className="text-muted-foreground">
-                  {admin.createdAt.toLocaleDateString()}
+                  {formatDate(admin.createdAt)}
                 </TableCell>
               </TableRow>
             ))}
@@ -93,12 +96,12 @@ export function AdminsTable({ admins }: { admins: AdminRow[] }) {
             <div className="mt-3 flex flex-wrap gap-1">
               {admin.userRoles.map((ur) => (
                 <Badge key={ur.id} variant="secondary">
-                  {ur.role.label}
+                  {t(ur.role.label)}
                 </Badge>
               ))}
             </div>
             <p className="text-muted-foreground mt-2 text-xs">
-              Created {admin.createdAt.toLocaleDateString()}
+              {t("Created {date}", { date: formatDate(admin.createdAt) })}
             </p>
           </Link>
         ))}

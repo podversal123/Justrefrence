@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { useState } from "react";
 import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
@@ -28,15 +29,17 @@ const initialState: ApiResult<{ roleId: string }> = {
 };
 
 function SubmitButton() {
+  const t = useT();
   const { pending } = useFormStatus();
   return (
     <Button type="submit" disabled={pending}>
-      {pending ? "Creating…" : "Create role"}
+      {pending ? t("Creating…") : t("Create role")}
     </Button>
   );
 }
 
 export function CreateRoleDialog() {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [state, formAction] = useActionState(createRoleAction, initialState);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -56,16 +59,16 @@ export function CreateRoleDialog() {
         render={
           <Button>
             <Plus />
-            Create role
+            {t("Create role")}
           </Button>
         }
       />
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
         <form action={formAction} className="space-y-4" noValidate>
           <DialogHeader>
-            <DialogTitle>Create a custom role</DialogTitle>
+            <DialogTitle>{t("Create a custom role")}</DialogTitle>
             <DialogDescription>
-              Build a role from the permissions that already exist.
+              {t("Build a role from the permissions that already exist.")}
             </DialogDescription>
           </DialogHeader>
 
@@ -78,17 +81,17 @@ export function CreateRoleDialog() {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="role-code">Code</Label>
-              <Input id="role-code" name="code" placeholder="CATALOG_MANAGER" required />
+              <Label htmlFor="role-code">{t("Code")}</Label>
+              <Input id="role-code" name="code" placeholder={t("CATALOG_MANAGER")} required />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="role-label">Label</Label>
-              <Input id="role-label" name="label" placeholder="Catalog Manager" required />
+              <Label htmlFor="role-label">{t("Label")}</Label>
+              <Input id="role-label" name="label" placeholder={t("Catalog Manager")} required />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label>Permissions</Label>
+            <Label>{t("Permissions")}</Label>
             <div className="grid max-h-64 grid-cols-1 gap-1 overflow-y-auto rounded-md border p-2 sm:grid-cols-2">
               {PERMISSIONS.map((code) => (
                 <label key={code} className="flex items-center gap-2 rounded px-1.5 py-1 text-sm">

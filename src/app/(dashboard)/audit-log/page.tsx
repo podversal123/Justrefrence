@@ -1,3 +1,4 @@
+import { getT } from "@/i18n/server";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getAuthSession } from "@/server/auth/session";
@@ -5,7 +6,10 @@ import { prisma } from "@/server/lib/prisma";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
-export const metadata: Metadata = { title: "Audit log" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("Audit log") };
+}
 
 /**
  * The one real, permission-gated data page in Phase 1 — proves RBAC, the
@@ -14,6 +18,7 @@ export const metadata: Metadata = { title: "Audit log" };
  * SUPER_ADMIN only) and docs/audit-logging.md §6.
  */
 export default async function AuditLogPage() {
+  const t = await getT();
   const session = await getAuthSession();
   if (!session) redirect("/login");
 
@@ -30,22 +35,22 @@ export default async function AuditLogPage() {
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
       <div>
-        <h1>Audit log</h1>
+        <h1>{t("Audit log")}</h1>
         <p className="text-muted-foreground">
-          The most recent 50 entries, newest first. Visible to Super Admin only.
+          {t("The most recent 50 entries, newest first. Visible to Super Admin only.")}
         </p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Recent activity</CardTitle>
+          <CardTitle>{t("Recent activity")}</CardTitle>
           <CardDescription>
-            Every entry is written once and can never be edited or deleted.
+            {t("Every entry is written once and can never be edited or deleted.")}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {entries.length === 0 ? (
-            <p className="text-muted-foreground py-8 text-center text-sm">No entries yet.</p>
+            <p className="text-muted-foreground py-8 text-center text-sm">{t("No entries yet.")}</p>
           ) : (
             <div className="divide-y">
               {entries.map((entry) => (

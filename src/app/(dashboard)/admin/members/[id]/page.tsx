@@ -1,3 +1,4 @@
+import { getFormat, getT } from "@/i18n/server";
 import type { Metadata, Route } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -9,16 +10,18 @@ import { DOCUMENT_LABELS } from "@/server/domain/kyc/rules";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { formatDate } from "@/lib/format";
 import { formatPaise } from "@/lib/money";
 import { ModerationButton } from "./moderation-button";
 import { EditMemberDialog } from "./edit-member-dialog";
 import { PendingChangeBanner } from "@/components/approvals/pending-change-banner";
 
-export const metadata: Metadata = { title: "Member" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("Member") };
+}
 
-const maskPan = (pan: string | null) =>
-  pan ? `${"•".repeat(Math.max(pan.length - 4, 0))}${pan.slice(-4)}` : "Not provided";
+const maskPan = (pan: string | null, notProvided: string) =>
+  pan ? `${"•".repeat(Math.max(pan.length - 4, 0))}${pan.slice(-4)}` : notProvided;
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -30,6 +33,8 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 }
 
 export default async function AdminMemberPage({ params }: { params: Promise<{ id: string }> }) {
+  const t = await getT();
+  const { formatDate } = await getFormat();
   const session = await getAuthSession();
   if (!session) redirect("/login");
   if (!session.permissions.has("member:read:any")) redirect("/unauthorized");
@@ -53,7 +58,7 @@ export default async function AdminMemberPage({ params }: { params: Promise<{ id
         className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-sm"
       >
         <ArrowLeft className="size-4" />
-        All members
+        {t("All members")}
       </Link>
 
       <PendingChangeBanner entityType="MEMBER_PROFILE" entityId={user.id} />
@@ -65,7 +70,7 @@ export default async function AdminMemberPage({ params }: { params: Promise<{ id
             <StatusBadge status={user.status} />
           </div>
           <p className="text-muted-foreground text-sm">
-            {profile.memberId} · Joined {formatDate(user.createdAt)}
+            {profile.memberId} · {t("Joined {date}", { date: formatDate(user.createdAt) })}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -76,7 +81,7 @@ export default async function AdminMemberPage({ params }: { params: Promise<{ id
               render={
                 <Link href={`/messages?to=${user.id}` as Route}>
                   <Mail />
-                  Send message
+                  {t("Send message")}
                 </Link>
               }
             />
@@ -87,7 +92,7 @@ export default async function AdminMemberPage({ params }: { params: Promise<{ id
             render={
               <a href={`/api/welcome-letter?member=${user.id}`}>
                 <FileText />
-                Welcome letter
+                {t("Welcome letter")}
               </a>
             }
           />
@@ -113,28 +118,30 @@ export default async function AdminMemberPage({ params }: { params: Promise<{ id
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Profile</CardTitle>
+            <CardTitle>{t("Profile")}</CardTitle>
           </CardHeader>
           <CardContent>
             <dl>
-              <Row label="Email">{user.email}</Row>
-              <Row label="Mobile">{user.phone ?? "Not provided"}</Row>
-              <Row label="Telephone">{profile.telephone ?? "Not provided"}</Row>
-              <Row label="Email verified">
-                {user.emailVerifiedAt ? formatDate(user.emailVerifiedAt) : "No"}
+              <Row label={t("Email")}>{user.email}</Row>
+              <Row label={t("Mobile")}>{user.phone ?? t("Not provided")}</Row>
+              <Row label={t("Telephone")}>{profile.telephone ?? t("Not provided")}</Row>
+              <Row label={t("Email verified")}>
+                {user.emailVerifiedAt ? formatDate(user.emailVerifiedAt) : t("No")}
               </Row>
-              <Row label="KYC">
+              <Row label={t("KYC")}>
                 <StatusBadge status={profile.kycStatus} />
               </Row>
-              <Row label="PAN">{maskPan(profile.pan)}</Row>
-              <Row label="GSTIN">{profile.gstin ?? "Not provided"}</Row>
-              <Row label="Referral code">{profile.referralCode ?? "—"}</Row>
-              <Row label="Referred by">
+              <Row label={t("PAN")}>{maskPan(profile.pan, t("Not provided"))}</Row>
+              <Row label={t("GSTIN")}>{profile.gstin ?? "Not provided"}</Row>
+              <Row label={t("Referral code")}>{profile.referralCode ?? "—"}</Row>
+              <Row label={t("Referred by")}>
                 {profile.referredByUser
                   ? (profile.referredByUser.fullName ?? profile.referredByUser.email)
-                  : "Direct signup"}
+                  : t("Direct signup")}
               </Row>
-              <Row label="Roles">{user.userRoles.map((r) => r.role.code).join(", ") || "—"}</Row>
+              <Row label={t("Roles")}>
+                {user.userRoles.map((r) => r.role.code).join(", ") || "—"}
+              </Row>
             </dl>
           </CardContent>
         </Card>
@@ -142,14 +149,14 @@ export default async function AdminMemberPage({ params }: { params: Promise<{ id
         <div className="flex flex-col gap-4">
           <Card>
             <CardHeader>
-              <CardTitle>Wallet</CardTitle>
+              <CardTitle>{t("Wallet")}</CardTitle>
             </CardHeader>
             <CardContent>
               <dl>
-                <Row label="Balance">
+                <Row label={t("Balance")}>
                   {formatPaise((user.wallet?.balance ?? 0n).toString(), "INR")}
                 </Row>
-                <Row label="On hold for payouts">
+                <Row label={t("On hold for payouts")}>
                   {formatPaise((user.wallet?.pendingBalance ?? 0n).toString(), "INR")}
                 </Row>
               </dl>
@@ -157,32 +164,32 @@ export default async function AdminMemberPage({ params }: { params: Promise<{ id
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle>Bank account</CardTitle>
+              <CardTitle>{t("Bank account")}</CardTitle>
             </CardHeader>
             <CardContent>
               {bank ? (
                 <dl>
-                  <Row label="Holder">{bank.accountHolderName}</Row>
-                  <Row label="Account">{bank.accountNoMasked}</Row>
-                  <Row label="IFSC">{bank.ifsc}</Row>
-                  <Row label="Verified">
-                    {bank.verifiedAt ? formatDate(bank.verifiedAt) : "Not yet"}
+                  <Row label={t("Holder")}>{bank.accountHolderName}</Row>
+                  <Row label={t("Account")}>{bank.accountNoMasked}</Row>
+                  <Row label={t("IFSC")}>{bank.ifsc}</Row>
+                  <Row label={t("Verified")}>
+                    {bank.verifiedAt ? formatDate(bank.verifiedAt) : t("Not yet")}
                   </Row>
                 </dl>
               ) : (
-                <p className="text-muted-foreground text-sm">No bank account added.</p>
+                <p className="text-muted-foreground text-sm">{t("No bank account added.")}</p>
               )}
             </CardContent>
           </Card>
           {user.vendorProfile ? (
             <Card>
               <CardHeader>
-                <CardTitle>Vendor</CardTitle>
+                <CardTitle>{t("Vendor")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <dl>
-                  <Row label="Business">{user.vendorProfile.businessName}</Row>
-                  <Row label="Approval">
+                  <Row label={t("Business")}>{user.vendorProfile.businessName}</Row>
+                  <Row label={t("Approval")}>
                     <StatusBadge status={user.vendorProfile.approvalStatus} />
                   </Row>
                 </dl>
@@ -194,11 +201,11 @@ export default async function AdminMemberPage({ params }: { params: Promise<{ id
 
       <Card>
         <CardHeader>
-          <CardTitle>KYC documents</CardTitle>
+          <CardTitle>{t("KYC documents")}</CardTitle>
         </CardHeader>
         <CardContent>
           {kycDocuments.length === 0 ? (
-            <p className="text-muted-foreground text-sm">No documents uploaded yet.</p>
+            <p className="text-muted-foreground text-sm">{t("No documents uploaded yet.")}</p>
           ) : (
             <ul className="divide-y">
               {kycDocuments.map((doc) => (
@@ -216,7 +223,7 @@ export default async function AdminMemberPage({ params }: { params: Promise<{ id
                         rel="noopener noreferrer"
                         className="text-primary font-medium hover:underline"
                       >
-                        View
+                        {t("View")}
                       </a>
                     ) : null}
                   </span>
@@ -226,9 +233,9 @@ export default async function AdminMemberPage({ params }: { params: Promise<{ id
           )}
           {session.permissions.has("kyc:review") ? (
             <p className="text-muted-foreground mt-3 text-xs">
-              To verify or reject, open{" "}
+              {t("To verify or reject, open")}{" "}
               <Link href={"/admin/kyc" as Route} className="text-primary hover:underline">
-                KYC review
+                {t("KYC review")}
               </Link>
               .
             </p>
@@ -238,12 +245,14 @@ export default async function AdminMemberPage({ params }: { params: Promise<{ id
 
       <Card>
         <CardHeader>
-          <CardTitle>Direct referrals ({directReferrals.length})</CardTitle>
+          <CardTitle>
+            {t("Direct referrals ({count})", { count: directReferrals.length })}
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {directReferrals.length === 0 ? (
             <p className="text-muted-foreground text-sm">
-              This member hasn&apos;t referred anyone yet.
+              {t("This member hasn't referred anyone yet.")}
             </p>
           ) : (
             <ul className="divide-y">

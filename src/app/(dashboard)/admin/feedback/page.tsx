@@ -1,3 +1,4 @@
+import { getFormat, getT } from "@/i18n/server";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { MessageSquareText } from "lucide-react";
@@ -6,12 +7,16 @@ import { listFeedback } from "@/server/repositories/content/feedback-repository"
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { formatDateTime } from "@/lib/format";
 import { ReviewedButton } from "./reviewed-button";
 
-export const metadata: Metadata = { title: "Customer feedback" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("Customer feedback") };
+}
 
 export default async function AdminFeedbackPage() {
+  const t = await getT();
+  const { formatDateTime } = await getFormat();
   const session = await getAuthSession();
   if (!session) redirect("/login");
   if (!session.permissions.has("feedback:read")) redirect("/unauthorized");
@@ -22,15 +27,17 @@ export default async function AdminFeedbackPage() {
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
       <div>
-        <h1>Customer feedback</h1>
-        <p className="text-muted-foreground">{unreviewed} not yet reviewed</p>
+        <h1>{t("Customer feedback")}</h1>
+        <p className="text-muted-foreground">
+          {t("{count} not yet reviewed", { count: unreviewed })}
+        </p>
       </div>
 
       {items.length === 0 ? (
         <EmptyState
           icon={MessageSquareText}
-          title="No feedback yet"
-          description="Messages sent from the public Feedback page appear here."
+          title={t("No feedback yet")}
+          description={t("Messages sent from the public Feedback page appear here.")}
         />
       ) : (
         <ul className="flex flex-col gap-3">
@@ -53,7 +60,7 @@ export default async function AdminFeedbackPage() {
                   <p className="text-sm whitespace-pre-wrap">{item.message}</p>
                   {item.reviewedAt ? (
                     <p className="text-muted-foreground text-xs">
-                      Reviewed {formatDateTime(item.reviewedAt)}
+                      {t("Reviewed {date}", { date: formatDateTime(item.reviewedAt) })}
                     </p>
                   ) : (
                     <ReviewedButton feedbackId={item.id} />

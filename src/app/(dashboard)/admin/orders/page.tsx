@@ -1,3 +1,4 @@
+import { getFormat, getT } from "@/i18n/server";
 import type { Metadata, Route } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -9,7 +10,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { CursorPagination } from "@/components/ui/pagination";
-import { StatusBadge } from "@/components/ui/status-badge";
+import { StatusBadge, statusLabel } from "@/components/ui/status-badge";
 import {
   Table,
   TableBody,
@@ -18,11 +19,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatDate } from "@/lib/format";
 import { formatPaise } from "@/lib/money";
 import type { OrderStatus } from "@/generated/prisma/enums";
 
-export const metadata: Metadata = { title: "All orders" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("All orders") };
+}
 
 const STATUSES: OrderStatus[] = [
   "PLACED",
@@ -41,6 +44,8 @@ export default async function AdminOrdersPage({
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
+  const t = await getT();
+  const { formatDate } = await getFormat();
   const session = await getAuthSession();
   if (!session) redirect("/login");
   if (!session.permissions.has("order:read:any")) redirect("/unauthorized");
@@ -63,56 +68,56 @@ export default async function AdminOrdersPage({
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
       <div>
-        <h1>All orders</h1>
+        <h1>{t("All orders")}</h1>
         <p className="text-muted-foreground">
-          Search every order by order number, invoice number, buyer or vendor.
+          {t("Search every order by order number, invoice number, buyer or vendor.")}
         </p>
       </div>
 
       <form method="get" role="search" className="flex flex-wrap items-end gap-3">
         <div className="space-y-1">
           <label htmlFor="o-search" className="text-xs font-medium">
-            Search
+            {t("Search")}
           </label>
           <Input
             id="o-search"
             name="search"
             defaultValue={search}
-            placeholder="ORD-000001, INV/2026-27/…, buyer or vendor"
+            placeholder={t("ORD-000001, INV/2026-27/…, buyer or vendor")}
             className="w-72"
           />
         </div>
         <div className="space-y-1">
           <label htmlFor="o-status" className="text-xs font-medium">
-            Status
+            {t("Status")}
           </label>
           <NativeSelect id="o-status" name="status" defaultValue={status ?? ""} className="w-40">
-            <option value="">All</option>
+            <option value="">{t("All")}</option>
             {STATUSES.map((s) => (
               <option key={s} value={s}>
-                {s.charAt(0) + s.slice(1).toLowerCase()}
+                {t(statusLabel(s))}
               </option>
             ))}
           </NativeSelect>
         </div>
         <div className="space-y-1">
           <label htmlFor="o-from" className="text-xs font-medium">
-            From
+            {t("From")}
           </label>
           <Input id="o-from" name="from" type="date" defaultValue={from} className="w-40" />
         </div>
         <div className="space-y-1">
           <label htmlFor="o-to" className="text-xs font-medium">
-            To
+            {t("To")}
           </label>
           <Input id="o-to" name="to" type="date" defaultValue={to} className="w-40" />
         </div>
-        <Button type="submit">Apply</Button>
+        <Button type="submit">{t("Apply")}</Button>
         {filtered ? (
           <Button
             variant="ghost"
             nativeButton={false}
-            render={<Link href={"/admin/orders" as Route}>Clear</Link>}
+            render={<Link href={"/admin/orders" as Route}>{t("Clear")}</Link>}
           />
         ) : null}
       </form>
@@ -120,9 +125,11 @@ export default async function AdminOrdersPage({
       {orders.length === 0 ? (
         <EmptyState
           icon={Receipt}
-          title="No orders found"
+          title={t("No orders found")}
           description={
-            filtered ? "Try widening the filters." : "Orders appear here as customers place them."
+            filtered
+              ? t("Try widening the filters.")
+              : t("Orders appear here as customers place them.")
           }
         />
       ) : (
@@ -130,13 +137,13 @@ export default async function AdminOrdersPage({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Order</TableHead>
-                <TableHead>Invoice</TableHead>
-                <TableHead>Buyer</TableHead>
-                <TableHead>Vendor</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead className="text-right">Total</TableHead>
+                <TableHead>{t("Order")}</TableHead>
+                <TableHead>{t("Invoice")}</TableHead>
+                <TableHead>{t("Buyer")}</TableHead>
+                <TableHead>{t("Vendor")}</TableHead>
+                <TableHead>{t("Status")}</TableHead>
+                <TableHead>{t("Date")}</TableHead>
+                <TableHead className="text-right">{t("Total")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

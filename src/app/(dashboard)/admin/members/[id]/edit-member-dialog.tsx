@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { useState } from "react";
 import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
@@ -34,10 +35,11 @@ const initialState: ApiResult<ChangeOutcome> = {
 };
 
 function SubmitButton({ needsApproval }: { needsApproval: boolean }) {
+  const t = useT();
   const { pending } = useFormStatus();
   return (
     <Button type="submit" disabled={pending}>
-      {pending ? "Saving…" : needsApproval ? "Submit for approval" : "Save changes"}
+      {pending ? t("Saving…") : needsApproval ? t("Submit for approval") : t("Save changes")}
     </Button>
   );
 }
@@ -63,6 +65,7 @@ export function EditMemberDialog({
   /** True for an Admin: the change goes to a Super Admin instead of being saved straight away. */
   needsApproval: boolean;
 }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [state, formAction] = useActionState(
     async (
@@ -94,18 +97,20 @@ export function EditMemberDialog({
         render={
           <Button variant="outline">
             <Pencil />
-            Edit profile
+            {t("Edit profile")}
           </Button>
         }
       />
       <DialogContent className="sm:max-w-xl">
         <form action={formAction} className="space-y-4" noValidate>
           <DialogHeader>
-            <DialogTitle>Edit member profile</DialogTitle>
+            <DialogTitle>{t("Edit member profile")}</DialogTitle>
             <DialogDescription>
               {needsApproval
-                ? "A Super Admin will review your change. The profile stays as it is until they approve it."
-                : "Changes are saved straight away and recorded in the audit log."}
+                ? t(
+                    "A Super Admin will review your change. The profile stays as it is until they approve it.",
+                  )
+                : t("Changes are saved straight away and recorded in the audit log.")}
             </DialogDescription>
           </DialogHeader>
 
@@ -119,19 +124,24 @@ export function EditMemberDialog({
           <input type="hidden" name="userId" value={member.userId} />
 
           <FormGrid>
-            <FormField htmlFor="em-fullName" label="Full name" error={errors["fullName"]}>
+            <FormField htmlFor="em-fullName" label={t("Full name")} error={errors["fullName"]}>
               <Input id="em-fullName" name="fullName" defaultValue={member.fullName} required />
             </FormField>
-            <FormField htmlFor="em-dob" label="Date of birth" error={errors["dob"]}>
+            <FormField htmlFor="em-dob" label={t("Date of birth")} error={errors["dob"]}>
               <Input id="em-dob" name="dob" type="date" defaultValue={member.dob} />
             </FormField>
-            <FormField htmlFor="em-pan" label="PAN" error={errors["pan"]}>
-              <Input id="em-pan" name="pan" defaultValue={member.pan} placeholder="ABCDE1234F" />
+            <FormField htmlFor="em-pan" label={t("PAN")} error={errors["pan"]}>
+              <Input
+                id="em-pan"
+                name="pan"
+                defaultValue={member.pan}
+                placeholder={t("ABCDE1234F")}
+              />
             </FormField>
-            <FormField htmlFor="em-gstin" label="GSTIN" error={errors["gstin"]}>
+            <FormField htmlFor="em-gstin" label={t("GSTIN")} error={errors["gstin"]}>
               <Input id="em-gstin" name="gstin" defaultValue={member.gstin} />
             </FormField>
-            <FormField htmlFor="em-telephone" label="Telephone" error={errors["telephone"]}>
+            <FormField htmlFor="em-telephone" label={t("Telephone")} error={errors["telephone"]}>
               <Input
                 id="em-telephone"
                 name="telephone"
@@ -140,7 +150,7 @@ export function EditMemberDialog({
                 placeholder="011-23456789"
               />
             </FormField>
-            <FormField htmlFor="em-website" label="Website" error={errors["websiteUrl"]}>
+            <FormField htmlFor="em-website" label={t("Website")} error={errors["websiteUrl"]}>
               <Input
                 id="em-website"
                 name="websiteUrl"
@@ -150,7 +160,7 @@ export function EditMemberDialog({
             </FormField>
             <FormField
               htmlFor="em-social"
-              label="Social links"
+              label={t("Social links")}
               error={errors["socialLinks"]}
               className={FULL_ROW}
             >
@@ -164,13 +174,13 @@ export function EditMemberDialog({
           </FormGrid>
 
           {needsApproval ? (
-            <FormField htmlFor="em-note" label="Why are you changing this? (optional)">
+            <FormField htmlFor="em-note" label={t("Why are you changing this? (optional)")}>
               <Textarea
                 id="em-note"
                 name="note"
                 rows={2}
                 maxLength={500}
-                placeholder="A short note helps the Super Admin decide faster."
+                placeholder={t("A short note helps the Super Admin decide faster.")}
               />
             </FormField>
           ) : null}

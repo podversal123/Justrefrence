@@ -1,3 +1,5 @@
+import { msg } from "@/i18n/locales";
+import { getT } from "@/i18n/server";
 import type { Metadata, Route } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -12,13 +14,16 @@ import { CursorPagination } from "@/components/ui/pagination";
 import { canApprove, canReject, type AdStatus } from "@/server/domain/ads/rules";
 import { cn } from "@/lib/utils";
 
-export const metadata: Metadata = { title: "Advertisements" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("Advertisements") };
+}
 
 const FILTERS: { key: AdStatus | "ALL"; label: string }[] = [
-  { key: "PENDING", label: "Waiting" },
-  { key: "APPROVED", label: "Approved" },
-  { key: "REJECTED", label: "Not approved" },
-  { key: "ALL", label: "All" },
+  { key: "PENDING", label: msg("Waiting") },
+  { key: "APPROVED", label: msg("Approved") },
+  { key: "REJECTED", label: msg("Not approved") },
+  { key: "ALL", label: msg("All") },
 ];
 
 export default async function AdminAdsPage({
@@ -26,6 +31,7 @@ export default async function AdminAdsPage({
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
+  const t = await getT();
   const session = await getAuthSession();
   if (!session) redirect("/login");
   if (!session.permissions.has("ad:review")) redirect("/unauthorized");
@@ -40,14 +46,15 @@ export default async function AdminAdsPage({
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
       <div>
-        <h1>Advertisements</h1>
+        <h1>{t("Advertisements")}</h1>
         <p className="text-muted-foreground">
-          Ads vendors want to show on the home page. Approve the good ones; turn down the rest with
-          a reason the vendor can act on.
+          {t(
+            "Ads vendors want to show on the home page. Approve the good ones; turn down the rest with a reason the vendor can act on.",
+          )}
         </p>
       </div>
 
-      <nav aria-label="Filter by status" className="flex flex-wrap gap-2">
+      <nav aria-label={t("Filter by status")} className="flex flex-wrap gap-2">
         {FILTERS.map((f) => (
           <Link
             key={f.key}
@@ -57,7 +64,7 @@ export default async function AdminAdsPage({
               buttonVariants({ variant: f.key === filter ? "default" : "outline", size: "sm" }),
             )}
           >
-            {f.label}
+            {t(f.label)}
           </Link>
         ))}
       </nav>
@@ -65,8 +72,8 @@ export default async function AdminAdsPage({
       {items.length === 0 ? (
         <EmptyState
           icon={Megaphone}
-          title={filter === "PENDING" ? "Nothing is waiting" : "No ads here"}
-          description="Ads vendors submit will appear here."
+          title={filter === "PENDING" ? t("Nothing is waiting") : t("No ads here")}
+          description={t("Ads vendors submit will appear here.")}
         />
       ) : (
         <>

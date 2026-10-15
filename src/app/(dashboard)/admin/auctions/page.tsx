@@ -1,3 +1,4 @@
+import { getT } from "@/i18n/server";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Gavel } from "lucide-react";
@@ -13,7 +14,10 @@ import {
   type AuctionState,
 } from "@/server/repositories/auction/auction-repository";
 
-export const metadata: Metadata = { title: "All auctions" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("All auctions") };
+}
 
 const STATES: AuctionState[] = ["open", "ended", "all"];
 
@@ -22,6 +26,7 @@ export default async function AdminAuctionsPage({
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
+  const t = await getT();
   const session = await getAuthSession();
   if (!session) redirect("/login");
   if (!session.permissions.has("auction:read:any")) redirect("/unauthorized");
@@ -38,43 +43,43 @@ export default async function AdminAuctionsPage({
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
       <div>
-        <h1>All auctions</h1>
+        <h1>{t("All auctions")}</h1>
         <p className="text-muted-foreground">
-          Every auction on the platform. Open one to see all bids with the real bidder names.
+          {t("Every auction on the platform. Open one to see all bids with the real bidder names.")}
         </p>
       </div>
 
       <form method="get" role="search" className="flex flex-wrap items-end gap-3">
         <div className="space-y-1">
           <label htmlFor="aa-search" className="text-xs font-medium">
-            Search
+            {t("Search")}
           </label>
           <Input
             id="aa-search"
             name="search"
             defaultValue={search}
-            placeholder="Title, seller or AUC-000012"
+            placeholder={t("Title, seller or AUC-000012")}
             className="w-72"
           />
         </div>
         <div className="space-y-1">
           <label htmlFor="aa-state" className="text-xs font-medium">
-            Status
+            {t("Status")}
           </label>
           <NativeSelect id="aa-state" name="state" defaultValue={state} className="w-40">
-            <option value="all">All</option>
-            <option value="open">Open</option>
-            <option value="ended">Ended</option>
+            <option value="all">{t("All")}</option>
+            <option value="open">{t("Open")}</option>
+            <option value="ended">{t("Ended")}</option>
           </NativeSelect>
         </div>
-        <Button type="submit">Apply</Button>
+        <Button type="submit">{t("Apply")}</Button>
       </form>
 
       {items.length === 0 ? (
         <EmptyState
           icon={Gavel}
-          title="No auctions found"
-          description="Auctions vendors start will appear here."
+          title={t("No auctions found")}
+          description={t("Auctions vendors start will appear here.")}
         />
       ) : (
         <>

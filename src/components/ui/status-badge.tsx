@@ -105,9 +105,13 @@ const STATUS_LABELS: Record<string, string> = {
  * (Phase 2) and listing approval/active status (Phase 3) — see the Phase 3
  * brief's "StatusBadge" reusable-component requirement.
  */
+export function statusLabel(status: string): string {
+  return STATUS_LABELS[status] ?? status.replace(/_/g, " ").toLowerCase();
+}
+
 export function StatusBadge({ status, className }: { status: string; className?: string }) {
   const variant = STATUS_VARIANTS[status] ?? "outline";
-  const label = STATUS_LABELS[status] ?? status.replace(/_/g, " ").toLowerCase();
+  const label = statusLabel(status);
   return (
     <Badge variant={variant} className={cn(className)}>
       <T text={label} />

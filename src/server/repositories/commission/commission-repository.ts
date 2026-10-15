@@ -1,6 +1,7 @@
 import "server-only";
 import { prisma } from "@/server/lib/prisma";
 import type { Prisma } from "@/generated/prisma/client";
+import { dayRangeBounds } from "@/lib/day-range";
 import type { CommissionStatus } from "@/generated/prisma/enums";
 
 type Tx = Prisma.TransactionClient;
@@ -113,4 +114,73 @@ export async function findCommissionsPastReleaseAt(now: Date = new Date()) {
   return prisma.commission.findMany({
     where: { status: "ELIGIBLE", releaseAt: { lte: now } },
   });
+}
+
+export type EarningsKind = "direct" | "indirect";
+
+export interface EarningsFilter {
+  kind?: EarningsKind;
+  from?: string;
+  to?: string;
+}
+
+/** Direct = the member's own referrals (level 1). Indirect = everyone further down (level 2 and up). */
+function earningsWhere(beneficiaryMemberId: string, filter: EarningsFilter) {
+  const createdAt = dayRangeBounds(filter.from, filter.to);
+  return {
+    beneficiaryMemberId,
+    ...(filter.kind === "direct" ? { level: 1 } : {}),
+    ...(filter.kind === "indirect" ? { level: { gte: 2 } } : {}),
+    ...(createdAt.gte || createdAt.lt ? { createdAt } : {}),
+  };
+}
+
+const EARNINGS_PAGE_SIZE = 25;
+
+export async function listEarnings(
+  beneficiaryMemberId: string,
+  filter: EarningsFilter & { cursor?: string },
+) {
+  const rows = await prisma.commission.findMany({
+    where: earningsWhere(beneficiaryMemberId, filter),
+    orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+    take: EARNINGS_PAGE_SIZE + 1,
+    ...(filter.cursor ? { cursor: { id: filter.cursor }, skip: 1 } : {}),
+    select: {
+      id: true,
+      level: true,
+      amount: true,
+      status: true,
+      createdAt: true,
+      order: { select: { orderNumber: true } },
+    },
+  });
+  const hasMore = rows.length > EARNINGS_PAGE_SIZE;
+  const items = hasMore ? rows.slice(0, EARNINGS_PAGE_SIZE) : rows;
+  return { items, nextCursor: hasMore ? (items.at(-1)?.id ?? null) : null };
+}
+
+/**
+ * Totals for the dates chosen. Reversed and cancelled commissions are not earnings, so they are left out;
+ * `received` is what has already reached the wallet (AVAILABLE), `pending` is still waiting to be released.
+ */
+export async function getEarningsTotals(
+  beneficiaryMemberId: string,
+  filter: Pick<EarningsFilter, "from" | "to">,
+) {
+  const grouped = await prisma.commission.groupBy({
+    by: ["level", "status"],
+    where: earningsWhere(beneficiaryMemberId, filter),
+    _sum: { amount: true },
+  });
+  const totals = { direct: 0n, indirect: 0n, received: 0n, pending: 0n };
+  for (const row of grouped) {
+    if (row.status === "REVERSED" || row.status === "CANCELLED") continue;
+    const amount = row._sum.amount ?? 0n;
+    if (row.level === 1) totals.direct += amount;
+    else totals.indirect += amount;
+    if (row.status === "AVAILABLE") totals.received += amount;
+    else totals.pending += amount;
+  }
+  return { ...totals, total: totals.direct + totals.indirect };
 }

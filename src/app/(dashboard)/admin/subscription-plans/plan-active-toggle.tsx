@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { useEffect, useRef } from "react";
 import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
@@ -11,16 +12,18 @@ import type { ApiResult } from "@/lib/api-response";
 const nullState: ApiResult<null> = { success: true, data: null, meta: { requestId: "" } };
 
 function ToggleButton({ active }: { active: boolean }) {
+  const t = useT();
   const { pending } = useFormStatus();
   return (
     <Button type="submit" variant="outline" size="sm" disabled={pending}>
-      {pending ? "Saving…" : active ? "Deactivate" : "Activate"}
+      {pending ? t("Saving…") : active ? t("Deactivate") : t("Activate")}
     </Button>
   );
 }
 
 /** Simple inline toggle — see the brief: a full edit dialog isn't warranted for a single boolean flip. */
 export function PlanActiveToggle({ planId, active }: { planId: string; active: boolean }) {
+  const t = useT();
   const [state, formAction] = useActionState(setSubscriptionPlanActiveAction, nullState);
   const lastRequestId = useRef(state.meta.requestId);
 
@@ -28,10 +31,12 @@ export function PlanActiveToggle({ planId, active }: { planId: string; active: b
     if (!state.meta.requestId || state.meta.requestId === lastRequestId.current) return;
     lastRequestId.current = state.meta.requestId;
     if (state.success) {
-      toast.success(active ? "Plan deactivated" : "Plan activated");
+      toast.success(active ? t("Plan deactivated") : t("Plan activated"));
     } else {
-      toast.error("Could not update plan", state.error.message);
+      toast.error(t("Could not update plan"), state.error.message);
     }
+    // `t` is left out on purpose: this runs once per result (guarded by the request id).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, active]);
 
   return (

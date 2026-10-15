@@ -29,7 +29,7 @@ import { PayoutRequestForm } from "./payout-request-form";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
-  return { title: t("My wallet") };
+  return { title: t("Wallet") };
 }
 
 export default async function WalletPage() {
@@ -55,7 +55,7 @@ export default async function WalletPage() {
     return (
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8">
         <div>
-          <h1>{t("My wallet")}</h1>
+          <h1>{t("Wallet")}</h1>
         </div>
         <ErrorState
           title={t("Couldn't load your wallet")}
@@ -85,7 +85,7 @@ export default async function WalletPage() {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 py-8">
       <div>
-        <h1>{t("My wallet")}</h1>
+        <h1>{t("Wallet")}</h1>
         <p className="text-muted-foreground">
           {t("Your balance, payout requests, and transaction history.")}
         </p>

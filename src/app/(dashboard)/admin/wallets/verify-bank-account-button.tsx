@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { useRouter } from "next/navigation";
 import { ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,12 +11,13 @@ import type { ApiResult } from "@/lib/api-response";
 
 /** Marks a member's bank account verified — the KYC gate payout eligibility checks. */
 export function VerifyBankAccountButton({ bankAccountId }: { bankAccountId: string }) {
+  const t = useT();
   const router = useRouter();
 
   async function handleAction(prevState: unknown, formData: FormData): Promise<ApiResult<null>> {
     const result = await verifyBankAccountAction(prevState, formData);
     if (result.success) {
-      toast.success("Bank account verified", "This member can now request a payout.");
+      toast.success(t("Bank account verified"), t("This member can now request a payout."));
       router.refresh();
     }
     return result;
@@ -26,13 +28,15 @@ export function VerifyBankAccountButton({ bankAccountId }: { bankAccountId: stri
       trigger={
         <Button size="sm" variant="outline">
           <ShieldCheck />
-          Verify
+          {t("Verify")}
         </Button>
       }
-      title="Verify this bank account?"
-      description="Confirm only after you've checked the account details are genuine (e.g. a cancelled cheque or penny-drop check). Verified accounts become eligible for payouts."
+      title={t("Verify this bank account?")}
+      description={t(
+        "Confirm only after you've checked the account details are genuine (e.g. a cancelled cheque or penny-drop check). Verified accounts become eligible for payouts.",
+      )}
       hiddenFields={{ bankAccountId }}
-      confirmLabel="Verify account"
+      confirmLabel={t("Verify account")}
       action={handleAction}
     />
   );

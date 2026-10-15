@@ -1,3 +1,4 @@
+import { getFormat, getT } from "@/i18n/server";
 import type { Metadata, Route } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -31,13 +32,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { describeDiscount } from "@/lib/coupon-display";
-import { formatDate } from "@/lib/format";
 import { formatPaise } from "@/lib/money";
 import { cn } from "@/lib/utils";
 import { PayRewardForm } from "./pay-reward-form";
 import { MarkGivenButton } from "./mark-given-button";
 
-export const metadata: Metadata = { title: "Rewards" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("Rewards") };
+}
 
 const STATUSES: RewardStatus[] = ["UNUSED", "USED", "EXPIRED"];
 
@@ -46,6 +49,8 @@ export default async function AdminRewardsPage({
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
+  const t = await getT();
+  const { formatDate } = await getFormat();
   const session = await getAuthSession();
   if (!session) redirect("/login");
   if (!session.permissions.has("reward:read:any")) redirect("/unauthorized");
@@ -68,21 +73,21 @@ export default async function AdminRewardsPage({
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-8">
       <div>
-        <h1>Rewards</h1>
+        <h1>{t("Rewards")}</h1>
         <p className="text-muted-foreground">
-          Pay a reward to a member, and see every reward paid so far.
+          {t("Pay a reward to a member, and see every reward paid so far.")}
         </p>
       </div>
 
       {canPay ? (
         <section aria-labelledby="pay-heading" className="space-y-4">
           <h2 id="pay-heading" className="text-lg">
-            Pay a reward
+            {t("Pay a reward")}
           </h2>
           <form method="get" role="search" className="flex flex-wrap items-end gap-3">
             <div className="space-y-1">
               <label htmlFor="rw-email" className="text-xs font-medium">
-                Member&apos;s email
+                {t("Member's email")}
               </label>
               <Input
                 id="rw-email"
@@ -95,22 +100,22 @@ export default async function AdminRewardsPage({
             </div>
             <Button type="submit">
               <Search />
-              Find member
+              {t("Find member")}
             </Button>
           </form>
 
           {email && !member ? (
             <EmptyState
               icon={UserX}
-              title="No member with that email"
-              description="Check the spelling, or find the member in the members list."
+              title={t("No member with that email")}
+              description={t("Check the spelling, or find the member in the members list.")}
             />
           ) : null}
           {member && !member.memberId ? (
             <EmptyState
               icon={UserX}
-              title="This account is not a member"
-              description="Rewards can only be paid to members."
+              title={t("This account is not a member")}
+              description={t("Rewards can only be paid to members.")}
             />
           ) : null}
           {member?.memberId ? (
@@ -124,54 +129,54 @@ export default async function AdminRewardsPage({
 
       <section aria-labelledby="list-heading" className="space-y-4">
         <h2 id="list-heading" className="text-lg">
-          Rewards list
+          {t("Rewards list")}
         </h2>
         <form method="get" role="search" className="flex flex-wrap items-end gap-3">
           <div className="space-y-1">
             <label htmlFor="rl-search" className="text-xs font-medium">
-              Search
+              {t("Search")}
             </label>
             <Input
               id="rl-search"
               name="search"
               defaultValue={search}
-              placeholder="Name, member ID, email or RWD-000012"
+              placeholder={t("Name, member ID, email or RWD-000012")}
               className="w-72"
             />
           </div>
           <div className="space-y-1">
             <label htmlFor="rl-type" className="text-xs font-medium">
-              Type
+              {t("Type")}
             </label>
             <NativeSelect id="rl-type" name="type" defaultValue={type ?? ""} className="w-44">
-              <option value="">All types</option>
-              {REWARD_TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {REWARD_TYPE_LABEL[t]}
+              <option value="">{t("All types")}</option>
+              {REWARD_TYPES.map((type_) => (
+                <option key={type_} value={type_}>
+                  {t(REWARD_TYPE_LABEL[type_])}
                 </option>
               ))}
             </NativeSelect>
           </div>
           <div className="space-y-1">
             <label htmlFor="rl-status" className="text-xs font-medium">
-              Status
+              {t("Status")}
             </label>
             <NativeSelect id="rl-status" name="status" defaultValue={status ?? ""} className="w-40">
-              <option value="">All</option>
+              <option value="">{t("All")}</option>
               {STATUSES.map((s) => (
                 <option key={s} value={s}>
-                  {REWARD_STATUS_LABEL[s]}
+                  {t(REWARD_STATUS_LABEL[s])}
                 </option>
               ))}
             </NativeSelect>
           </div>
-          <Button type="submit">Apply</Button>
+          <Button type="submit">{t("Apply")}</Button>
           {filtered ? (
             <Link
               href={"/admin/rewards" as Route}
               className={cn(buttonVariants({ variant: "ghost" }))}
             >
-              Clear
+              {t("Clear")}
             </Link>
           ) : null}
         </form>
@@ -179,9 +184,11 @@ export default async function AdminRewardsPage({
         {items.length === 0 ? (
           <EmptyState
             icon={Gift}
-            title={filtered ? "No rewards match" : "No rewards paid yet"}
+            title={filtered ? t("No rewards match") : t("No rewards paid yet")}
             description={
-              filtered ? "Try clearing a filter." : "Rewards you pay to members will appear here."
+              filtered
+                ? t("Try clearing a filter.")
+                : t("Rewards you pay to members will appear here.")
             }
           />
         ) : (
@@ -189,12 +196,12 @@ export default async function AdminRewardsPage({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Reward</TableHead>
-                  <TableHead>Member</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Value</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Paid on</TableHead>
+                  <TableHead>{t("Reward")}</TableHead>
+                  <TableHead>{t("Member")}</TableHead>
+                  <TableHead>{t("Type")}</TableHead>
+                  <TableHead>{t("Value")}</TableHead>
+                  <TableHead>{t("Status")}</TableHead>
+                  <TableHead>{t("Paid on")}</TableHead>
                   <TableHead className="w-0" />
                 </TableRow>
               </TableHeader>
@@ -235,7 +242,7 @@ export default async function AdminRewardsPage({
                           <span className="text-muted-foreground">
                             {reward.expiresAt
                               ? `Claim by ${formatDate(reward.expiresAt)}`
-                              : "No expiry"}
+                              : t("No expiry")}
                           </span>
                         )}
                       </TableCell>

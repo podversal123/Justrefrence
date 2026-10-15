@@ -1,3 +1,4 @@
+import { getT } from "@/i18n/server";
 import { EditVendorDialog } from "./edit-vendor-dialog";
 import { PendingChangeBanner } from "@/components/approvals/pending-change-banner";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -22,13 +23,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RoleManager } from "@/components/admin/role-manager";
 import { VendorStatusActions } from "./vendor-status-actions";
 
-export const metadata: Metadata = { title: "Vendor details" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("Vendor details") };
+}
 
 interface PageProps {
   params: Promise<{ id: string }>;
 }
 
 export default async function VendorDetailPage({ params }: PageProps) {
+  const t = await getT();
   const session = await getAuthSession();
   if (!session) redirect("/login");
   if (!session.permissions.has("member:read:any")) redirect("/unauthorized");
@@ -70,7 +75,7 @@ export default async function VendorDetailPage({ params }: PageProps) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Status</CardTitle>
+          <CardTitle>{t("Status")}</CardTitle>
           <CardDescription>{statusNote(vendor)}</CardDescription>
         </CardHeader>
         <CardContent>
@@ -86,25 +91,25 @@ export default async function VendorDetailPage({ params }: PageProps) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Contact and tax details</CardTitle>
-          <CardDescription>As entered by the vendor.</CardDescription>
+          <CardTitle>{t("Contact and tax details")}</CardTitle>
+          <CardDescription>{t("As entered by the vendor.")}</CardDescription>
         </CardHeader>
         <CardContent>
           <dl className="grid gap-x-8 gap-y-3 text-sm sm:grid-cols-2">
-            <ContactRow label="Contact person" value={vendor.user.fullName} />
-            <ContactRow label="Email" value={vendor.user.email} />
-            <ContactRow label="Business mobile" value={vendor.phone} />
-            <ContactRow label="Telephone" value={vendor.telephone} />
-            <ContactRow label="GSTIN" value={vendor.gstin} />
-            <ContactRow label="Business PAN" value={vendor.pan ? maskPan(vendor.pan) : null} />
+            <ContactRow label={t("Contact person")} value={vendor.user.fullName} />
+            <ContactRow label={t("Email")} value={vendor.user.email} />
+            <ContactRow label={t("Business mobile")} value={vendor.phone} />
+            <ContactRow label={t("Telephone")} value={vendor.telephone} />
+            <ContactRow label={t("GSTIN")} value={vendor.gstin} />
+            <ContactRow label={t("Business PAN")} value={vendor.pan ? maskPan(vendor.pan) : null} />
           </dl>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>Roles</CardTitle>
-          <CardDescription>What this vendor account can do.</CardDescription>
+          <CardTitle>{t("Roles")}</CardTitle>
+          <CardDescription>{t("What this vendor account can do.")}</CardDescription>
         </CardHeader>
         <CardContent>
           {session.permissions.has("role:assign") ? (
@@ -127,9 +132,9 @@ export default async function VendorDetailPage({ params }: PageProps) {
 
       <Tabs defaultValue="products">
         <TabsList>
-          <TabsTrigger value="products">Products</TabsTrigger>
-          <TabsTrigger value="services">Services</TabsTrigger>
-          <TabsTrigger value="projects">Projects</TabsTrigger>
+          <TabsTrigger value="products">{t("Products")}</TabsTrigger>
+          <TabsTrigger value="services">{t("Services")}</TabsTrigger>
+          <TabsTrigger value="projects">{t("Projects")}</TabsTrigger>
         </TabsList>
         <TabsContent value="products">
           <ListingList kind="products" items={listings.products} icon={Package} noun="products" />
@@ -145,7 +150,7 @@ export default async function VendorDetailPage({ params }: PageProps) {
   );
 }
 
-function ListingList({
+async function ListingList({
   kind,
   items,
   icon,
@@ -156,6 +161,7 @@ function ListingList({
   icon: typeof Package;
   noun: string;
 }) {
+  const t = await getT();
   if (items.length === 0) {
     return (
       <EmptyState
@@ -177,7 +183,7 @@ function ListingList({
           </Link>
           <div className="flex items-center gap-3 text-sm">
             <span className="text-muted-foreground tabular-nums">
-              {item.price === null ? "Quote on request" : formatPaise(item.price)}
+              {item.price === null ? t("Quote on request") : formatPaise(item.price)}
             </span>
             <Badge variant="outline">
               {item.isActive ? item.approvalStatus.toLowerCase() : "inactive"}
@@ -189,12 +195,13 @@ function ListingList({
   );
 }
 
-function ContactRow({ label, value }: { label: string; value: string | null | undefined }) {
+async function ContactRow({ label, value }: { label: string; value: string | null | undefined }) {
+  const t = await getT();
   return (
     <div>
       <dt className="text-muted-foreground text-xs">{label}</dt>
       <dd className="font-medium">
-        {value || <span className="text-muted-foreground">Not added</span>}
+        {value || <span className="text-muted-foreground">{t("Not added")}</span>}
       </dd>
     </div>
   );

@@ -79,3 +79,12 @@ export async function listTdsRecordsForExport(filter: TdsFilter) {
   const truncated = rows.length > TDS_EXPORT_MAX_ROWS;
   return { rows: truncated ? rows.slice(0, TDS_EXPORT_MAX_ROWS) : rows, truncated };
 }
+
+/** TDS deducted from one member's own paid payouts, for their account report. */
+export async function sumTdsForUser(userId: string, filter: TdsFilter) {
+  const result = await prisma.payoutTransaction.aggregate({
+    where: { ...whereFor(filter), payoutRequest: { requestedBy: userId } },
+    _sum: { tdsDeducted: true },
+  });
+  return result._sum.tdsDeducted ?? 0n;
+}

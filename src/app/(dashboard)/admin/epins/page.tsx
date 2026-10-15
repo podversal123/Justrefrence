@@ -1,3 +1,4 @@
+import { getT } from "@/i18n/server";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { KeyRound } from "lucide-react";
@@ -11,13 +12,17 @@ import { EpinFilters } from "./epin-filters";
 import { EpinsTable } from "./epins-table";
 import { GenerateEpinDialog } from "./generate-epin-dialog";
 
-export const metadata: Metadata = { title: "E-pins" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("E-pins") };
+}
 
 interface PageProps {
   searchParams: Promise<Record<string, string | undefined>>;
 }
 
 export default async function EpinsPage({ searchParams }: PageProps) {
+  const t = await getT();
   const session = await getAuthSession();
   if (!session) redirect("/login");
   if (!session.permissions.has("epin:read:any")) redirect("/unauthorized");
@@ -39,9 +44,9 @@ export default async function EpinsPage({ searchParams }: PageProps) {
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1>E-pins</h1>
+          <h1>{t("E-pins")}</h1>
           <p className="text-muted-foreground">
-            Generate and manage single-use prepaid codes for subscription plans.
+            {t("Generate and manage single-use prepaid codes for subscription plans.")}
           </p>
         </div>
         {canGenerate ? (
@@ -56,12 +61,12 @@ export default async function EpinsPage({ searchParams }: PageProps) {
       {items.length === 0 ? (
         <EmptyState
           icon={KeyRound}
-          title={hasActiveFilters ? "No e-pins match your filters" : "No e-pins yet"}
+          title={hasActiveFilters ? t("No e-pins match your filters") : t("No e-pins yet")}
           description={
             hasActiveFilters
-              ? "Try a different status filter."
+              ? t("Try a different status filter.")
               : canGenerate
-                ? "Generate the first e-pin to get started."
+                ? t("Generate the first e-pin to get started.")
                 : undefined
           }
         />

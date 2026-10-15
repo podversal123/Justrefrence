@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { useState } from "react";
 import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
@@ -35,15 +36,17 @@ const initialState: ApiResult<{ planId: string }> = {
 };
 
 function SubmitButton() {
+  const t = useT();
   const { pending } = useFormStatus();
   return (
     <Button type="submit" disabled={pending}>
-      {pending ? "Creating…" : "Create plan"}
+      {pending ? t("Creating…") : t("Create plan")}
     </Button>
   );
 }
 
 export function CreatePlanDialog() {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [state, formAction] = useActionState(createSubscriptionPlanAction, initialState);
   const [type, setType] = useState("YEARLY");
@@ -61,15 +64,17 @@ export function CreatePlanDialog() {
         render={
           <Button>
             <Plus />
-            Create plan
+            {t("Create plan")}
           </Button>
         }
       />
       <DialogContent>
         <form action={formAction} className="space-y-4" noValidate>
           <DialogHeader>
-            <DialogTitle>Create a subscription plan</DialogTitle>
-            <DialogDescription>Set the price, duration and type for this plan.</DialogDescription>
+            <DialogTitle>{t("Create a subscription plan")}</DialogTitle>
+            <DialogDescription>
+              {t("Set the price, duration and type for this plan.")}
+            </DialogDescription>
           </DialogHeader>
 
           {state !== initialState && !state.success ? (
@@ -81,11 +86,11 @@ export function CreatePlanDialog() {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="plan-code">Code</Label>
-              <Input id="plan-code" name="code" placeholder="YEARLY-PRO" required />
+              <Label htmlFor="plan-code">{t("Code")}</Label>
+              <Input id="plan-code" name="code" placeholder={t("YEARLY-PRO")} required />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="plan-type">Type</Label>
+              <Label htmlFor="plan-type">{t("Type")}</Label>
               <Select
                 name="type"
                 value={type}
@@ -96,9 +101,9 @@ export function CreatePlanDialog() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="YEARLY">Yearly</SelectItem>
-                  <SelectItem value="TIME_BOUND">Time-bound</SelectItem>
-                  <SelectItem value="LIFETIME">Lifetime</SelectItem>
+                  <SelectItem value="YEARLY">{t("Yearly")}</SelectItem>
+                  <SelectItem value="TIME_BOUND">{t("Time-bound")}</SelectItem>
+                  <SelectItem value="LIFETIME">{t("Lifetime")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -106,7 +111,7 @@ export function CreatePlanDialog() {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="plan-priceRupees">Price (₹)</Label>
+              <Label htmlFor="plan-priceRupees">{t("Price (₹)")}</Label>
               <Input
                 id="plan-priceRupees"
                 name="priceRupees"
@@ -118,13 +123,13 @@ export function CreatePlanDialog() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="plan-durationDays">Duration (days)</Label>
+              <Label htmlFor="plan-durationDays">{t("Duration (days)")}</Label>
               <Input
                 id="plan-durationDays"
                 name="durationDays"
                 type="number"
                 min={1}
-                placeholder={isLifetime ? "No expiry" : "365"}
+                placeholder={isLifetime ? t("No expiry") : "365"}
                 disabled={isLifetime}
                 required={!isLifetime}
               />
@@ -132,11 +137,11 @@ export function CreatePlanDialog() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="plan-benefits">Benefits (optional)</Label>
+            <Label htmlFor="plan-benefits">{t("Benefits (optional)")}</Label>
             <Textarea
               id="plan-benefits"
               name="benefits"
-              placeholder="Describe what this plan includes…"
+              placeholder={t("Describe what this plan includes…")}
               rows={3}
             />
           </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { FormField } from "@/components/ui/form-field";
@@ -8,22 +9,24 @@ import { updateSiteSettingsAction } from "@/server/services/settings-actions";
 import type { SiteSettings } from "@/server/lib/site-settings";
 
 export function SettingsForm({ settings, canEdit }: { settings: SiteSettings; canEdit: boolean }) {
+  const t = useT();
   return (
     <ActionForm
       action={updateSiteSettingsAction}
-      submitLabel="Save settings"
-      pendingLabel="Saving…"
-      successMessage="Settings saved"
+      submitLabel={t("Save settings")}
+      pendingLabel={t("Saving…")}
+      successMessage={t("Settings saved")}
       resetOnSuccess={false}
     >
       {(errors) => (
         <fieldset disabled={!canEdit} className="space-y-8">
           <section className="space-y-4">
             <div>
-              <h2 className="text-base font-semibold">Website maintenance</h2>
+              <h2 className="text-base font-semibold">{t("Website maintenance")}</h2>
               <p className="text-muted-foreground text-sm">
-                When on, visitors, members and vendors see a maintenance notice instead of the site.
-                Staff accounts keep full access, and payments and scheduled jobs keep running.
+                {t(
+                  "When on, visitors, members and vendors see a maintenance notice instead of the site. Staff accounts keep full access, and payments and scheduled jobs keep running.",
+                )}
               </p>
             </div>
             <label className="flex items-start gap-3 text-sm">
@@ -34,16 +37,16 @@ export function SettingsForm({ settings, canEdit }: { settings: SiteSettings; ca
                 className="mt-0.5 size-4"
               />
               <span>
-                <span className="font-medium">Put the website in maintenance mode</span>
+                <span className="font-medium">{t("Put the website in maintenance mode")}</span>
                 <span className="text-muted-foreground block text-xs">
-                  Sign-in stays available so your team can get in.
+                  {t("Sign-in stays available so your team can get in.")}
                 </span>
               </span>
             </label>
             <FormField
               htmlFor="st-message"
-              label="Message shown to visitors"
-              hint="Optional. A default message is used if this is empty."
+              label={t("Message shown to visitors")}
+              hint={t("Optional. A default message is used if this is empty.")}
               error={errors["maintenanceMessage"]}
             >
               <Textarea
@@ -58,13 +61,39 @@ export function SettingsForm({ settings, canEdit }: { settings: SiteSettings; ca
 
           <section className="space-y-4">
             <div>
-              <h2 className="text-base font-semibold">Contact details</h2>
+              <h2 className="text-base font-semibold">{t("Auto logout")}</h2>
               <p className="text-muted-foreground text-sm">
-                Shown on the public Contact page. Leave a field empty to hide it.
+                {t("Signed-in users are logged out after this many minutes without any activity.")}
+              </p>
+            </div>
+            <FormField
+              htmlFor="st-idle"
+              label={t("Minutes before auto logout")}
+              hint={t("Use 0 to turn auto logout off. Otherwise 5 to 1440.")}
+              error={errors["idleLogoutMinutes"]}
+            >
+              <Input
+                id="st-idle"
+                name="idleLogoutMinutes"
+                type="number"
+                inputMode="numeric"
+                min={0}
+                max={1440}
+                className="w-40"
+                defaultValue={settings.idleLogoutMinutes}
+              />
+            </FormField>
+          </section>
+
+          <section className="space-y-4">
+            <div>
+              <h2 className="text-base font-semibold">{t("Contact details")}</h2>
+              <p className="text-muted-foreground text-sm">
+                {t("Shown on the public Contact page. Leave a field empty to hide it.")}
               </p>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
-              <FormField htmlFor="st-email" label="Email" error={errors["contactEmail"]}>
+              <FormField htmlFor="st-email" label={t("Email")} error={errors["contactEmail"]}>
                 <Input
                   id="st-email"
                   name="contactEmail"
@@ -73,7 +102,7 @@ export function SettingsForm({ settings, canEdit }: { settings: SiteSettings; ca
                   defaultValue={settings.contactEmail}
                 />
               </FormField>
-              <FormField htmlFor="st-phone" label="Phone" error={errors["contactPhone"]}>
+              <FormField htmlFor="st-phone" label={t("Phone")} error={errors["contactPhone"]}>
                 <Input
                   id="st-phone"
                   name="contactPhone"
@@ -83,7 +112,11 @@ export function SettingsForm({ settings, canEdit }: { settings: SiteSettings; ca
                 />
               </FormField>
             </div>
-            <FormField htmlFor="st-address" label="Office address" error={errors["contactAddress"]}>
+            <FormField
+              htmlFor="st-address"
+              label={t("Office address")}
+              error={errors["contactAddress"]}
+            >
               <Textarea
                 id="st-address"
                 name="contactAddress"
@@ -94,8 +127,8 @@ export function SettingsForm({ settings, canEdit }: { settings: SiteSettings; ca
             </FormField>
             <FormField
               htmlFor="st-hours"
-              label="Working hours"
-              hint="For example: Monday to Saturday, 10 am to 6 pm."
+              label={t("Working hours")}
+              hint={t("For example: Monday to Saturday, 10 am to 6 pm.")}
               error={errors["contactHours"]}
             >
               <Input

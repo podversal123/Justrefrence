@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { useState } from "react";
 import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
@@ -28,15 +29,17 @@ const initialState: ApiResult<{ userId: string }> = {
 };
 
 function SubmitButton() {
+  const t = useT();
   const { pending } = useFormStatus();
   return (
     <Button type="submit" disabled={pending}>
-      {pending ? "Sending invite…" : "Create vendor"}
+      {pending ? t("Sending invite…") : t("Create vendor")}
     </Button>
   );
 }
 
 export function CreateVendorDialog() {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [state, formAction] = useActionState(createVendorAction, initialState);
 
@@ -46,17 +49,16 @@ export function CreateVendorDialog() {
         render={
           <Button>
             <Plus />
-            Create vendor
+            {t("Create vendor")}
           </Button>
         }
       />
       <DialogContent className="sm:max-w-xl">
         <form action={formAction} className="space-y-4" noValidate>
           <DialogHeader>
-            <DialogTitle>Create vendor account</DialogTitle>
+            <DialogTitle>{t("Create vendor account")}</DialogTitle>
             <DialogDescription>
-              Sends an email invite. The vendor starts as <strong>Pending</strong> until you approve
-              them.
+              {t("Sends an email invite. The vendor starts as Pending until you approve them.")}
             </DialogDescription>
           </DialogHeader>
 
@@ -69,17 +71,17 @@ export function CreateVendorDialog() {
 
           <FormGrid>
             <div className={`space-y-2 ${FULL_ROW}`}>
-              <Label htmlFor="vendor-businessName">Business name</Label>
+              <Label htmlFor="vendor-businessName">{t("Business name")}</Label>
               <Input id="vendor-businessName" name="businessName" required />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="vendor-fullName">Contact name</Label>
+              <Label htmlFor="vendor-fullName">{t("Contact name")}</Label>
               <Input id="vendor-fullName" name="fullName" required />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="vendor-phone">Contact mobile</Label>
+              <Label htmlFor="vendor-phone">{t("Contact mobile")}</Label>
               <Input
                 id="vendor-phone"
                 name="phone"
@@ -90,10 +92,10 @@ export function CreateVendorDialog() {
             </div>
 
             <div className={`space-y-2 ${FULL_ROW}`}>
-              <Label htmlFor="vendor-email">Contact email</Label>
+              <Label htmlFor="vendor-email">{t("Contact email")}</Label>
               <Input id="vendor-email" name="email" type="email" required />
               <p className="text-muted-foreground text-xs">
-                We send the invite here. The mobile number needs the country code.
+                {t("We send the invite here. The mobile number needs the country code.")}
               </p>
             </div>
           </FormGrid>

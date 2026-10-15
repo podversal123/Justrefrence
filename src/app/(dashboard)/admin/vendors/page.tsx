@@ -1,3 +1,4 @@
+import { getT } from "@/i18n/server";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -9,13 +10,17 @@ import { VendorFilters } from "./vendor-filters";
 import { VendorsTable } from "./vendors-table";
 import { CreateVendorDialog } from "./create-vendor-dialog";
 
-export const metadata: Metadata = { title: "Vendors" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("Vendors") };
+}
 
 interface PageProps {
   searchParams: Promise<Record<string, string | undefined>>;
 }
 
 export default async function VendorsPage({ searchParams }: PageProps) {
+  const t = await getT();
   const session = await getAuthSession();
   if (!session) redirect("/login");
   if (!session.permissions.has("member:read:any")) redirect("/unauthorized");
@@ -39,8 +44,8 @@ export default async function VendorsPage({ searchParams }: PageProps) {
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1>Vendors</h1>
-          <p className="text-muted-foreground">Manage vendor accounts and approvals.</p>
+          <h1>{t("Vendors")}</h1>
+          <p className="text-muted-foreground">{t("Manage vendor accounts and approvals.")}</p>
         </div>
         {canCreate ? <CreateVendorDialog /> : null}
       </div>
@@ -58,7 +63,7 @@ export default async function VendorsPage({ searchParams }: PageProps) {
           <Button
             variant="outline"
             nativeButton={false}
-            render={<Link href={`/admin/vendors?${nextParams.toString()}`}>Load more</Link>}
+            render={<Link href={`/admin/vendors?${nextParams.toString()}`}>{t("Load more")}</Link>}
           />
         </div>
       ) : null}

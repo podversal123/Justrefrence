@@ -1,3 +1,4 @@
+import { msg } from "@/i18n/locales";
 /**
  * Advertisement rules — pure, no I/O, unit-tested directly (tests/unit/ad-rules.test.ts).
  * The service layer applies each rule inside one atomic database update.
@@ -17,9 +18,9 @@ export function isShowing(ad: AdFacts): boolean {
 
 /** What the vendor sees next to an ad. */
 export function adStateLabel(ad: AdFacts): string {
-  if (ad.status === "PENDING") return "Waiting for approval";
-  if (ad.status === "REJECTED") return "Not approved";
-  return ad.isActive ? "Showing on the home page" : "Paused";
+  if (ad.status === "PENDING") return msg("Waiting for approval");
+  if (ad.status === "REJECTED") return msg("Not approved");
+  return ad.isActive ? msg("Showing on the home page") : msg("Paused");
 }
 
 /** Only an ad waiting for review can be approved. */

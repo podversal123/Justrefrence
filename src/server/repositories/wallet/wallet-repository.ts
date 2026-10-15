@@ -8,6 +8,7 @@
 // (`@/server/lib/prisma`) still carries the guard, so nothing here is
 // reachable from an actual Client Component bundle.
 import { prisma } from "@/server/lib/prisma";
+import { dayRangeBounds } from "@/lib/day-range";
 import type { Prisma } from "@/generated/prisma/client";
 import type { WalletTransactionDirection, WalletTransactionType } from "@/generated/prisma/enums";
 
@@ -272,4 +273,51 @@ export async function releaseHoldToBalance(
     where: { id: walletId },
     data: { pendingBalance: { decrement: amount }, balance: { increment: amount } },
   });
+}
+
+export interface LedgerReportFilter {
+  from?: string;
+  to?: string;
+  direction?: "CREDIT" | "DEBIT";
+}
+
+function ledgerWhere(walletId: string, filter: LedgerReportFilter) {
+  const createdAt = dayRangeBounds(filter.from, filter.to);
+  return {
+    walletId,
+    ...(filter.direction ? { direction: filter.direction } : {}),
+    ...(createdAt.gte || createdAt.lt ? { createdAt } : {}),
+  };
+}
+
+const REPORT_PAGE_SIZE = 50;
+
+/** The member's account report: every ledger entry in the chosen dates, newest first. */
+export async function listLedgerReport(walletId: string, filter: LedgerReportFilter & { cursor?: string }) {
+  const rows = await prisma.walletTransaction.findMany({
+    where: ledgerWhere(walletId, filter),
+    orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+    take: REPORT_PAGE_SIZE + 1,
+    ...(filter.cursor ? { cursor: { id: filter.cursor }, skip: 1 } : {}),
+  });
+  const hasMore = rows.length > REPORT_PAGE_SIZE;
+  const items = hasMore ? rows.slice(0, REPORT_PAGE_SIZE) : rows;
+  return { items, nextCursor: hasMore ? (items.at(-1)?.id ?? null) : null };
+}
+
+/** Totals over the whole filtered range, not just the visible page. */
+export async function sumLedgerReport(walletId: string, filter: LedgerReportFilter) {
+  const grouped = await prisma.walletTransaction.groupBy({
+    by: ["direction"],
+    where: ledgerWhere(walletId, filter),
+    _sum: { amount: true },
+    _count: true,
+  });
+  const credit = grouped.find((g) => g.direction === "CREDIT");
+  const debit = grouped.find((g) => g.direction === "DEBIT");
+  return {
+    credit: credit?._sum.amount ?? 0n,
+    debit: debit?._sum.amount ?? 0n,
+    count: (credit?._count ?? 0) + (debit?._count ?? 0),
+  };
 }

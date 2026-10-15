@@ -1,3 +1,4 @@
+import { getT } from "@/i18n/server";
 import { StatusBadge } from "@/components/ui/status-badge";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
@@ -8,13 +9,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { RoleManager } from "@/components/admin/role-manager";
 
-export const metadata: Metadata = { title: "Admin details" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("Admin details") };
+}
 
 interface PageProps {
   params: Promise<{ id: string }>;
 }
 
 export default async function AdminDetailPage({ params }: PageProps) {
+  const t = await getT();
   const session = await getAuthSession();
   if (!session) redirect("/login");
   if (!session.permissions.has("user:read")) redirect("/unauthorized");
@@ -37,8 +42,8 @@ export default async function AdminDetailPage({ params }: PageProps) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Roles</CardTitle>
-          <CardDescription>What this account can do.</CardDescription>
+          <CardTitle>{t("Roles")}</CardTitle>
+          <CardDescription>{t("What this account can do.")}</CardDescription>
         </CardHeader>
         <CardContent>
           {session.permissions.has("role:assign") ? (

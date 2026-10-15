@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { useTransition } from "react";
 import { ArrowDown, ArrowUp, Eye, EyeOff, Trash2 } from "lucide-react";
 import {
@@ -16,6 +17,7 @@ type Action = (prev: unknown, formData: FormData) => Promise<ApiResult<null>>;
 
 /** Runs a banner action and reports the outcome the moment the server answers. */
 function useRun(action: Action, id: string, extra: Record<string, string> = {}) {
+  const t = useT();
   const [pending, start] = useTransition();
   const run = (message?: string) =>
     start(async () => {
@@ -23,7 +25,7 @@ function useRun(action: Action, id: string, extra: Record<string, string> = {}) 
       formData.set("id", id);
       for (const [k, v] of Object.entries(extra)) formData.set(k, v);
       const result = await action(undefined, formData);
-      if (!result.success) toast.error("Could not do that", result.error.message);
+      if (!result.success) toast.error(t("Could not do that"), result.error.message);
       else if (message) toast.success(message);
     });
   return { pending, run };
@@ -42,6 +44,7 @@ export function BannerRowActions({
   isFirst: boolean;
   isLast: boolean;
 }) {
+  const t = useT();
   const up = useRun(moveBannerAction, id, { direction: "UP" });
   const down = useRun(moveBannerAction, id, { direction: "DOWN" });
   const toggle = useRun(toggleBannerAction, id);
@@ -55,7 +58,7 @@ export function BannerRowActions({
         onClick={() => up.run()}
       >
         <ArrowUp />
-        <span className="sr-only">Move up</span>
+        <span className="sr-only">{t("Move up")}</span>
       </Button>
       <Button
         variant="outline"
@@ -64,7 +67,7 @@ export function BannerRowActions({
         onClick={() => down.run()}
       >
         <ArrowDown />
-        <span className="sr-only">Move down</span>
+        <span className="sr-only">{t("Move down")}</span>
       </Button>
       <Button
         variant="outline"
@@ -73,24 +76,24 @@ export function BannerRowActions({
         onClick={() => toggle.run(isActive ? "Banner hidden" : "Banner is showing")}
       >
         {isActive ? <EyeOff /> : <Eye />}
-        {isActive ? "Hide" : "Show"}
+        {isActive ? t("Hide") : t("Show")}
       </Button>
       <ConfirmationDialog
         trigger={
           <Button variant="outline" size="icon-sm">
             <Trash2 />
-            <span className="sr-only">Delete</span>
+            <span className="sr-only">{t("Delete")}</span>
           </Button>
         }
-        title="Delete this banner?"
+        title={t("Delete this banner?")}
         description={`"${headline}" and its photo will be removed from the home page. This cannot be undone.`}
         action={async (prev, formData) => {
           const result = await deleteBannerAction(prev, formData);
-          if (result.success) toast.success("Banner deleted");
+          if (result.success) toast.success(t("Banner deleted"));
           return result;
         }}
         hiddenFields={{ id }}
-        confirmLabel="Delete"
+        confirmLabel={t("Delete")}
         variant="destructive"
       />
     </div>

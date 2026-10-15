@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { Ban } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
@@ -12,23 +13,27 @@ import { toast } from "@/components/ui/toast";
  * a bare button.
  */
 export function RevokeEpinButton({ epinId, codeLast4 }: { epinId: string; codeLast4: string }) {
+  const t = useT();
   return (
     <ConfirmationDialog
       trigger={
         <Button variant="destructive" size="sm">
           <Ban />
-          Revoke
+          {t("Revoke")}
         </Button>
       }
-      title="Revoke this e-pin?"
-      description={`Ending in ${codeLast4}. Once revoked, it can never be redeemed or revived. This cannot be undone.`}
+      title={t("Revoke this e-pin?")}
+      description={t(
+        "Ending in {last4}. Once revoked, it can never be redeemed or revived. This cannot be undone.",
+        { last4: codeLast4 },
+      )}
       hiddenFields={{ epinId }}
-      confirmLabel="Revoke e-pin"
+      confirmLabel={t("Revoke e-pin")}
       variant="destructive"
       action={async (prevState, formData) => {
         const result = await revokeEpinAction(prevState, formData);
-        if (result.success) toast.success("E-pin revoked");
-        else toast.error("Could not revoke e-pin", result.error.message);
+        if (result.success) toast.success(t("E-pin revoked"));
+        else toast.error(t("Could not revoke e-pin"), result.error.message);
         return result;
       }}
     />

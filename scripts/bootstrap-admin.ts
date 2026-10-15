@@ -7,6 +7,7 @@
  *
  * Run once, giving the password in the environment (it is never kept in the code):
  *   BOOTSTRAP_ADMIN_PASSWORD="a-strong-password" npx tsx scripts/bootstrap-admin.ts
+ * For a restricted Admin: also set BOOTSTRAP_ADMIN_EMAIL, BOOTSTRAP_ADMIN_NAME and BOOTSTRAP_ADMIN_ROLE=ADMIN.
  * Not part of the app's action layer — delete after first use if desired.
  */
 import { config as loadEnv } from "dotenv";
@@ -18,7 +19,9 @@ import { PrismaPg } from "@prisma/adapter-pg";
 
 const EMAIL = process.env["BOOTSTRAP_ADMIN_EMAIL"] ?? "admin@justreference.in";
 const PASSWORD = process.env["BOOTSTRAP_ADMIN_PASSWORD"] ?? "";
-const FULL_NAME = "Super Admin";
+// SUPER_ADMIN by default; set BOOTSTRAP_ADMIN_ROLE=ADMIN (and a name) to create a restricted staff account.
+const ROLE_CODE = process.env["BOOTSTRAP_ADMIN_ROLE"] ?? "SUPER_ADMIN";
+const FULL_NAME = process.env["BOOTSTRAP_ADMIN_NAME"] ?? "Super Admin";
 
 async function main() {
   if (PASSWORD.length < 12) {
@@ -61,9 +64,9 @@ async function main() {
   const userId = created.data.user.id;
   console.log(`Supabase Auth user created: ${userId}`);
 
-  const role = await prisma.role.findFirst({ where: { code: "SUPER_ADMIN" } });
+  const role = await prisma.role.findFirst({ where: { code: ROLE_CODE } });
   if (!role) {
-    throw new Error("SUPER_ADMIN role not found — did the seed script run?");
+    throw new Error(`${ROLE_CODE} role not found — did the seed script run?`);
   }
 
   try {
@@ -88,9 +91,8 @@ async function main() {
   }
 
   console.log("---");
-  console.log("Super Admin account created successfully:");
+  console.log(`${ROLE_CODE} account created successfully:`);
   console.log(`  Email:    ${EMAIL}`);
-  console.log(`  Password: ${PASSWORD}`);
   console.log("---");
 
   await prisma.$disconnect();

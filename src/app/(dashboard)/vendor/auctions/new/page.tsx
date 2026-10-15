@@ -29,7 +29,7 @@ export default async function NewAuctionPage() {
         className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-sm"
       >
         <ArrowLeft className="size-4" />
-        {t("My auctions")}
+        {t("Auctions")}
       </Link>
       <div>
         <h1>{t("Start an auction")}</h1>

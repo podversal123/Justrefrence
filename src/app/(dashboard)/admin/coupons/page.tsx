@@ -1,3 +1,4 @@
+import { getFormat, getT } from "@/i18n/server";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { TicketPercent } from "lucide-react";
@@ -14,14 +15,18 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { couponState, describeDiscount } from "@/lib/coupon-display";
-import { formatDate } from "@/lib/format";
 import { formatPaise } from "@/lib/money";
 import { CouponToggle } from "./coupon-toggle";
 import { CreateCouponDialog } from "./create-coupon-dialog";
 
-export const metadata: Metadata = { title: "Coupons" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("Coupons") };
+}
 
 export default async function AdminCouponsPage() {
+  const t = await getT();
+  const { formatDate } = await getFormat();
   const session = await getAuthSession();
   if (!session) redirect("/login");
   if (!session.permissions.has("coupon:read")) redirect("/unauthorized");
@@ -34,9 +39,9 @@ export default async function AdminCouponsPage() {
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1>Coupons</h1>
+          <h1>{t("Coupons")}</h1>
           <p className="text-muted-foreground">
-            Discount codes customers apply at checkout, and how often each has been used.
+            {t("Discount codes customers apply at checkout, and how often each has been used.")}
           </p>
         </div>
         {canCreate ? <CreateCouponDialog /> : null}
@@ -45,22 +50,22 @@ export default async function AdminCouponsPage() {
       {coupons.length === 0 ? (
         <EmptyState
           icon={TicketPercent}
-          title="No coupons yet"
-          description="Create a code to offer a percentage or fixed discount."
+          title={t("No coupons yet")}
+          description={t("Create a code to offer a percentage or fixed discount.")}
           action={canCreate ? <CreateCouponDialog /> : undefined}
         />
       ) : (
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Code</TableHead>
-              <TableHead>Discount</TableHead>
-              <TableHead>Minimum order</TableHead>
-              <TableHead>Valid</TableHead>
-              <TableHead>Used</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>{t("Code")}</TableHead>
+              <TableHead>{t("Discount")}</TableHead>
+              <TableHead>{t("Minimum order")}</TableHead>
+              <TableHead>{t("Valid")}</TableHead>
+              <TableHead>{t("Used")}</TableHead>
+              <TableHead>{t("Status")}</TableHead>
               <TableHead>
-                <span className="sr-only">Actions</span>
+                <span className="sr-only">{t("Actions")}</span>
               </TableHead>
             </TableRow>
           </TableHeader>
@@ -74,11 +79,11 @@ export default async function AdminCouponsPage() {
                   <TableCell className="tabular-nums">
                     {coupon.minOrderAmount > 0n
                       ? formatPaise(coupon.minOrderAmount.toString(), "INR")
-                      : "None"}
+                      : t("None")}
                   </TableCell>
                   <TableCell className="text-muted-foreground text-sm">
                     {formatDate(coupon.startsAt)} –{" "}
-                    {coupon.expiresAt ? formatDate(coupon.expiresAt) : "no end date"}
+                    {coupon.expiresAt ? formatDate(coupon.expiresAt) : t("no end date")}
                   </TableCell>
                   <TableCell className="tabular-nums">
                     {coupon._count.redemptions}

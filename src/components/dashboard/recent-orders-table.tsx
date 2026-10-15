@@ -10,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { StatusBadge } from "@/components/ui/status-badge";
+import { StatusBadge, statusLabel } from "@/components/ui/status-badge";
 import { SearchInput } from "@/components/ui/search-input";
 import { FilterBar, SelectFilter } from "@/components/ui/filter-bar";
 import { CursorPagination } from "@/components/ui/pagination";
@@ -68,9 +68,9 @@ export async function RecentOrdersTable({
           <SearchInput placeholder={t("Search order number or buyer email…")} />
           <SelectFilter
             paramName="status"
-            ariaLabel="Filter by status"
+            ariaLabel={t("Filter by status")}
             placeholder={t("All statuses")}
-            options={ORDER_STATUSES.map((s) => ({ value: s, label: s }))}
+            options={ORDER_STATUSES.map((s) => ({ value: s, label: t(statusLabel(s)) }))}
           />
         </FilterBar>
 

@@ -1,3 +1,4 @@
+import { getT } from "@/i18n/server";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Megaphone } from "lucide-react";
@@ -9,9 +10,13 @@ import { AUDIENCE_LABELS } from "@/lib/schemas/announcement";
 import { AnnouncementDialog } from "./announcement-dialog";
 import { AnnouncementRowActions } from "./announcement-row-actions";
 
-export const metadata: Metadata = { title: "Announcements" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("Announcements") };
+}
 
 export default async function AnnouncementsPage() {
+  const t = await getT();
   const session = await getAuthSession();
   if (!session) redirect("/login");
   if (!session.permissions.has("announcement:manage")) redirect("/unauthorized");
@@ -24,10 +29,10 @@ export default async function AnnouncementsPage() {
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1>Announcements</h1>
+          <h1>{t("Announcements")}</h1>
           <p className="text-muted-foreground">
-            Notices shown at the top of customers&apos; and vendors&apos; dashboards.
-            {isSuper ? "" : " A Super Admin publishes what you send."}
+            {t("Notices shown at the top of customers' and vendors' dashboards.")}
+            {isSuper ? "" : t(" A Super Admin publishes what you send.")}
           </p>
         </div>
         <AnnouncementDialog needsApproval={!isSuper} />
@@ -36,8 +41,8 @@ export default async function AnnouncementsPage() {
       {visible.length === 0 ? (
         <EmptyState
           icon={Megaphone}
-          title="No announcements yet"
-          description="Write one to tell members about a change, a holiday or an offer."
+          title={t("No announcements yet")}
+          description={t("Write one to tell members about a change, a holiday or an offer.")}
         />
       ) : (
         <ul className="space-y-3">

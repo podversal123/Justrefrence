@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { useState } from "react";
 import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
@@ -36,15 +37,17 @@ const initialState: ApiResult<AnnouncementOutcome> = {
 };
 
 function SubmitButton({ needsApproval }: { needsApproval: boolean }) {
+  const t = useT();
   const { pending } = useFormStatus();
   return (
     <Button type="submit" disabled={pending}>
-      {pending ? "Saving…" : needsApproval ? "Send for approval" : "Publish now"}
+      {pending ? t("Saving…") : needsApproval ? t("Send for approval") : t("Publish now")}
     </Button>
   );
 }
 
 export function AnnouncementDialog({ needsApproval }: { needsApproval: boolean }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [state, formAction] = useActionState(
     async (
@@ -76,18 +79,18 @@ export function AnnouncementDialog({ needsApproval }: { needsApproval: boolean }
         render={
           <Button>
             <Plus />
-            New announcement
+            {t("New announcement")}
           </Button>
         }
       />
       <DialogContent className="sm:max-w-xl">
         <form action={formAction} className="space-y-4" noValidate>
           <DialogHeader>
-            <DialogTitle>New announcement</DialogTitle>
+            <DialogTitle>{t("New announcement")}</DialogTitle>
             <DialogDescription>
               {needsApproval
-                ? "It shows on members' dashboards once a Super Admin publishes it."
-                : "It shows at the top of members' dashboards as soon as you publish."}
+                ? t("It shows on members' dashboards once a Super Admin publishes it.")
+                : t("It shows at the top of members' dashboards as soon as you publish.")}
             </DialogDescription>
           </DialogHeader>
 
@@ -101,7 +104,7 @@ export function AnnouncementDialog({ needsApproval }: { needsApproval: boolean }
           <FormGrid>
             <FormField
               htmlFor="an-title"
-              label="Title"
+              label={t("Title")}
               error={errors["title"]}
               className={FULL_ROW}
             >
@@ -109,13 +112,17 @@ export function AnnouncementDialog({ needsApproval }: { needsApproval: boolean }
             </FormField>
             <FormField
               htmlFor="an-body"
-              label="Message"
+              label={t("Message")}
               error={errors["body"]}
               className={FULL_ROW}
             >
               <Textarea id="an-body" name="body" rows={4} maxLength={1000} required />
             </FormField>
-            <FormField htmlFor="an-audience" label="Who should see it" error={errors["audience"]}>
+            <FormField
+              htmlFor="an-audience"
+              label={t("Who should see it")}
+              error={errors["audience"]}
+            >
               <NativeSelect id="an-audience" name="audience" defaultValue="ALL">
                 {ANNOUNCEMENT_AUDIENCES.map((a) => (
                   <option key={a} value={a}>

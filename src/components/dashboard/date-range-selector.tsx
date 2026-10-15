@@ -3,15 +3,18 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { DATE_RANGE_PRESETS, type DateRangePreset } from "@/server/domain/dashboard/date-range";
 import { cn } from "@/lib/utils";
+import { msg } from "@/i18n/locales";
+import { useT } from "@/i18n/provider";
 
 const LABELS: Record<DateRangePreset, string> = {
-  "7D": "7 days",
-  "30D": "30 days",
-  "90D": "90 days",
-  ALL: "All time",
+  "7D": msg("7 days"),
+  "30D": msg("30 days"),
+  "90D": msg("90 days"),
+  ALL: msg("All time"),
 };
 
 export function DateRangeSelector({ current }: { current: DateRangePreset }) {
+  const t = useT();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -36,7 +39,7 @@ export function DateRangeSelector({ current }: { current: DateRangePreset }) {
               : "text-muted-foreground hover:text-foreground",
           )}
         >
-          {LABELS[preset]}
+          {t(LABELS[preset])}
         </button>
       ))}
     </div>

@@ -20,6 +20,7 @@ const KEYS = {
   contactPhone: { key: "site.contact_phone", type: "STRING" },
   contactAddress: { key: "site.contact_address", type: "STRING" },
   contactHours: { key: "site.contact_hours", type: "STRING" },
+  idleLogoutMinutes: { key: "site.idle_logout_minutes", type: "NUMBER" },
 } as const;
 
 export interface SiteSettings {
@@ -29,10 +30,15 @@ export interface SiteSettings {
   contactPhone: string;
   contactAddress: string;
   contactHours: string;
+  /** Minutes of no activity before a signed-in user is logged out. 0 turns auto logout off. */
+  idleLogoutMinutes: number;
 }
 
 export const DEFAULT_MAINTENANCE_MESSAGE =
   "We're making some improvements and will be back shortly. Thank you for your patience.";
+
+/** Used until an admin saves a value in Settings. */
+export const DEFAULT_IDLE_LOGOUT_MINUTES = 30;
 
 const DEFAULTS: SiteSettings = {
   maintenanceEnabled: false,
@@ -41,7 +47,14 @@ const DEFAULTS: SiteSettings = {
   contactPhone: "",
   contactAddress: "",
   contactHours: "",
+  idleLogoutMinutes: DEFAULT_IDLE_LOGOUT_MINUTES,
 };
+
+function idleMinutes(value: unknown): number {
+  return typeof value === "number" && Number.isInteger(value) && value >= 0
+    ? value
+    : DEFAULT_IDLE_LOGOUT_MINUTES;
+}
 
 async function readSettings(): Promise<SiteSettings> {
   const rows = await prisma.systemSetting.findMany({
@@ -58,6 +71,7 @@ async function readSettings(): Promise<SiteSettings> {
     contactPhone: text(KEYS.contactPhone.key),
     contactAddress: text(KEYS.contactAddress.key),
     contactHours: text(KEYS.contactHours.key),
+    idleLogoutMinutes: idleMinutes(byKey.get(KEYS.idleLogoutMinutes.key)),
   };
 }
 
@@ -85,13 +99,14 @@ export async function getSiteSettingsFresh(): Promise<SiteSettings> {
 }
 
 export async function saveSiteSettings(input: SiteSettingsInput, actorId: string): Promise<void> {
-  const values: Record<keyof typeof KEYS, string | boolean> = {
+  const values: Record<keyof typeof KEYS, string | boolean | number> = {
     maintenanceEnabled: input.maintenanceEnabled,
     maintenanceMessage: input.maintenanceMessage,
     contactEmail: input.contactEmail,
     contactPhone: input.contactPhone,
     contactAddress: input.contactAddress,
     contactHours: input.contactHours,
+    idleLogoutMinutes: input.idleLogoutMinutes,
   };
   await prisma.$transaction(
     (Object.keys(KEYS) as (keyof typeof KEYS)[]).map((name) =>

@@ -14,7 +14,7 @@ import { formatPaise } from "@/lib/money";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
-  return { title: t("My coupons") };
+  return { title: t("Coupons") };
 }
 
 type Bucket = "available" | "used" | "unavailable";
@@ -30,7 +30,7 @@ export default async function MyCouponsPage() {
   if (!member) {
     return (
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-        <h1>{t("My coupons")}</h1>
+        <h1>{t("Coupons")}</h1>
         <EmptyState
           icon={TicketPercent}
           title={t("No member profile yet")}
@@ -64,7 +64,7 @@ export default async function MyCouponsPage() {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-8">
       <div>
-        <h1>{t("My coupons")}</h1>
+        <h1>{t("Coupons")}</h1>
         <p className="text-muted-foreground">
           {t(
             "Enter a code at checkout to apply it. Each coupon has its own dates, minimum order and limits.",

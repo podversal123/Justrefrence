@@ -1,3 +1,5 @@
+import { msg } from "@/i18n/locales";
+import { getFormat, getT } from "@/i18n/server";
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { RevokeEpinButton } from "./revoke-epin-button";
@@ -10,35 +12,37 @@ function maskedCode(codeLast4: string): string {
   return `${"•".repeat(12)}${codeLast4}`;
 }
 
-export function EpinsTable({ epins, canRevoke }: { epins: EpinRow[]; canRevoke: boolean }) {
+export async function EpinsTable({ epins, canRevoke }: { epins: EpinRow[]; canRevoke: boolean }) {
+  const t = await getT();
+  const { formatDate } = await getFormat();
   const columns: DataTableColumn<EpinRow>[] = [
     {
       key: "code",
-      header: "Code",
+      header: msg("Code"),
       cell: (row) => (
         <span className="font-mono text-xs tracking-wide">{maskedCode(row.codeLast4)}</span>
       ),
     },
     {
       key: "plan",
-      header: "Plan",
+      header: msg("Plan"),
       cell: (row) => row.plan.code,
     },
     {
       key: "status",
-      header: "Status",
+      header: msg("Status"),
       cell: (row) => <StatusBadge status={row.status} />,
     },
     {
       key: "generated",
-      header: "Generated",
-      cell: (row) => row.createdAt.toLocaleDateString(),
+      header: msg("Generated"),
+      cell: (row) => formatDate(row.createdAt),
       hideOnMobile: true,
     },
     {
       key: "expires",
-      header: "Expires",
-      cell: (row) => (row.expiresAt ? row.expiresAt.toLocaleDateString() : "No expiry"),
+      header: msg("Expires"),
+      cell: (row) => (row.expiresAt ? formatDate(row.expiresAt) : t("No expiry")),
     },
     ...(canRevoke
       ? [

@@ -11,7 +11,7 @@ import { listRequirementsForBuyer } from "@/server/repositories/bidding/bidding-
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
-  return { title: t("My requirements") };
+  return { title: t("Requirements") };
 }
 
 export default async function MyRequirementsPage() {
@@ -34,7 +34,7 @@ export default async function MyRequirementsPage() {
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1>{t("My requirements")}</h1>
+          <h1>{t("Requirements")}</h1>
           <p className="text-muted-foreground">
             {t("What you've asked vendors to bid on, and the offers that came in.")}
           </p>

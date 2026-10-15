@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { useTransition } from "react";
 import { Archive, Check } from "lucide-react";
 import {
@@ -23,6 +24,7 @@ export function AnnouncementRowActions({
   canPublish: boolean;
   canTakeDown: boolean;
 }) {
+  const t = useT();
   const [pending, start] = useTransition();
 
   function publish() {
@@ -30,8 +32,8 @@ export function AnnouncementRowActions({
       const formData = new FormData();
       formData.set("id", id);
       const result = await publishAnnouncementAction(undefined, formData);
-      if (result.success) toast.success("Announcement published");
-      else toast.error("Could not publish", result.error.message);
+      if (result.success) toast.success(t("Announcement published"));
+      else toast.error(t("Could not publish"), result.error.message);
     });
   }
 
@@ -44,7 +46,7 @@ export function AnnouncementRowActions({
       {status === "PENDING" && canPublish ? (
         <Button size="sm" disabled={pending} onClick={publish}>
           <Check />
-          Publish
+          {t("Publish")}
         </Button>
       ) : null}
       {mayRemove ? (
@@ -56,12 +58,14 @@ export function AnnouncementRowActions({
             </Button>
           }
           title={
-            status === "PENDING" ? "Reject this announcement?" : "Take this announcement down?"
+            status === "PENDING"
+              ? t("Reject this announcement?")
+              : t("Take this announcement down?")
           }
           description={`"${title}" will not show on any dashboard.`}
           action={async (prev, formData) => {
             const result = await archiveAnnouncementAction(prev, formData);
-            if (result.success) toast.success("Announcement removed");
+            if (result.success) toast.success(t("Announcement removed"));
             return result;
           }}
           hiddenFields={{ id }}

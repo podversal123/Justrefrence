@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { useState } from "react";
 import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
@@ -13,10 +14,11 @@ import type { ApiResult } from "@/lib/api-response";
 const initialState: ApiResult<null> = { success: true, data: null, meta: { requestId: "" } };
 
 function SubmitButton() {
+  const t = useT();
   const { pending } = useFormStatus();
   return (
     <Button type="submit" disabled={pending}>
-      {pending ? "Saving…" : "Save permissions"}
+      {pending ? t("Saving…") : t("Save permissions")}
     </Button>
   );
 }
@@ -30,6 +32,7 @@ export function RolePermissionEditor({
   currentPermissionCodes: string[];
   readOnly: boolean;
 }) {
+  const t = useT();
   const [state, formAction] = useActionState(updateRolePermissionsAction, initialState);
   const [selected, setSelected] = useState<Set<string>>(new Set(currentPermissionCodes));
   const submitted = state !== initialState;
@@ -57,7 +60,7 @@ export function RolePermissionEditor({
       {submitted && state.success ? (
         <Alert>
           <CheckCircle2 className="size-4" />
-          <AlertDescription>Permissions updated.</AlertDescription>
+          <AlertDescription>{t("Permissions updated.")}</AlertDescription>
         </Alert>
       ) : null}
 

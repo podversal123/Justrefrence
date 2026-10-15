@@ -1,3 +1,5 @@
+import { msg } from "@/i18n/locales";
+import { getFormat, getT } from "@/i18n/server";
 import type { Metadata, Route } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -24,23 +26,25 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { ComposeForm } from "./compose-form";
 import { DeleteDraftButton } from "./draft-actions";
 
-export const metadata: Metadata = { title: "SMS" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("SMS") };
+}
 
 const TABS = [
-  { key: "compose", label: "Write" },
-  { key: "drafts", label: "Drafts" },
-  { key: "outbox", label: "Outbox" },
+  { key: "compose", label: msg("Write") },
+  { key: "drafts", label: msg("Drafts") },
+  { key: "outbox", label: msg("Outbox") },
 ] as const;
 const STATUSES: SmsStatus[] = ["SENT", "FAILED", "QUEUED"];
 const STATUS_LABEL: Record<SmsStatus, string> = {
-  SENT: "Sent or recorded",
-  FAILED: "Failed",
-  QUEUED: "Waiting",
+  SENT: msg("Sent or recorded"),
+  FAILED: msg("Failed"),
+  QUEUED: msg("Waiting"),
 };
 
 /** A text that was handed off, but only to the stand-in used while no real SMS service is connected. */
@@ -53,6 +57,7 @@ export default async function AdminSmsPage({
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
+  const t = await getT();
   const session = await getAuthSession();
   if (!session) redirect("/login");
   if (!session.permissions.has("sms:send")) redirect("/unauthorized");
@@ -65,32 +70,35 @@ export default async function AdminSmsPage({
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
       <div>
-        <h1>SMS</h1>
+        <h1>{t("SMS")}</h1>
         <p className="text-muted-foreground">
-          Write a text to one member or a group, keep drafts, and see everything you have sent.
+          {t(
+            "Write a text to one member or a group, keep drafts, and see everything you have sent.",
+          )}
         </p>
       </div>
 
-      <nav aria-label="SMS sections" className="flex flex-wrap gap-2">
-        {TABS.map((t) => (
+      <nav aria-label={t("SMS sections")} className="flex flex-wrap gap-2">
+        {TABS.map((tab_) => (
           <Link
-            key={t.key}
-            href={`/admin/sms?tab=${t.key}` as Route}
-            aria-current={t.key === tab ? "page" : undefined}
+            key={tab_.key}
+            href={`/admin/sms?tab=${tab_.key}` as Route}
+            aria-current={tab_.key === tab ? "page" : undefined}
             className={cn(
-              buttonVariants({ variant: t.key === tab ? "default" : "outline", size: "sm" }),
+              buttonVariants({ variant: tab_.key === tab ? "default" : "outline", size: "sm" }),
             )}
           >
-            {t.label}
+            {t(tab_.label)}
           </Link>
         ))}
       </nav>
 
       {tab === "compose" ? (
-        <section className="space-y-4 rounded-lg border p-5" aria-label="Write an SMS">
+        <section className="space-y-4 rounded-lg border p-5" aria-label={t("Write an SMS")}>
           <p className="text-muted-foreground text-sm">
-            Members read it in their SMS inbox. Texts go out through the SMS service; until it is
-            connected they are only recorded, and the outbox says so.
+            {t(
+              "Members read it in their SMS inbox. Texts go out through the SMS service; until it is connected they are only recorded, and the outbox says so.",
+            )}
           </p>
           <ComposeForm
             key={draft?.id ?? "new"}
@@ -115,13 +123,15 @@ export default async function AdminSmsPage({
 }
 
 async function Drafts({ authorId }: { authorId: string }) {
+  const t = await getT();
+  const { formatDateTime } = await getFormat();
   const drafts = await listDrafts(authorId);
   if (drafts.length === 0) {
     return (
       <EmptyState
         icon={MessageSquareText}
-        title="No drafts"
-        description="Use Save as draft on the Write tab to finish a message later."
+        title={t("No drafts")}
+        description={t("Use Save as draft on the Write tab to finish a message later.")}
       />
     );
   }
@@ -130,16 +140,18 @@ async function Drafts({ authorId }: { authorId: string }) {
       {drafts.map((d) => (
         <li key={d.id} className="surface-card flex flex-wrap items-center gap-4 p-4">
           <div className="min-w-0 flex-1 space-y-1">
-            <Badge variant="secondary">{SMS_AUDIENCE_LABEL[d.audience]}</Badge>
+            <Badge variant="secondary">{t(SMS_AUDIENCE_LABEL[d.audience])}</Badge>
             <p className="line-clamp-2 text-sm">{d.body}</p>
-            <p className="text-muted-foreground text-xs">Saved {formatDateTime(d.updatedAt)}</p>
+            <p className="text-muted-foreground text-xs">
+              {t("Saved {date}", { date: formatDateTime(d.updatedAt) })}
+            </p>
           </div>
           <div className="flex items-center gap-2">
             <Link
               href={`/admin/sms?tab=compose&draft=${d.id}` as Route}
               className={buttonVariants({ size: "sm" })}
             >
-              Open and send
+              {t("Open and send")}
             </Link>
             <DeleteDraftButton draftId={d.id} />
           </div>
@@ -150,57 +162,59 @@ async function Drafts({ authorId }: { authorId: string }) {
 }
 
 async function Outbox({ params }: { params: Record<string, string | undefined> }) {
+  const t = await getT();
+  const { formatDateTime } = await getFormat();
   const status = STATUSES.find((s) => s === params["status"]);
   const search = params["search"]?.slice(0, 100);
   const { items, nextCursor } = await listOutbox({ status, search, cursor: params["cursor"] });
 
   return (
-    <section className="space-y-4" aria-label="Outbox">
+    <section className="space-y-4" aria-label={t("Outbox")}>
       <form method="get" role="search" className="flex flex-wrap items-end gap-3">
         <input type="hidden" name="tab" value="outbox" />
         <div className="space-y-1">
           <label htmlFor="ob-search" className="text-xs font-medium">
-            Search
+            {t("Search")}
           </label>
           <Input
             id="ob-search"
             name="search"
             defaultValue={search}
-            placeholder="Words in the message, member or number"
+            placeholder={t("Words in the message, member or number")}
             className="w-72"
           />
         </div>
         <div className="space-y-1">
           <label htmlFor="ob-status" className="text-xs font-medium">
-            Status
+            {t("Status")}
           </label>
           <NativeSelect id="ob-status" name="status" defaultValue={status ?? ""} className="w-48">
-            <option value="">All</option>
+            <option value="">{t("All")}</option>
             {STATUSES.map((s) => (
               <option key={s} value={s}>
-                {STATUS_LABEL[s]}
+                {t(STATUS_LABEL[s])}
               </option>
             ))}
           </NativeSelect>
         </div>
-        <Button type="submit">Apply</Button>
+        <Button type="submit">{t("Apply")}</Button>
       </form>
 
       {items.length === 0 ? (
         <EmptyState
           icon={MessageSquareText}
-          title="Nothing sent yet"
-          description="Texts you send from the Write tab will be listed here."
+          title={t("Nothing sent yet")}
+          description={t("Texts you send from the Write tab will be listed here.")}
         />
       ) : (
         <>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>When</TableHead>
-                <TableHead>To</TableHead>
-                <TableHead>Message</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>{t("When")}</TableHead>
+                <TableHead>{t("To")}</TableHead>
+                <TableHead>{t("Message")}</TableHead>
+                <TableHead>{t("Status")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -228,11 +242,11 @@ async function Outbox({ params }: { params: Record<string, string | undefined> }
                               : "success"
                       }
                     >
-                      {recordedOnly(m) ? "Recorded only" : smsStateLabel(m)}
+                      {recordedOnly(m) ? t("Recorded only") : smsStateLabel(m)}
                     </Badge>
                     {recordedOnly(m) ? (
                       <p className="text-muted-foreground mt-1 text-xs">
-                        SMS service not connected
+                        {t("SMS service not connected")}
                       </p>
                     ) : null}
                     {m.failureReason ? (

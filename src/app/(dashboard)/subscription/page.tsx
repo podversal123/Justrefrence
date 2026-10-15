@@ -16,7 +16,7 @@ import { RedeemEpinForm } from "./redeem-epin-form";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
-  return { title: t("My subscription") };
+  return { title: t("Subscription") };
 }
 
 /** "TIME_BOUND" -> "Time bound" — same enum-display convention used elsewhere. */
@@ -42,7 +42,7 @@ export default async function SubscriptionPage() {
     return (
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8">
         <div>
-          <h1>{t("My subscription")}</h1>
+          <h1>{t("Subscription")}</h1>
         </div>
         <EmptyState
           icon={Crown}
@@ -73,7 +73,7 @@ export default async function SubscriptionPage() {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 py-8">
       <div>
-        <h1>{t("My subscription")}</h1>
+        <h1>{t("Subscription")}</h1>
         <p className="text-muted-foreground">
           {t("Your subscription status and e-pin redemption.")}
         </p>

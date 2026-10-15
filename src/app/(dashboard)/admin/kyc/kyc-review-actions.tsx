@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { Check, X } from "lucide-react";
 import { reviewKycDocumentAction } from "@/server/services/kyc-actions";
 import { Button } from "@/components/ui/button";
@@ -34,48 +35,51 @@ export function KycReviewActions({
   personName: string;
   panOnFile: string | null;
 }) {
+  const t = useT();
   return (
     <div className="flex flex-wrap gap-2">
       <ConfirmationDialog
         trigger={
           <Button size="sm">
             <Check />
-            Verify
+            {t("Verify")}
           </Button>
         }
-        title={`Verify ${personName}'s ${documentLabel}?`}
+        title={t("Verify {name}'s {document}?", { name: personName, document: documentLabel })}
         description={
           panOnFile
-            ? `Check that the card shows the same PAN number as on file: ${panOnFile}.`
-            : "Check the document carefully before you verify it."
+            ? t("Check that the card shows the same PAN number as on file: {pan}.", {
+                pan: panOnFile,
+              })
+            : t("Check the document carefully before you verify it.")
         }
-        action={reviewWithToast("Document verified")}
+        action={reviewWithToast(t("Document verified"))}
         hiddenFields={{ documentId, decision: "VERIFY" }}
-        confirmLabel="Yes, verify"
+        confirmLabel={t("Yes, verify")}
       />
       <ConfirmationDialog
         trigger={
           <Button size="sm" variant="outline">
             <X />
-            Reject
+            {t("Reject")}
           </Button>
         }
-        title={`Reject ${personName}'s ${documentLabel}?`}
-        description="They will be told to upload it again, along with your note."
-        action={reviewWithToast("Document rejected")}
+        title={t("Reject {name}'s {document}?", { name: personName, document: documentLabel })}
+        description={t("They will be told to upload it again, along with your note.")}
+        action={reviewWithToast(t("Document rejected"))}
         hiddenFields={{ documentId, decision: "REJECT" }}
-        confirmLabel="Reject"
+        confirmLabel={t("Reject")}
         variant="destructive"
       >
         <div className="space-y-2">
-          <Label htmlFor={`reject-reason-${documentId}`}>What should they fix?</Label>
+          <Label htmlFor={`reject-reason-${documentId}`}>{t("What should they fix?")}</Label>
           <Textarea
             id={`reject-reason-${documentId}`}
             name="reason"
             rows={3}
             maxLength={500}
             required
-            placeholder="For example: the photo is blurry, please upload a clear one."
+            placeholder={t("For example: the photo is blurry, please upload a clear one.")}
           />
         </div>
       </ConfirmationDialog>

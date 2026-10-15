@@ -1,3 +1,5 @@
+import { msg } from "@/i18n/locales";
+import { getFormat, getT } from "@/i18n/server";
 import type { Metadata, Route } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -19,17 +21,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatDate } from "@/lib/format";
 import { DOCUMENT_LABELS } from "@/server/domain/kyc/rules";
 import type { KycDocumentStatus } from "@/generated/prisma/enums";
 import { KycReviewActions } from "./kyc-review-actions";
 
-export const metadata: Metadata = { title: "KYC review" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("KYC review") };
+}
 
 const STATUSES: { value: KycDocumentStatus; label: string }[] = [
-  { value: "PENDING", label: "To review" },
-  { value: "VERIFIED", label: "Verified" },
-  { value: "REJECTED", label: "Rejected" },
+  { value: "PENDING", label: msg("To review") },
+  { value: "VERIFIED", label: msg("Verified") },
+  { value: "REJECTED", label: msg("Rejected") },
 ];
 
 export default async function AdminKycPage({
@@ -37,6 +41,8 @@ export default async function AdminKycPage({
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
+  const t = await getT();
+  const { formatDate } = await getFormat();
   const session = await getAuthSession();
   if (!session) redirect("/login");
   if (!session.permissions.has("kyc:review")) redirect("/unauthorized");
@@ -52,14 +58,15 @@ export default async function AdminKycPage({
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
       <div>
-        <h1>KYC review</h1>
+        <h1>{t("KYC review")}</h1>
         <p className="text-muted-foreground">
-          Check each uploaded document against the number the person entered, then verify it or ask
-          them to upload it again.
+          {t(
+            "Check each uploaded document against the number the person entered, then verify it or ask them to upload it again.",
+          )}
         </p>
       </div>
 
-      <nav aria-label="Filter by status" className="flex flex-wrap gap-2">
+      <nav aria-label={t("Filter by status")} className="flex flex-wrap gap-2">
         {STATUSES.map((s) => (
           <Button
             key={s.value}
@@ -67,7 +74,7 @@ export default async function AdminKycPage({
             nativeButton={false}
             render={
               <Link href={`/admin/kyc?status=${s.value}` as Route}>
-                {s.label} ({counts[s.value] ?? 0})
+                {t(s.label)} ({counts[s.value] ?? 0})
               </Link>
             }
           />
@@ -77,11 +84,11 @@ export default async function AdminKycPage({
       {items.length === 0 ? (
         <EmptyState
           icon={FileCheck2}
-          title={status === "PENDING" ? "Nothing to review" : "No documents here"}
+          title={status === "PENDING" ? t("Nothing to review") : t("No documents here")}
           description={
             status === "PENDING"
-              ? "New uploads will appear here."
-              : "Documents show up here after they are reviewed."
+              ? t("New uploads will appear here.")
+              : t("Documents show up here after they are reviewed.")
           }
         />
       ) : (
@@ -89,12 +96,12 @@ export default async function AdminKycPage({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Person</TableHead>
-                <TableHead>Document</TableHead>
-                <TableHead>PAN on file</TableHead>
-                <TableHead>Uploaded</TableHead>
+                <TableHead>{t("Person")}</TableHead>
+                <TableHead>{t("Document")}</TableHead>
+                <TableHead>{t("PAN on file")}</TableHead>
+                <TableHead>{t("Uploaded")}</TableHead>
                 <TableHead className="text-right">
-                  {status === "PENDING" ? "Decision" : "Status"}
+                  {status === "PENDING" ? t("Decision") : t("Status")}
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -119,12 +126,14 @@ export default async function AdminKycPage({
                         rel="noopener noreferrer"
                         className="text-primary inline-flex items-center gap-1 text-xs font-medium hover:underline"
                       >
-                        Open document
+                        {t("Open document")}
                         <ExternalLink className="size-3" aria-hidden="true" />
                       </a>
                     </TableCell>
                     <TableCell className="font-mono text-sm">
-                      {pan ?? <span className="text-destructive font-sans">Not entered</span>}
+                      {pan ?? (
+                        <span className="text-destructive font-sans">{t("Not entered")}</span>
+                      )}
                     </TableCell>
                     <TableCell className="text-muted-foreground whitespace-nowrap">
                       {formatDate(doc.createdAt)}

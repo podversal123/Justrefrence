@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { useState } from "react";
 import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
@@ -71,6 +72,7 @@ function SimpleStatusForm({
 }
 
 function RejectDialog({ vendorProfileId }: { vendorProfileId: string }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [state, formAction] = useActionState(updateVendorStatusAction, initialState);
 
@@ -79,15 +81,18 @@ function RejectDialog({ vendorProfileId }: { vendorProfileId: string }) {
       <DialogTrigger
         render={
           <Button size="sm" variant="destructive">
-            <X /> Reject
+            <X />
+            {t("Reject")}
           </Button>
         }
       />
       <DialogContent>
         <form action={formAction} className="space-y-4" noValidate>
           <DialogHeader>
-            <DialogTitle>Reject this vendor</DialogTitle>
-            <DialogDescription>The vendor will see this reason on their profile.</DialogDescription>
+            <DialogTitle>{t("Reject this vendor")}</DialogTitle>
+            <DialogDescription>
+              {t("The vendor will see this reason on their profile.")}
+            </DialogDescription>
           </DialogHeader>
           <input type="hidden" name="vendorProfileId" value={vendorProfileId} />
           <input type="hidden" name="status" value="REJECTED" />
@@ -100,12 +105,12 @@ function RejectDialog({ vendorProfileId }: { vendorProfileId: string }) {
           ) : null}
 
           <div className="space-y-2">
-            <Label htmlFor="reason">Reason</Label>
+            <Label htmlFor="reason">{t("Reason")}</Label>
             <Textarea id="reason" name="reason" required rows={3} />
           </div>
 
           <DialogFooter>
-            <ActionButton variant="destructive">Reject vendor</ActionButton>
+            <ActionButton variant="destructive">{t("Reject vendor")}</ActionButton>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -126,13 +131,14 @@ export function VendorStatusActions({
   canReject: boolean;
   canSuspend: boolean;
 }) {
+  const t = useT();
   return (
     <div className="flex flex-wrap gap-2">
       {status === "PENDING" && canApprove ? (
         <SimpleStatusForm
           vendorProfileId={vendorProfileId}
           status="APPROVED"
-          label="Approve"
+          label={t("Approve")}
           icon={<Check />}
           variant="default"
         />
@@ -144,7 +150,7 @@ export function VendorStatusActions({
         <SimpleStatusForm
           vendorProfileId={vendorProfileId}
           status="APPROVED"
-          label="Re-approve"
+          label={t("Re-approve")}
           icon={<Check />}
           variant="default"
         />
@@ -153,7 +159,7 @@ export function VendorStatusActions({
         <SimpleStatusForm
           vendorProfileId={vendorProfileId}
           status="SUSPENDED"
-          label="Suspend"
+          label={t("Suspend")}
           icon={<Ban />}
           variant="outline"
         />

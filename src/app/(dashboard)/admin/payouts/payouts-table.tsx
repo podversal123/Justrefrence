@@ -1,5 +1,6 @@
 "use client";
 
+import { useFormat, useT } from "@/i18n/provider";
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -121,6 +122,7 @@ function RejectDialog({
   busy: boolean;
   onReject: (reason: string) => Promise<ApiResult<null>>;
 }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -149,16 +151,18 @@ function RejectDialog({
         render={
           <Button variant="destructive" size="sm" disabled={busy}>
             <X />
-            Reject
+            {t("Reject")}
           </Button>
         }
       />
       <DialogContent>
         <form onSubmit={submit} className="space-y-4" noValidate>
           <DialogHeader>
-            <DialogTitle>Reject this payout request?</DialogTitle>
+            <DialogTitle>{t("Reject this payout request?")}</DialogTitle>
             <DialogDescription>
-              The member will see this reason, and the held funds return to their spendable balance.
+              {t(
+                "The member will see this reason, and the held funds return to their spendable balance.",
+              )}
             </DialogDescription>
           </DialogHeader>
 
@@ -170,7 +174,7 @@ function RejectDialog({
           ) : null}
 
           <div className="space-y-2">
-            <Label htmlFor="payout-reject-reason">Reason</Label>
+            <Label htmlFor="payout-reject-reason">{t("Reason")}</Label>
             <Textarea
               id="payout-reject-reason"
               value={reason}
@@ -182,7 +186,7 @@ function RejectDialog({
 
           <DialogFooter>
             <Button type="submit" variant="destructive" disabled={busy}>
-              {busy ? "Working…" : "Reject"}
+              {busy ? t("Working…") : t("Reject")}
             </Button>
           </DialogFooter>
         </form>
@@ -198,6 +202,7 @@ function MarkPaidDialog({
   busy: boolean;
   onMarkPaid: (transferReference: string, tdsDeductedRupees: string) => Promise<ApiResult<null>>;
 }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [transferReference, setTransferReference] = useState("");
   const [tdsDeductedRupees, setTdsDeductedRupees] = useState("");
@@ -228,17 +233,18 @@ function MarkPaidDialog({
         render={
           <Button size="sm" disabled={busy}>
             <Banknote />
-            Mark paid
+            {t("Mark paid")}
           </Button>
         }
       />
       <DialogContent>
         <form onSubmit={submit} className="space-y-4" noValidate>
           <DialogHeader>
-            <DialogTitle>Mark this payout as paid</DialogTitle>
+            <DialogTitle>{t("Mark this payout as paid")}</DialogTitle>
             <DialogDescription>
-              Record the bank transfer you&apos;ve already sent. This releases the held funds for
-              good and can&apos;t be undone from here.
+              {t(
+                "Record the bank transfer you've already sent. This releases the held funds for good and can't be undone from here.",
+              )}
             </DialogDescription>
           </DialogHeader>
 
@@ -250,17 +256,17 @@ function MarkPaidDialog({
           ) : null}
 
           <div className="space-y-2">
-            <Label htmlFor="transfer-reference">Transfer reference (UTR)</Label>
+            <Label htmlFor="transfer-reference">{t("Transfer reference (UTR)")}</Label>
             <Input
               id="transfer-reference"
               value={transferReference}
               onChange={(event) => setTransferReference(event.target.value)}
-              placeholder="e.g. a bank UTR number"
+              placeholder={t("e.g. a bank UTR number")}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="tds-deducted">TDS deducted (₹, optional)</Label>
+            <Label htmlFor="tds-deducted">{t("TDS deducted (₹, optional)")}</Label>
             <Input
               id="tds-deducted"
               type="number"
@@ -273,7 +279,7 @@ function MarkPaidDialog({
 
           <DialogFooter>
             <Button type="submit" disabled={busy}>
-              {busy ? "Working…" : "Mark paid"}
+              {busy ? t("Working…") : t("Mark paid")}
             </Button>
           </DialogFooter>
         </form>
@@ -289,6 +295,7 @@ function MarkFailedDialog({
   busy: boolean;
   onMarkFailed: () => Promise<ApiResult<null>>;
 }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -314,17 +321,17 @@ function MarkFailedDialog({
         render={
           <Button size="sm" variant="outline" disabled={busy}>
             <X />
-            Mark failed
+            {t("Mark failed")}
           </Button>
         }
       />
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Mark this transfer as failed?</DialogTitle>
+          <DialogTitle>{t("Mark this transfer as failed?")}</DialogTitle>
           <DialogDescription>
-            Use this if the bank transfer bounced or couldn&apos;t be completed. This only marks the
-            request as failed. It does not move the held funds back to the member&apos;s spendable
-            balance, so follow up on that separately.
+            {t(
+              "Use this if the bank transfer bounced or couldn't be completed. This only marks the request as failed. It does not move the held funds back to the member's spendable balance, so follow up on that separately.",
+            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -337,10 +344,10 @@ function MarkFailedDialog({
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={busy}>
-            Cancel
+            {t("Cancel")}
           </Button>
           <Button variant="destructive" onClick={confirm} disabled={busy}>
-            {busy ? "Working…" : "Mark failed"}
+            {busy ? t("Working…") : t("Mark failed")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -355,6 +362,7 @@ function BulkApproveAction({
   count: number;
   onConfirm: () => Promise<void>;
 }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -371,25 +379,27 @@ function BulkApproveAction({
         render={
           <Button size="sm">
             <Check />
-            Approve selected
+            {t("Approve selected")}
           </Button>
         }
       />
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            Approve {count} payout request{count === 1 ? "" : "s"}?
+            {count === 1
+              ? t("Approve 1 payout request?")
+              : t("Approve {count} payout requests?", { count })}
           </DialogTitle>
           <DialogDescription>
-            Each request is approved individually, the same as approving one at a time.
+            {t("Each request is approved individually, the same as approving one at a time.")}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={busy}>
-            Cancel
+            {t("Cancel")}
           </Button>
           <Button onClick={handleConfirm} disabled={busy}>
-            {busy ? "Approving…" : "Approve all"}
+            {busy ? t("Approving…") : t("Approve all")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -404,6 +414,7 @@ function BulkRejectAction({
   count: number;
   onConfirm: (reason: string) => Promise<void>;
 }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [reason, setReason] = useState("");
@@ -423,7 +434,7 @@ function BulkRejectAction({
         render={
           <Button size="sm" variant="destructive">
             <X />
-            Reject selected
+            {t("Reject selected")}
           </Button>
         }
       />
@@ -431,16 +442,19 @@ function BulkRejectAction({
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
           <DialogHeader>
             <DialogTitle>
-              Reject {count} payout request{count === 1 ? "" : "s"}?
+              {count === 1
+                ? t("Reject 1 payout request?")
+                : t("Reject {count} payout requests?", { count })}
             </DialogTitle>
             <DialogDescription>
-              The same reason is applied to every selected request, and each one&apos;s held funds
-              return to the member&apos;s balance.
+              {t(
+                "The same reason is applied to every selected request, and each one's held funds return to the member's balance.",
+              )}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-2">
-            <Label htmlFor="bulk-reject-reason">Reason</Label>
+            <Label htmlFor="bulk-reject-reason">{t("Reason")}</Label>
             <Textarea
               id="bulk-reject-reason"
               value={reason}
@@ -452,10 +466,10 @@ function BulkRejectAction({
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={busy}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button type="submit" variant="destructive" disabled={busy}>
-              {busy ? "Rejecting…" : "Reject all"}
+              {busy ? t("Rejecting…") : t("Reject all")}
             </Button>
           </DialogFooter>
         </form>
@@ -481,13 +495,14 @@ function PayoutRowFooter({
   onMarkPaid: (transferReference: string, tdsDeductedRupees: string) => Promise<ApiResult<null>>;
   onMarkFailed: () => Promise<ApiResult<null>>;
 }) {
+  const t = useT();
   if (row.status === "REQUESTED") {
     return (
       <div className="flex w-full justify-end gap-2">
         <RejectDialog busy={busy} onReject={onReject} />
         <Button size="sm" onClick={onApprove} disabled={busy}>
           <Check />
-          {busy ? "Working…" : "Approve"}
+          {busy ? t("Working…") : t("Approve")}
         </Button>
       </div>
     );
@@ -497,7 +512,7 @@ function PayoutRowFooter({
       <div className="flex w-full justify-end gap-2">
         <Button size="sm" onClick={onAdvance} disabled={busy}>
           <ArrowRight />
-          {busy ? "Working…" : "Move to processing"}
+          {busy ? t("Working…") : t("Move to processing")}
         </Button>
       </div>
     );
@@ -512,12 +527,14 @@ function PayoutRowFooter({
   }
   return (
     <p className="text-muted-foreground w-full text-right text-sm">
-      This request is in a final state.
+      {t("This request is in a final state.")}
     </p>
   );
 }
 
 export function PayoutsTable({ items }: { items: PayoutDetailRow[] }) {
+  const t = useT();
+  const { formatDate } = useFormat();
   const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [drawerId, setDrawerId] = useState<string | null>(null);
@@ -571,25 +588,37 @@ export function PayoutsTable({ items }: { items: PayoutDetailRow[] }) {
       setDrawerId((current) => (current === id ? null : current));
       router.refresh();
     } else {
-      toast.error("Could not update payout", result.error.message);
+      toast.error(t("Could not update payout"), result.error.message);
     }
     return result;
   }
 
-  function reportBulkResult(results: ApiResult<null>[], pastTense: string, verbLower: string) {
+  function reportBulkResult(results: ApiResult<null>[], action: "approve" | "reject") {
     const failed = results.filter((result) => !result.success).length;
     const total = results.length;
     if (failed === 0) {
-      toast.success(`${pastTense} ${total} request${total === 1 ? "" : "s"}`);
+      toast.success(
+        action === "approve"
+          ? total === 1
+            ? t("1 request approved")
+            : t("{count} requests approved", { count: total })
+          : total === 1
+            ? t("1 request rejected")
+            : t("{count} requests rejected", { count: total }),
+      );
     } else if (failed === total) {
       toast.error(
-        `Bulk ${verbLower} failed`,
-        `None of the selected requests could be ${verbLower}ed.`,
+        action === "approve" ? t("Bulk approve failed") : t("Bulk reject failed"),
+        action === "approve"
+          ? t("None of the selected requests could be approved.")
+          : t("None of the selected requests could be rejected."),
       );
     } else {
       toast.warning(
-        `${pastTense} ${total - failed} of ${total}`,
-        `${failed} failed. Open them one by one to see why.`,
+        action === "approve"
+          ? t("Approved {done} of {total}", { done: total - failed, total })
+          : t("Rejected {done} of {total}", { done: total - failed, total }),
+        t("{count} failed. Open them one by one to see why.", { count: failed }),
       );
     }
   }
@@ -597,7 +626,7 @@ export function PayoutsTable({ items }: { items: PayoutDetailRow[] }) {
   async function handleBulkApprove() {
     const rows = selectedRows;
     const results = await Promise.all(rows.map((row) => approveRow(row.id)));
-    reportBulkResult(results, "Approved", "approve");
+    reportBulkResult(results, "approve");
     clearSelection();
     router.refresh();
   }
@@ -605,7 +634,7 @@ export function PayoutsTable({ items }: { items: PayoutDetailRow[] }) {
   async function handleBulkReject(reason: string) {
     const rows = selectedRows;
     const results = await Promise.all(rows.map((row) => rejectRow(row.id, reason)));
-    reportBulkResult(results, "Rejected", "reject");
+    reportBulkResult(results, "reject");
     clearSelection();
     router.refresh();
   }
@@ -626,8 +655,8 @@ export function PayoutsTable({ items }: { items: PayoutDetailRow[] }) {
       {items.length === 0 ? (
         <EmptyState
           icon={PiggyBank}
-          title="No payout requests"
-          description="Nothing matches the current filter."
+          title={t("No payout requests")}
+          description={t("Nothing matches the current filter.")}
         />
       ) : (
         <>
@@ -640,16 +669,16 @@ export function PayoutsTable({ items }: { items: PayoutDetailRow[] }) {
                       checked={allSelected}
                       indeterminate={someSelected}
                       onCheckedChange={(checked) => toggleAll(checked === true)}
-                      aria-label="Select all requested payouts"
+                      aria-label={t("Select all requested payouts")}
                       disabled={selectableItems.length === 0}
                     />
                   </TableHead>
-                  <TableHead>Requester</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Bank account</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Requested</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>{t("Requester")}</TableHead>
+                  <TableHead>{t("Amount")}</TableHead>
+                  <TableHead>{t("Bank account")}</TableHead>
+                  <TableHead>{t("Status")}</TableHead>
+                  <TableHead>{t("Requested")}</TableHead>
+                  <TableHead className="text-right">{t("Actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -663,7 +692,9 @@ export function PayoutsTable({ items }: { items: PayoutDetailRow[] }) {
                           <Checkbox
                             checked={isSelected}
                             onCheckedChange={(checked) => toggleRow(row.id, checked === true)}
-                            aria-label={`Select payout request from ${row.requester.fullName ?? row.requester.email}`}
+                            aria-label={t("Select payout request from {name}", {
+                              name: row.requester.fullName ?? row.requester.email,
+                            })}
                           />
                         ) : null}
                       </TableCell>
@@ -691,7 +722,7 @@ export function PayoutsTable({ items }: { items: PayoutDetailRow[] }) {
                         <StatusBadge status={row.status} />
                       </TableCell>
                       <TableCell className="text-muted-foreground text-xs">
-                        {row.createdAt.toLocaleDateString("en-IN")}
+                        {formatDate(row.createdAt)}
                       </TableCell>
                       <TableCell className="text-right">
                         <Button
@@ -701,7 +732,7 @@ export function PayoutsTable({ items }: { items: PayoutDetailRow[] }) {
                           disabled={isBusy}
                         >
                           <Eye />
-                          View
+                          {t("View")}
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -730,7 +761,7 @@ export function PayoutsTable({ items }: { items: PayoutDetailRow[] }) {
                   {row.bankAccount.accountNoMasked} · {row.bankAccount.ifsc}
                 </p>
                 <p className="text-muted-foreground mt-1 text-xs">
-                  Requested {row.createdAt.toLocaleDateString("en-IN")}
+                  {t("Requested {date}", { date: formatDate(row.createdAt) })}
                 </p>
               </button>
             ))}
@@ -784,46 +815,46 @@ export function PayoutsTable({ items }: { items: PayoutDetailRow[] }) {
         {drawerRow ? (
           <dl className="space-y-4 text-sm">
             <div className="flex items-center justify-between gap-3">
-              <dt className="text-muted-foreground">Requester</dt>
+              <dt className="text-muted-foreground">{t("Requester")}</dt>
               <dd className="text-right">
                 <div className="font-medium">{drawerRow.requester.fullName ?? "—"}</div>
                 <div className="text-muted-foreground text-xs">{drawerRow.requester.email}</div>
               </dd>
             </div>
             <div className="flex items-center justify-between gap-3">
-              <dt className="text-muted-foreground">Amount requested</dt>
+              <dt className="text-muted-foreground">{t("Amount requested")}</dt>
               <dd className="text-right font-medium">{formatPaise(drawerRow.amount)}</dd>
             </div>
             <div className="flex items-center justify-between gap-3">
-              <dt className="text-muted-foreground">Status</dt>
+              <dt className="text-muted-foreground">{t("Status")}</dt>
               <dd>
                 <StatusBadge status={drawerRow.status} />
               </dd>
             </div>
             <div className="flex items-center justify-between gap-3">
-              <dt className="text-muted-foreground">Requested</dt>
-              <dd>{drawerRow.createdAt.toLocaleDateString("en-IN")}</dd>
+              <dt className="text-muted-foreground">{t("Requested")}</dt>
+              <dd>{formatDate(drawerRow.createdAt)}</dd>
             </div>
 
             <div className="border-border space-y-2 border-t pt-4">
               <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                Bank account
+                {t("Bank account")}
               </p>
               <div className="flex items-center justify-between gap-3">
-                <dt className="text-muted-foreground">Holder</dt>
+                <dt className="text-muted-foreground">{t("Holder")}</dt>
                 <dd>{drawerRow.bankAccount.accountHolderName || "—"}</dd>
               </div>
               <div className="flex items-center justify-between gap-3">
-                <dt className="text-muted-foreground">Account</dt>
+                <dt className="text-muted-foreground">{t("Account")}</dt>
                 <dd>{drawerRow.bankAccount.accountNoMasked}</dd>
               </div>
               <div className="flex items-center justify-between gap-3">
-                <dt className="text-muted-foreground">IFSC</dt>
+                <dt className="text-muted-foreground">{t("IFSC")}</dt>
                 <dd>{drawerRow.bankAccount.ifsc}</dd>
               </div>
               {drawerRow.bankAccount.branchAddress ? (
                 <div className="flex items-center justify-between gap-3">
-                  <dt className="text-muted-foreground">Branch</dt>
+                  <dt className="text-muted-foreground">{t("Branch")}</dt>
                   <dd className="text-right">{drawerRow.bankAccount.branchAddress}</dd>
                 </div>
               ) : null}
@@ -832,7 +863,7 @@ export function PayoutsTable({ items }: { items: PayoutDetailRow[] }) {
             {drawerRow.rejectedReason ? (
               <div className="border-border space-y-1 border-t pt-4">
                 <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                  Rejection reason
+                  {t("Rejection reason")}
                 </p>
                 <p>{drawerRow.rejectedReason}</p>
               </div>
@@ -841,24 +872,24 @@ export function PayoutsTable({ items }: { items: PayoutDetailRow[] }) {
             {drawerRow.transaction ? (
               <div className="border-border space-y-2 border-t pt-4">
                 <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                  Transfer record
+                  {t("Transfer record")}
                 </p>
                 <div className="flex items-center justify-between gap-3">
-                  <dt className="text-muted-foreground">Reference</dt>
+                  <dt className="text-muted-foreground">{t("Reference")}</dt>
                   <dd>{drawerRow.transaction.transferReference ?? "—"}</dd>
                 </div>
                 <div className="flex items-center justify-between gap-3">
-                  <dt className="text-muted-foreground">TDS deducted</dt>
+                  <dt className="text-muted-foreground">{t("TDS deducted")}</dt>
                   <dd>{formatPaise(drawerRow.transaction.tdsDeducted)}</dd>
                 </div>
                 <div className="flex items-center justify-between gap-3">
-                  <dt className="text-muted-foreground">Net amount</dt>
+                  <dt className="text-muted-foreground">{t("Net amount")}</dt>
                   <dd className="font-medium">{formatPaise(drawerRow.transaction.netAmount)}</dd>
                 </div>
                 {drawerRow.transaction.paidAt ? (
                   <div className="flex items-center justify-between gap-3">
-                    <dt className="text-muted-foreground">Paid</dt>
-                    <dd>{drawerRow.transaction.paidAt.toLocaleDateString("en-IN")}</dd>
+                    <dt className="text-muted-foreground">{t("Paid")}</dt>
+                    <dd>{formatDate(drawerRow.transaction.paidAt)}</dd>
                   </div>
                 ) : null}
               </div>

@@ -1,3 +1,4 @@
+import { getT } from "@/i18n/server";
 import type { Metadata, Route } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -8,9 +9,13 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { BlogForm } from "../blog-form";
 import { PostActions } from "../post-actions";
 
-export const metadata: Metadata = { title: "Edit blog post" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("Edit blog post") };
+}
 
 export default async function EditBlogPostPage({ params }: { params: Promise<{ id: string }> }) {
+  const t = await getT();
   const session = await getAuthSession();
   if (!session) redirect("/login");
   if (!session.permissions.has("blog:create")) redirect("/unauthorized");
@@ -26,11 +31,11 @@ export default async function EditBlogPostPage({ params }: { params: Promise<{ i
         className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-sm"
       >
         <ArrowLeft className="size-4" />
-        All posts
+        {t("All posts")}
       </Link>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <h1>Edit post</h1>
+          <h1>{t("Edit post")}</h1>
           <StatusBadge status={post.status} />
         </div>
         {post.status === "PUBLISHED" ? (
@@ -38,7 +43,7 @@ export default async function EditBlogPostPage({ params }: { params: Promise<{ i
             href={`/blog/${post.slug}` as Route}
             className="text-primary inline-flex items-center gap-1 text-sm hover:underline"
           >
-            View on site
+            {t("View on site")}
             <ExternalLink className="size-4" />
           </Link>
         ) : null}

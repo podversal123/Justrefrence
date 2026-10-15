@@ -50,7 +50,7 @@ export default async function ManageRequirementPage({
         className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-sm"
       >
         <ArrowLeft className="size-4" />
-        {view.isOwner ? t("My requirements") : t("All bids")}
+        {view.isOwner ? t("Requirements") : t("All bids")}
       </Link>
 
       <div className="flex flex-wrap items-start justify-between gap-4">

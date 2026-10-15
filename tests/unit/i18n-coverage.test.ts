@@ -174,7 +174,14 @@ describe("Hindi coverage", () => {
   it("really is Hindi where it should be (contains Devanagari letters)", () => {
     // Format examples and codes (PAN, IFSC, coupon sample, email) stay as they are, and so do these
     // names that are the same in every language.
-    const sameEverywhere = new Set(["GSTIN", "WhatsApp", "{date} IST"]);
+    const sameEverywhere = new Set([
+      "GSTIN",
+      "WhatsApp",
+      "{date} IST",
+      "IFSC",
+      "CATALOG_MANAGER",
+      "YEARLY-PRO",
+    ]);
     const untranslated = Object.entries(HI_MESSAGES)
       .filter(
         ([en, hi]) =>

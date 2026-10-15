@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { useState } from "react";
 import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
@@ -25,15 +26,17 @@ const initialState: ApiResult<{ ruleId: string }> = {
 };
 
 function SubmitButton() {
+  const t = useT();
   const { pending } = useFormStatus();
   return (
     <Button type="submit" disabled={pending}>
-      {pending ? "Saving…" : "Activate rule"}
+      {pending ? t("Saving…") : t("Activate rule")}
     </Button>
   );
 }
 
 export function CreateCommissionRuleForm() {
+  const t = useT();
   const [state, formAction] = useActionState(createCommissionRuleAction, initialState);
   const [rateBasis, setRateBasis] = useState("PERCENT_OF_ORDER");
   const submitted = state !== initialState;
@@ -49,34 +52,34 @@ export function CreateCommissionRuleForm() {
       {submitted && state.success ? (
         <Alert>
           <CheckCircle2 className="size-4" />
-          <AlertDescription>Commission rule activated.</AlertDescription>
+          <AlertDescription>{t("Commission rule activated.")}</AlertDescription>
         </Alert>
       ) : null}
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="level">Referral level</Label>
+          <Label htmlFor="level">{t("Referral level")}</Label>
           <Input id="level" name="level" type="number" min={1} max={20} defaultValue={1} required />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="appliesTo">Applies to</Label>
+          <Label htmlFor="appliesTo">{t("Applies to")}</Label>
           <Select name="appliesTo" defaultValue="PRODUCT" required>
             <SelectTrigger id="appliesTo" className="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="PRODUCT">Product</SelectItem>
-              <SelectItem value="SERVICE">Service</SelectItem>
-              <SelectItem value="PROJECT">Project</SelectItem>
-              <SelectItem value="EPIN">E-pin</SelectItem>
-              <SelectItem value="SUBSCRIPTION">Subscription</SelectItem>
+              <SelectItem value="PRODUCT">{t("Product")}</SelectItem>
+              <SelectItem value="SERVICE">{t("Service")}</SelectItem>
+              <SelectItem value="PROJECT">{t("Project")}</SelectItem>
+              <SelectItem value="EPIN">{t("E-pin")}</SelectItem>
+              <SelectItem value="SUBSCRIPTION">{t("Subscription")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="rateBasis">Rate basis</Label>
+        <Label htmlFor="rateBasis">{t("Rate basis")}</Label>
         <Select
           name="rateBasis"
           value={rateBasis}
@@ -87,17 +90,17 @@ export function CreateCommissionRuleForm() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="PERCENT_OF_ORDER">Percent of order</SelectItem>
-            <SelectItem value="PERCENT_OF_VENDOR_SALE">Percent of vendor sale</SelectItem>
-            <SelectItem value="PERCENT_OF_PLATFORM_FEE">Percent of platform fee</SelectItem>
-            <SelectItem value="FIXED">Fixed amount</SelectItem>
+            <SelectItem value="PERCENT_OF_ORDER">{t("Percent of order")}</SelectItem>
+            <SelectItem value="PERCENT_OF_VENDOR_SALE">{t("Percent of vendor sale")}</SelectItem>
+            <SelectItem value="PERCENT_OF_PLATFORM_FEE">{t("Percent of platform fee")}</SelectItem>
+            <SelectItem value="FIXED">{t("Fixed amount")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       {rateBasis === "FIXED" ? (
         <div className="space-y-2">
-          <Label htmlFor="rateValueFixed">Fixed amount (paise)</Label>
+          <Label htmlFor="rateValueFixed">{t("Fixed amount (paise)")}</Label>
           <Input
             id="rateValueFixed"
             name="rateValueFixed"
@@ -108,7 +111,7 @@ export function CreateCommissionRuleForm() {
         </div>
       ) : (
         <div className="space-y-2">
-          <Label htmlFor="rateValuePercent">Rate (%)</Label>
+          <Label htmlFor="rateValuePercent">{t("Rate (%)")}</Label>
           <Input
             id="rateValuePercent"
             name="rateValuePercent"
@@ -126,7 +129,7 @@ export function CreateCommissionRuleForm() {
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="releaseDelayDays">Release delay (days)</Label>
+          <Label htmlFor="releaseDelayDays">{t("Release delay (days)")}</Label>
           <Input
             id="releaseDelayDays"
             name="releaseDelayDays"
@@ -138,7 +141,7 @@ export function CreateCommissionRuleForm() {
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="minimumActivityCount">Minimum activity (optional)</Label>
+          <Label htmlFor="minimumActivityCount">{t("Minimum activity (optional)")}</Label>
           <Input
             id="minimumActivityCount"
             name="minimumActivityCount"
@@ -151,7 +154,7 @@ export function CreateCommissionRuleForm() {
 
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" name="requiresActiveSubscription" className="size-4" />
-        Requires an active subscription to earn
+        {t("Requires an active subscription to earn")}
       </label>
 
       <SubmitButton />

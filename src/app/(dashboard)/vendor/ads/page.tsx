@@ -12,7 +12,7 @@ import { canPause } from "@/server/domain/ads/rules";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
-  return { title: t("My advertisements") };
+  return { title: t("Advertisements") };
 }
 
 export default async function VendorAdsPage() {
@@ -29,7 +29,7 @@ export default async function VendorAdsPage() {
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1>{t("My advertisements")}</h1>
+          <h1>{t("Advertisements")}</h1>
           <p className="text-muted-foreground">
             {t(
               "Promote your business in the Sponsored section on the home page. The team approves each ad before it shows.",

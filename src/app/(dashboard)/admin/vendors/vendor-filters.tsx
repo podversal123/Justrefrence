@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Search } from "lucide-react";
@@ -42,6 +43,7 @@ export function VendorFilters({
   initialStatus: string;
   initialSort: string;
 }) {
+  const t = useT();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [search, setSearch] = useState(initialSearch);
@@ -73,9 +75,9 @@ export function VendorFilters({
         <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search business, name, or email…"
+          placeholder={t("Search business, name, or email…")}
           className="pl-8"
-          aria-label="Search vendors"
+          aria-label={t("Search vendors")}
         />
       </div>
 
@@ -83,8 +85,8 @@ export function VendorFilters({
         value={initialStatus || "ALL"}
         onValueChange={(value) => updateParam("status", value ?? "ALL")}
       >
-        <SelectTrigger className="w-full sm:w-44" aria-label="Filter by status">
-          <SelectValue placeholder="All statuses" />
+        <SelectTrigger className="w-full sm:w-44" aria-label={t("Filter by status")}>
+          <SelectValue placeholder={t("All statuses")} />
         </SelectTrigger>
         <SelectContent>
           {STATUS_OPTIONS.map((opt) => (
@@ -106,8 +108,8 @@ export function VendorFilters({
           router.push(`/admin/vendors?${params.toString()}` as never);
         }}
       >
-        <SelectTrigger className="w-full sm:w-48" aria-label="Sort vendors">
-          <SelectValue placeholder="Sort" />
+        <SelectTrigger className="w-full sm:w-48" aria-label={t("Sort vendors")}>
+          <SelectValue placeholder={t("Sort")} />
         </SelectTrigger>
         <SelectContent>
           {SORT_OPTIONS.map((opt) => (

@@ -1,5 +1,7 @@
 "use client";
 
+import { msg } from "@/i18n/locales";
+import { useT } from "@/i18n/provider";
 import { FilterBar, SelectFilter } from "@/components/ui/filter-bar";
 
 const STATUS_OPTIONS = [
@@ -10,12 +12,13 @@ const STATUS_OPTIONS = [
 ];
 
 export function EpinFilters() {
+  const t = useT();
   return (
     <FilterBar>
       <SelectFilter
         paramName="status"
-        ariaLabel="Filter by status"
-        placeholder="All statuses"
+        ariaLabel={msg("Filter by status")}
+        placeholder={t("All statuses")}
         options={STATUS_OPTIONS}
       />
     </FilterBar>

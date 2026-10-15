@@ -1,5 +1,6 @@
 "use client";
 
+import { useFormat, useT } from "@/i18n/provider";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -106,6 +107,7 @@ function RowApprovalFooter({
   onApprove: () => void;
   onReject: (reason: string) => Promise<ApiResult<null>>;
 }) {
+  const t = useT();
   const [rejectOpen, setRejectOpen] = useState(false);
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -135,18 +137,18 @@ function RowApprovalFooter({
           render={
             <Button variant="destructive" size="sm" disabled={busy}>
               <X />
-              Reject
+              {t("Reject")}
             </Button>
           }
         />
         <DialogContent>
           <form onSubmit={submitReject} className="space-y-4" noValidate>
             <DialogHeader>
-              <DialogTitle>Reject &ldquo;{row.title}&rdquo;?</DialogTitle>
+              <DialogTitle>{t('Reject "{title}"?', { title: row.title })}</DialogTitle>
               <DialogDescription>
                 {row.kind === "VENDOR"
-                  ? "The vendor will see this reason on their profile."
-                  : "The vendor will see this reason."}
+                  ? t("The vendor will see this reason on their profile.")
+                  : t("The vendor will see this reason.")}
               </DialogDescription>
             </DialogHeader>
 
@@ -158,7 +160,7 @@ function RowApprovalFooter({
             ) : null}
 
             <div className="space-y-2">
-              <Label htmlFor="drawer-reject-reason">Reason</Label>
+              <Label htmlFor="drawer-reject-reason">{t("Reason")}</Label>
               <Textarea
                 id="drawer-reject-reason"
                 value={reason}
@@ -170,7 +172,7 @@ function RowApprovalFooter({
 
             <DialogFooter>
               <Button type="submit" variant="destructive" disabled={busy}>
-                {busy ? "Working…" : "Reject"}
+                {busy ? t("Working…") : t("Reject")}
               </Button>
             </DialogFooter>
           </form>
@@ -179,7 +181,7 @@ function RowApprovalFooter({
 
       <Button size="sm" onClick={onApprove} disabled={busy}>
         <Check />
-        {busy ? "Working…" : "Approve"}
+        {busy ? t("Working…") : t("Approve")}
       </Button>
     </div>
   );
@@ -192,6 +194,7 @@ function BulkApproveAction({
   rows: PendingApprovalRow[];
   onConfirm: () => Promise<void>;
 }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const count = rows.length;
@@ -209,25 +212,27 @@ function BulkApproveAction({
         render={
           <Button size="sm">
             <Check />
-            Approve selected
+            {t("Approve selected")}
           </Button>
         }
       />
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            Approve {count} item{count === 1 ? "" : "s"}?
+            {count === 1 ? t("Approve 1 item?") : t("Approve {count} items?", { count })}
           </DialogTitle>
           <DialogDescription>
-            Each vendor or listing is approved individually, the same as approving one at a time.
+            {t(
+              "Each vendor or listing is approved individually, the same as approving one at a time.",
+            )}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={busy}>
-            Cancel
+            {t("Cancel")}
           </Button>
           <Button onClick={handleConfirm} disabled={busy}>
-            {busy ? "Approving…" : "Approve all"}
+            {busy ? t("Approving…") : t("Approve all")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -242,6 +247,7 @@ function BulkRejectAction({
   rows: PendingApprovalRow[];
   onConfirm: (reason: string) => Promise<void>;
 }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [reason, setReason] = useState("");
@@ -262,7 +268,7 @@ function BulkRejectAction({
         render={
           <Button size="sm" variant="destructive">
             <X />
-            Reject selected
+            {t("Reject selected")}
           </Button>
         }
       />
@@ -270,15 +276,15 @@ function BulkRejectAction({
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
           <DialogHeader>
             <DialogTitle>
-              Reject {count} item{count === 1 ? "" : "s"}?
+              {count === 1 ? t("Reject 1 item?") : t("Reject {count} items?", { count })}
             </DialogTitle>
             <DialogDescription>
-              The same reason is applied to every selected vendor or listing.
+              {t("The same reason is applied to every selected vendor or listing.")}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-2">
-            <Label htmlFor="bulk-reject-reason">Reason</Label>
+            <Label htmlFor="bulk-reject-reason">{t("Reason")}</Label>
             <Textarea
               id="bulk-reject-reason"
               value={reason}
@@ -290,10 +296,10 @@ function BulkRejectAction({
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={busy}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button type="submit" variant="destructive" disabled={busy}>
-              {busy ? "Rejecting…" : "Reject all"}
+              {busy ? t("Rejecting…") : t("Reject all")}
             </Button>
           </DialogFooter>
         </form>
@@ -303,6 +309,8 @@ function BulkRejectAction({
 }
 
 export function PendingApprovalsTable({ items }: { items: PendingApprovalRow[] }) {
+  const t = useT();
+  const { formatDate } = useFormat();
   const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [drawerRow, setDrawerRow] = useState<PendingApprovalRow | null>(null);
@@ -343,12 +351,12 @@ export function PendingApprovalsTable({ items }: { items: PendingApprovalRow[] }
     const result = await approveRow(row);
     setBusyKey(null);
     if (result.success) {
-      toast.success(`"${row.title}" approved`);
+      toast.success(t('"{title}" approved', { title: row.title }));
       dropFromSelection(key);
       setDrawerRow((current) => (current && rowKey(current) === key ? null : current));
       router.refresh();
     } else {
-      toast.error("Could not approve", result.error.message);
+      toast.error(t("Could not approve"), result.error.message);
     }
   }
 
@@ -361,12 +369,12 @@ export function PendingApprovalsTable({ items }: { items: PendingApprovalRow[] }
     const result = await rejectRow(row, reason);
     setBusyKey(null);
     if (result.success) {
-      toast.success(`"${row.title}" rejected`);
+      toast.success(t('"{title}" rejected', { title: row.title }));
       dropFromSelection(key);
       setDrawerRow((current) => (current && rowKey(current) === key ? null : current));
       router.refresh();
     } else {
-      toast.error("Could not reject", result.error.message);
+      toast.error(t("Could not reject"), result.error.message);
     }
     return result;
   }
@@ -376,13 +384,17 @@ export function PendingApprovalsTable({ items }: { items: PendingApprovalRow[] }
     const results = await Promise.all(rows.map((row) => approveRow(row)));
     const failed = results.filter((result) => !result.success).length;
     if (failed === 0) {
-      toast.success(`Approved ${rows.length} item${rows.length === 1 ? "" : "s"}`);
+      toast.success(
+        rows.length === 1
+          ? t("Approved 1 item")
+          : t("Approved {count} items", { count: rows.length }),
+      );
     } else if (failed === rows.length) {
-      toast.error("Bulk approve failed", "None of the selected items could be approved.");
+      toast.error(t("Bulk approve failed"), t("None of the selected items could be approved."));
     } else {
       toast.warning(
-        `Approved ${rows.length - failed} of ${rows.length}`,
-        `${failed} failed. Open them one by one to see why.`,
+        t("Approved {done} of {total}", { done: rows.length - failed, total: rows.length }),
+        t("{count} failed. Open them one by one to see why.", { count: failed }),
       );
     }
     clearSelection();
@@ -394,13 +406,17 @@ export function PendingApprovalsTable({ items }: { items: PendingApprovalRow[] }
     const results = await Promise.all(rows.map((row) => rejectRow(row, reason)));
     const failed = results.filter((result) => !result.success).length;
     if (failed === 0) {
-      toast.success(`Rejected ${rows.length} item${rows.length === 1 ? "" : "s"}`);
+      toast.success(
+        rows.length === 1
+          ? t("Rejected 1 item")
+          : t("Rejected {count} items", { count: rows.length }),
+      );
     } else if (failed === rows.length) {
-      toast.error("Bulk reject failed", "None of the selected items could be rejected.");
+      toast.error(t("Bulk reject failed"), t("None of the selected items could be rejected."));
     } else {
       toast.warning(
-        `Rejected ${rows.length - failed} of ${rows.length}`,
-        `${failed} failed. Open them one by one to see why.`,
+        t("Rejected {done} of {total}", { done: rows.length - failed, total: rows.length }),
+        t("{count} failed. Open them one by one to see why.", { count: failed }),
       );
     }
     clearSelection();
@@ -411,8 +427,10 @@ export function PendingApprovalsTable({ items }: { items: PendingApprovalRow[] }
     <>
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Pending approvals</CardTitle>
-          <CardDescription>Vendor applications and new listings awaiting review.</CardDescription>
+          <CardTitle className="text-base">{t("Pending approvals")}</CardTitle>
+          <CardDescription>
+            {t("Vendor applications and new listings awaiting review.")}
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <BulkActionToolbar
@@ -429,8 +447,8 @@ export function PendingApprovalsTable({ items }: { items: PendingApprovalRow[] }
           {items.length === 0 ? (
             <EmptyState
               icon={ClipboardCheck}
-              title="All caught up"
-              description="Nothing is waiting for review."
+              title={t("All caught up")}
+              description={t("Nothing is waiting for review.")}
             />
           ) : (
             <Table>
@@ -441,14 +459,14 @@ export function PendingApprovalsTable({ items }: { items: PendingApprovalRow[] }
                       checked={allSelected}
                       indeterminate={someSelected}
                       onCheckedChange={(checked) => toggleAll(checked === true)}
-                      aria-label="Select all pending approvals"
+                      aria-label={t("Select all pending approvals")}
                     />
                   </TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Submitted</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>{t("Type")}</TableHead>
+                  <TableHead>{t("Name")}</TableHead>
+                  <TableHead>{t("Status")}</TableHead>
+                  <TableHead>{t("Submitted")}</TableHead>
+                  <TableHead className="text-right">{t("Actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -462,7 +480,7 @@ export function PendingApprovalsTable({ items }: { items: PendingApprovalRow[] }
                         <Checkbox
                           checked={isSelected}
                           onCheckedChange={(checked) => toggleRow(key, checked === true)}
-                          aria-label={`Select ${row.title}`}
+                          aria-label={t("Select {title}", { title: row.title })}
                         />
                       </TableCell>
                       <TableCell>
@@ -481,7 +499,7 @@ export function PendingApprovalsTable({ items }: { items: PendingApprovalRow[] }
                         <StatusBadge status="PENDING" />
                       </TableCell>
                       <TableCell className="text-muted-foreground text-xs">
-                        {row.submittedAt.toLocaleDateString("en-IN")}
+                        {formatDate(row.submittedAt)}
                       </TableCell>
                       <TableCell className="text-right">
                         <Button
@@ -491,7 +509,7 @@ export function PendingApprovalsTable({ items }: { items: PendingApprovalRow[] }
                           disabled={isBusy}
                         >
                           <Eye />
-                          View
+                          {t("View")}
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -524,28 +542,28 @@ export function PendingApprovalsTable({ items }: { items: PendingApprovalRow[] }
         {drawerRow ? (
           <dl className="space-y-4 text-sm">
             <div className="flex items-center justify-between gap-3">
-              <dt className="text-muted-foreground">Type</dt>
+              <dt className="text-muted-foreground">{t("Type")}</dt>
               <dd>
                 <Badge variant="secondary">{drawerRow.kind}</Badge>
               </dd>
             </div>
             <div className="flex items-center justify-between gap-3">
-              <dt className="text-muted-foreground">Name</dt>
+              <dt className="text-muted-foreground">{t("Name")}</dt>
               <dd className="text-right font-medium">{drawerRow.title}</dd>
             </div>
             <div className="flex items-center justify-between gap-3">
-              <dt className="text-muted-foreground">Status</dt>
+              <dt className="text-muted-foreground">{t("Status")}</dt>
               <dd>
                 <StatusBadge status="PENDING" />
               </dd>
             </div>
             <div className="flex items-center justify-between gap-3">
-              <dt className="text-muted-foreground">Submitted</dt>
-              <dd>{drawerRow.submittedAt.toLocaleDateString("en-IN")}</dd>
+              <dt className="text-muted-foreground">{t("Submitted")}</dt>
+              <dd>{formatDate(drawerRow.submittedAt)}</dd>
             </div>
             <div className="border-border border-t pt-4">
               <Link href={approvalHref(drawerRow)} className="text-primary text-sm hover:underline">
-                View full record →
+                {t("View full record →")}
               </Link>
             </div>
           </dl>

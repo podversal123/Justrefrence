@@ -1,3 +1,4 @@
+import { getT } from "@/i18n/server";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Gavel } from "lucide-react";
@@ -13,7 +14,10 @@ import {
   type RequirementState,
 } from "@/server/repositories/bidding/bidding-repository";
 
-export const metadata: Metadata = { title: "All bids" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("All bids") };
+}
 
 const STATES: RequirementState[] = ["open", "closed", "all"];
 
@@ -22,6 +26,7 @@ export default async function AdminBidsPage({
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
+  const t = await getT();
   const session = await getAuthSession();
   if (!session) redirect("/login");
   if (!session.permissions.has("bid:read:any")) redirect("/unauthorized");
@@ -38,44 +43,45 @@ export default async function AdminBidsPage({
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
       <div>
-        <h1>All bids</h1>
+        <h1>{t("All bids")}</h1>
         <p className="text-muted-foreground">
-          Every requirement on the platform. Open one to see all offers, with prices and vendor
-          names.
+          {t(
+            "Every requirement on the platform. Open one to see all offers, with prices and vendor names.",
+          )}
         </p>
       </div>
 
       <form method="get" role="search" className="flex flex-wrap items-end gap-3">
         <div className="space-y-1">
           <label htmlFor="ab-search" className="text-xs font-medium">
-            Search
+            {t("Search")}
           </label>
           <Input
             id="ab-search"
             name="search"
             defaultValue={search}
-            placeholder="Title, city or REQ-000012"
+            placeholder={t("Title, city or REQ-000012")}
             className="w-72"
           />
         </div>
         <div className="space-y-1">
           <label htmlFor="ab-state" className="text-xs font-medium">
-            Status
+            {t("Status")}
           </label>
           <NativeSelect id="ab-state" name="state" defaultValue={state} className="w-40">
-            <option value="all">All</option>
-            <option value="open">Open</option>
-            <option value="closed">Closed</option>
+            <option value="all">{t("All")}</option>
+            <option value="open">{t("Open")}</option>
+            <option value="closed">{t("Closed")}</option>
           </NativeSelect>
         </div>
-        <Button type="submit">Apply</Button>
+        <Button type="submit">{t("Apply")}</Button>
       </form>
 
       {items.length === 0 ? (
         <EmptyState
           icon={Gavel}
-          title="No requirements found"
-          description="Requirements buyers post will appear here."
+          title={t("No requirements found")}
+          description={t("Requirements buyers post will appear here.")}
         />
       ) : (
         <>

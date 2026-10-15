@@ -1,3 +1,4 @@
+import { getT } from "@/i18n/server";
 import type { Metadata } from "next";
 import Image from "next/image";
 import { redirect } from "next/navigation";
@@ -10,9 +11,13 @@ import { catalogImagePublicUrlClient } from "@/lib/catalog-image-url";
 import { BannerDialog } from "./banner-dialog";
 import { BannerRowActions } from "./banner-row-actions";
 
-export const metadata: Metadata = { title: "Banners" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("Banners") };
+}
 
 export default async function BannersPage() {
+  const t = await getT();
   const session = await getAuthSession();
   if (!session) redirect("/login");
   if (!session.permissions.has("banner:manage")) redirect("/unauthorized");
@@ -24,14 +29,14 @@ export default async function BannersPage() {
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1>Home page banners</h1>
+          <h1>{t("Home page banners")}</h1>
           <p className="text-muted-foreground">
-            The photos that change on top of the home page. They show in this order.
+            {t("The photos that change on top of the home page. They show in this order.")}
             {banners.length === 0
-              ? " Until you add one, the standard banners are shown."
+              ? t(" Until you add one, the standard banners are shown.")
               : showing === 0
-                ? " None is showing right now, so the standard banners are shown."
-                : ` ${showing} showing.`}
+                ? t(" None is showing right now, so the standard banners are shown.")
+                : ` ${t("{count} showing.", { count: showing })}`}
           </p>
         </div>
         <BannerDialog />
@@ -40,8 +45,8 @@ export default async function BannersPage() {
       {banners.length === 0 ? (
         <EmptyState
           icon={ImageIcon}
-          title="No banners of your own yet"
-          description="The home page is using the standard banners. Add one to replace them."
+          title={t("No banners of your own yet")}
+          description={t("The home page is using the standard banners. Add one to replace them.")}
         />
       ) : (
         <ul className="space-y-3">
@@ -69,9 +74,9 @@ export default async function BannersPage() {
                   <p className="text-muted-foreground text-sm">{banner.subline}</p>
                 ) : null}
                 <p className="text-sm">
-                  <span className="text-muted-foreground">Button: </span>
+                  <span className="text-muted-foreground">{t("Button:")} </span>
                   {banner.ctaLabel}
-                  <span className="text-muted-foreground"> goes to </span>
+                  <span className="text-muted-foreground">{t("goes to")} </span>
                   <span className="font-mono text-xs break-all">{banner.ctaHref}</span>
                 </p>
               </div>

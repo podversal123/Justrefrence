@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { useState } from "react";
 import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
@@ -28,12 +29,13 @@ const nullResult: ApiResult<null> = { success: true, data: null, meta: { request
 // from a component nested inside the form's JSX, not the component that
 // renders the <form> itself. These two tiny components exist for that reason.
 function RemoveSubmitButton() {
+  const t = useT();
   const { pending } = useFormStatus();
   return (
     <button
       type="submit"
       disabled={pending}
-      aria-label="Remove role"
+      aria-label={t("Remove role")}
       className="hover:text-destructive ml-1 inline-flex align-middle disabled:opacity-50"
     >
       <X className="size-3" />
@@ -56,11 +58,12 @@ function RemoveButton({ userRoleId }: { userRoleId: string }) {
 }
 
 function AssignSubmitButton({ disabled }: { disabled: boolean }) {
+  const t = useT();
   const { pending } = useFormStatus();
   return (
     <Button type="submit" size="sm" variant="outline" disabled={disabled || pending}>
       <Plus />
-      Assign
+      {t("Assign")}
     </Button>
   );
 }
@@ -72,6 +75,7 @@ function AssignForm({
   userId: string;
   assignableRoles: Grant["role"][];
 }) {
+  const t = useT();
   const [state, formAction] = useActionState(assignRoleAction, nullResult);
   const [roleId, setRoleId] = useState("");
 
@@ -80,8 +84,8 @@ function AssignForm({
       <input type="hidden" name="userId" value={userId} />
       <input type="hidden" name="roleId" value={roleId} />
       <Select value={roleId} onValueChange={(value) => setRoleId(value ?? "")}>
-        <SelectTrigger className="w-48" aria-label="Choose a role to add">
-          <SelectValue placeholder="Add a role…" />
+        <SelectTrigger className="w-48" aria-label={t("Choose a role to add")}>
+          <SelectValue placeholder={t("Add a role…")} />
         </SelectTrigger>
         <SelectContent>
           {assignableRoles.map((role) => (
@@ -118,6 +122,7 @@ export function RoleManager({
   currentGrants: Grant[];
   allRoles: Grant["role"][];
 }) {
+  const t = useT();
   const heldRoleIds = new Set(currentGrants.map((g) => g.role.id));
   const assignableRoles = allRoles.filter((r) => !heldRoleIds.has(r.id));
 
@@ -125,7 +130,7 @@ export function RoleManager({
     <div className="space-y-3">
       <div className="flex flex-wrap gap-2">
         {currentGrants.length === 0 ? (
-          <p className="text-muted-foreground text-sm">No roles assigned.</p>
+          <p className="text-muted-foreground text-sm">{t("No roles assigned.")}</p>
         ) : (
           currentGrants.map((grant) => (
             <Badge key={grant.id} variant="secondary" className="gap-0">

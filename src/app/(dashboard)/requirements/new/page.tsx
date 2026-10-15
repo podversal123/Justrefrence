@@ -24,7 +24,7 @@ export default async function NewRequirementPage() {
         className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-sm"
       >
         <ArrowLeft className="size-4" />
-        {t("My requirements")}
+        {t("Requirements")}
       </Link>
       <div>
         <h1>{t("Post a requirement")}</h1>

@@ -20,7 +20,7 @@ import { formatPaise } from "@/lib/money";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
-  return { title: t("My rewards") };
+  return { title: t("Rewards") };
 }
 
 const SECTIONS: { key: RewardStatus; title: string; empty: string }[] = [
@@ -40,7 +40,7 @@ export default async function MyRewardsPage() {
   if (!member) {
     return (
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-        <h1>{t("My rewards")}</h1>
+        <h1>{t("Rewards")}</h1>
         <EmptyState
           icon={Gift}
           title={t("No member profile yet")}
@@ -64,7 +64,7 @@ export default async function MyRewardsPage() {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-8">
       <div>
-        <h1>{t("My rewards")}</h1>
+        <h1>{t("Rewards")}</h1>
         <p className="text-muted-foreground">
           {t(
             "Bonuses and rewards paid to you. Cash is added to your wallet, and coupons can be used at checkout.",

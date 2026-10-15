@@ -11,7 +11,7 @@ import { listAuctionsForVendor } from "@/server/repositories/auction/auction-rep
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
-  return { title: t("My auctions") };
+  return { title: t("Auctions") };
 }
 
 export default async function VendorAuctionsPage() {
@@ -34,7 +34,7 @@ export default async function VendorAuctionsPage() {
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1>{t("My auctions")}</h1>
+          <h1>{t("Auctions")}</h1>
           <p className="text-muted-foreground">
             {t(
               "Put one of your listings up for auction. The highest bid wins when the timer ends.",

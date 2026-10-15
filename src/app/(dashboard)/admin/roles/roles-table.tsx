@@ -1,3 +1,4 @@
+import { getT } from "@/i18n/server";
 import Link from "next/link";
 import { ShieldCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -19,13 +20,14 @@ export interface RoleRow {
   _count: { userRoles: number };
 }
 
-export function RolesTable({ roles }: { roles: RoleRow[] }) {
+export async function RolesTable({ roles }: { roles: RoleRow[] }) {
+  const t = await getT();
   if (roles.length === 0) {
     return (
       <EmptyState
         icon={ShieldCheck}
-        title="No roles"
-        description="There are no roles to show yet."
+        title={t("No roles")}
+        description={t("There are no roles to show yet.")}
       />
     );
   }
@@ -36,10 +38,10 @@ export function RolesTable({ roles }: { roles: RoleRow[] }) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Role</TableHead>
-              <TableHead>Code</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Assigned to</TableHead>
+              <TableHead>{t("Role")}</TableHead>
+              <TableHead>{t("Code")}</TableHead>
+              <TableHead>{t("Type")}</TableHead>
+              <TableHead>{t("Assigned to")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -47,7 +49,7 @@ export function RolesTable({ roles }: { roles: RoleRow[] }) {
               <TableRow key={role.id}>
                 <TableCell className="font-medium">
                   <Link href={`/admin/roles/${role.id}`} className="hover:underline">
-                    {role.label}
+                    {t(role.label)}
                   </Link>
                 </TableCell>
                 <TableCell className="text-muted-foreground font-mono text-xs">
@@ -55,11 +57,11 @@ export function RolesTable({ roles }: { roles: RoleRow[] }) {
                 </TableCell>
                 <TableCell>
                   <Badge variant={role.isSystem ? "secondary" : "outline"}>
-                    {role.isSystem ? "System" : "Custom"}
+                    {role.isSystem ? t("System") : t("Custom")}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-muted-foreground">
-                  {role._count.userRoles} user(s)
+                  {t("{count} user(s)", { count: role._count.userRoles })}
                 </TableCell>
               </TableRow>
             ))}
@@ -76,15 +78,15 @@ export function RolesTable({ roles }: { roles: RoleRow[] }) {
           >
             <div className="flex items-start justify-between gap-2">
               <div>
-                <p className="font-medium">{role.label}</p>
+                <p className="font-medium">{t(role.label)}</p>
                 <p className="text-muted-foreground font-mono text-xs">{role.code}</p>
               </div>
               <Badge variant={role.isSystem ? "secondary" : "outline"}>
-                {role.isSystem ? "System" : "Custom"}
+                {role.isSystem ? t("System") : t("Custom")}
               </Badge>
             </div>
             <p className="text-muted-foreground mt-2 text-xs">
-              {role._count.userRoles} user(s) assigned
+              {t("{count} user(s) assigned", { count: role._count.userRoles })}
             </p>
           </Link>
         ))}

@@ -1,3 +1,4 @@
+import { getT } from "@/i18n/server";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getAuthSession } from "@/server/auth/session";
@@ -6,9 +7,13 @@ import { listRoles } from "@/server/repositories/role-repository";
 import { CreateAdminDialog } from "./create-admin-dialog";
 import { AdminsTable } from "./admins-table";
 
-export const metadata: Metadata = { title: "Admins" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("Admins") };
+}
 
 export default async function AdminsPage() {
+  const t = await getT();
   const session = await getAuthSession();
   if (!session) redirect("/login");
   if (!session.permissions.has("user:read")) redirect("/unauthorized");
@@ -21,9 +26,9 @@ export default async function AdminsPage() {
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1>Admins</h1>
+          <h1>{t("Admins")}</h1>
           <p className="text-muted-foreground">
-            Staff accounts: Super Admin, Admin, Finance, Support.
+            {t("Staff accounts: Super Admin, Admin, Finance, Support.")}
           </p>
         </div>
         {canCreate ? <CreateAdminDialog roles={assignableRoles} /> : null}

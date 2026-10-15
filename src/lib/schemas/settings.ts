@@ -39,6 +39,19 @@ export const siteSettingsSchema = z.object({
     ),
   contactAddress: optionalText(300),
   contactHours: optionalText(120),
+  /** Empty means "use the default"; 0 turns auto logout off. */
+  idleLogoutMinutes: z
+    .string()
+    .trim()
+    .optional()
+    .transform((value) => (value === undefined || value === "" ? "30" : value))
+    .pipe(
+      z
+        .string()
+        .regex(/^\d{1,4}$/, "Enter a whole number of minutes, or 0 to turn it off.")
+        .transform(Number)
+        .refine((n) => n === 0 || (n >= 5 && n <= 1440), "Use 0, or a number between 5 and 1440."),
+    ),
 });
 
 export type SiteSettingsInput = z.infer<typeof siteSettingsSchema>;

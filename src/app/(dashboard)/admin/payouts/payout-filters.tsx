@@ -1,5 +1,7 @@
 "use client";
 
+import { msg } from "@/i18n/locales";
+import { useT } from "@/i18n/provider";
 import { FilterBar, SelectFilter } from "@/components/ui/filter-bar";
 
 const STATUS_OPTIONS = [
@@ -14,13 +16,14 @@ const STATUS_OPTIONS = [
 
 /** Status filter for the payout queue — pushes `?status=` the same way VendorFilters does. */
 export function PayoutFilters() {
+  const t = useT();
   return (
     <FilterBar>
       <SelectFilter
         paramName="status"
         options={STATUS_OPTIONS}
-        placeholder="All statuses"
-        ariaLabel="Filter by status"
+        placeholder={t("All statuses")}
+        ariaLabel={msg("Filter by status")}
         className="w-full sm:w-48"
       />
     </FilterBar>

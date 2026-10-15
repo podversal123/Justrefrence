@@ -1,3 +1,5 @@
+import { msg } from "@/i18n/locales";
+import { getT } from "@/i18n/server";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { Package, Plus } from "lucide-react";
@@ -38,6 +40,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
  * different data scope) lives at (dashboard)/vendor/catalog/[kind].
  */
 export default async function AdminCatalogListPage({ params, searchParams }: PageProps) {
+  const t = await getT();
   const { kind: kindSegment } = await params;
   const kind = kindFromRouteSegment(kindSegment);
   if (!kind) notFound();
@@ -69,13 +72,17 @@ export default async function AdminCatalogListPage({ params, searchParams }: Pag
   const hasActiveFilters = Boolean(query.search || query.categoryId || query.approvalStatus);
 
   const columns: DataTableColumn<CatalogListItem>[] = [
-    { key: "title", header: "Title", cell: (r) => <span className="font-medium">{r.title}</span> },
-    { key: "vendor", header: "Vendor", cell: (r) => r.vendorBusinessName },
-    { key: "category", header: "Category", cell: (r) => r.categoryName, hideOnMobile: true },
-    { key: "price", header: "Price", cell: (r) => formatPaise(r.price, r.currency) },
+    {
+      key: "title",
+      header: msg("Title"),
+      cell: (r) => <span className="font-medium">{r.title}</span>,
+    },
+    { key: "vendor", header: msg("Vendor"), cell: (r) => r.vendorBusinessName },
+    { key: "category", header: msg("Category"), cell: (r) => r.categoryName, hideOnMobile: true },
+    { key: "price", header: msg("Price"), cell: (r) => formatPaise(r.price, r.currency) },
     {
       key: "status",
-      header: "Status",
+      header: msg("Status"),
       cell: (r) => (
         <div className="flex flex-wrap gap-1">
           <StatusBadge status={r.approvalStatus} />
@@ -89,9 +96,9 @@ export default async function AdminCatalogListPage({ params, searchParams }: Pag
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1>{labels.plural}</h1>
+          <h1>{t(labels.plural)}</h1>
           <p className="text-muted-foreground">
-            Manage every vendor&apos;s {labels.plural.toLowerCase()}.
+            {t("Manage every vendor's {kind}.", { kind: t(labels.plural).toLowerCase() })}
           </p>
         </div>
         <div className="flex gap-2">
@@ -99,7 +106,9 @@ export default async function AdminCatalogListPage({ params, searchParams }: Pag
             <Button
               variant="outline"
               nativeButton={false}
-              render={<Link href={`/admin/catalog/${kindSegment}/categories`}>Categories</Link>}
+              render={
+                <Link href={`/admin/catalog/${kindSegment}/categories`}>{t("Categories")}</Link>
+              }
             />
           ) : null}
           {canCreate ? (
@@ -108,7 +117,7 @@ export default async function AdminCatalogListPage({ params, searchParams }: Pag
               render={
                 <Link href={`/admin/catalog/${kindSegment}/new`}>
                   <Plus />
-                  New {labels.singular.toLowerCase()}
+                  {t("New {kind}", { kind: t(labels.singular).toLowerCase() })}
                 </Link>
               }
             />
@@ -117,11 +126,11 @@ export default async function AdminCatalogListPage({ params, searchParams }: Pag
       </div>
 
       <FilterBar>
-        <SearchInput placeholder={`Search ${labels.plural.toLowerCase()}…`} />
+        <SearchInput placeholder={t("Search {kind}…", { kind: t(labels.plural).toLowerCase() })} />
         <SelectFilter
           paramName="approvalStatus"
-          ariaLabel="Filter by approval status"
-          placeholder="All statuses"
+          ariaLabel={msg("Filter by approval status")}
+          placeholder={t("All statuses")}
           options={[
             { value: "PENDING", label: "Pending" },
             { value: "APPROVED", label: "Approved" },
@@ -130,8 +139,8 @@ export default async function AdminCatalogListPage({ params, searchParams }: Pag
         />
         <SelectFilter
           paramName="categoryId"
-          ariaLabel="Filter by category"
-          placeholder="All categories"
+          ariaLabel={msg("Filter by category")}
+          placeholder={t("All categories")}
           options={categories.map((c: { id: string; name: string }) => ({
             value: c.id,
             label: c.name,
@@ -144,14 +153,16 @@ export default async function AdminCatalogListPage({ params, searchParams }: Pag
           icon={Package}
           title={
             hasActiveFilters
-              ? `No ${labels.plural.toLowerCase()} match your filters`
-              : `No ${labels.plural.toLowerCase()} yet`
+              ? t("No {kind} match your filters", { kind: t(labels.plural).toLowerCase() })
+              : t("No {kind} yet", { kind: t(labels.plural).toLowerCase() })
           }
           description={
             hasActiveFilters
-              ? "Try a different search term or clear the filters."
+              ? t("Try a different search term or clear the filters.")
               : canCreate
-                ? `Create the first ${labels.singular.toLowerCase()} to get started.`
+                ? t("Create the first {kind} to get started.", {
+                    kind: t(labels.singular).toLowerCase(),
+                  })
                 : undefined
           }
         />

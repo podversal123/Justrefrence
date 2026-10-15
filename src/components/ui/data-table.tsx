@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { T } from "@/i18n/t-text";
 import type { Route } from "next";
 import {
   Table,
@@ -45,7 +46,7 @@ export function DataTable<T>({
             <TableRow>
               {columns.map((col) => (
                 <TableHead key={col.key} className={col.className}>
-                  {col.header}
+                  <T text={col.header} />
                 </TableHead>
               ))}
             </TableRow>
@@ -81,7 +82,9 @@ export function DataTable<T>({
             <div className="space-y-1.5">
               {cardColumns.map((col) => (
                 <div key={col.key} className="flex items-baseline justify-between gap-3 text-sm">
-                  <span className="text-muted-foreground shrink-0">{col.header}</span>
+                  <span className="text-muted-foreground shrink-0">
+                    <T text={col.header} />
+                  </span>
                   <span className="text-right">{col.cell(row)}</span>
                 </div>
               ))}

@@ -14,7 +14,7 @@ import { CursorPagination } from "@/components/ui/pagination";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
-  return { title: t("My orders") };
+  return { title: t("Orders") };
 }
 
 interface PageProps {
@@ -35,7 +35,7 @@ export default async function OrdersPage({ searchParams }: PageProps) {
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-8">
       <div>
-        <h1>{t("My orders")}</h1>
+        <h1>{t("Orders")}</h1>
         <p className="text-muted-foreground">{t("Track your order history and status.")}</p>
       </div>
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { useState } from "react";
 import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
@@ -35,10 +36,11 @@ const initialState: ApiResult<{ userId: string }> = {
 };
 
 function SubmitButton() {
+  const t = useT();
   const { pending } = useFormStatus();
   return (
     <Button type="submit" disabled={pending}>
-      {pending ? "Sending invite…" : "Create admin"}
+      {pending ? t("Sending invite…") : t("Create admin")}
     </Button>
   );
 }
@@ -48,6 +50,7 @@ export function CreateAdminDialog({
 }: {
   roles: { id: string; code: string; label: string }[];
 }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [state, formAction] = useActionState(createAdminAction, initialState);
 
@@ -62,16 +65,16 @@ export function CreateAdminDialog({
         render={
           <Button>
             <Plus />
-            Create admin
+            {t("Create admin")}
           </Button>
         }
       />
       <DialogContent className="sm:max-w-xl">
         <form action={formAction} className="space-y-4" noValidate>
           <DialogHeader>
-            <DialogTitle>Create admin account</DialogTitle>
+            <DialogTitle>{t("Create admin account")}</DialogTitle>
             <DialogDescription>
-              Sends an email invite so they can set their own password.
+              {t("Sends an email invite so they can set their own password.")}
             </DialogDescription>
           </DialogHeader>
 
@@ -84,25 +87,25 @@ export function CreateAdminDialog({
 
           <FormGrid>
             <div className="space-y-2">
-              <Label htmlFor="admin-fullName">Full name</Label>
+              <Label htmlFor="admin-fullName">{t("Full name")}</Label>
               <Input id="admin-fullName" name="fullName" required />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="admin-email">Email</Label>
+              <Label htmlFor="admin-email">{t("Email")}</Label>
               <Input id="admin-email" name="email" type="email" required />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="admin-phone">Mobile (optional)</Label>
+              <Label htmlFor="admin-phone">{t("Mobile (optional)")}</Label>
               <Input id="admin-phone" name="phone" type="tel" placeholder="+919876543210" />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="admin-roleId">Role</Label>
+              <Label htmlFor="admin-roleId">{t("Role")}</Label>
               <Select name="roleId" required>
                 <SelectTrigger id="admin-roleId" className="w-full">
-                  <SelectValue placeholder="Choose a role" />
+                  <SelectValue placeholder={t("Choose a role")} />
                 </SelectTrigger>
                 <SelectContent>
                   {roles.map((role) => (

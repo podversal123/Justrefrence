@@ -1,3 +1,4 @@
+import { getT } from "@/i18n/server";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -5,9 +6,13 @@ import { ArrowLeft } from "lucide-react";
 import { getAuthSession } from "@/server/auth/session";
 import { BlogForm } from "../blog-form";
 
-export const metadata: Metadata = { title: "New blog post" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("New blog post") };
+}
 
 export default async function NewBlogPostPage() {
+  const t = await getT();
   const session = await getAuthSession();
   if (!session) redirect("/login");
   if (!session.permissions.has("blog:create")) redirect("/unauthorized");
@@ -19,9 +24,9 @@ export default async function NewBlogPostPage() {
         className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-sm"
       >
         <ArrowLeft className="size-4" />
-        All posts
+        {t("All posts")}
       </Link>
-      <h1>New post</h1>
+      <h1>{t("New post")}</h1>
       <BlogForm />
     </div>
   );

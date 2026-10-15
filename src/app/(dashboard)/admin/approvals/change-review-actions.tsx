@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { Check, X } from "lucide-react";
 import { reviewChangeAction } from "@/server/services/approval-actions";
 import { Button } from "@/components/ui/button";
@@ -28,44 +29,45 @@ export function ChangeReviewActions({
   requestId: string;
   recordName: string;
 }) {
+  const t = useT();
   return (
     <div className="flex flex-wrap justify-end gap-2">
       <ConfirmationDialog
         trigger={
           <Button size="sm">
             <Check />
-            Approve
+            {t("Approve")}
           </Button>
         }
-        title={`Approve the change to ${recordName}?`}
-        description="The change is applied right away and the admin is told."
-        action={decideWithToast("Change approved and applied")}
+        title={t("Approve the change to {name}?", { name: recordName })}
+        description={t("The change is applied right away and the admin is told.")}
+        action={decideWithToast(t("Change approved and applied"))}
         hiddenFields={{ requestId, decision: "APPROVE" }}
-        confirmLabel="Yes, approve"
+        confirmLabel={t("Yes, approve")}
       />
       <ConfirmationDialog
         trigger={
           <Button size="sm" variant="outline">
             <X />
-            Reject
+            {t("Reject")}
           </Button>
         }
-        title={`Reject the change to ${recordName}?`}
-        description="Nothing is changed. The admin sees your note."
-        action={decideWithToast("Change rejected")}
+        title={t("Reject the change to {name}?", { name: recordName })}
+        description={t("Nothing is changed. The admin sees your note.")}
+        action={decideWithToast(t("Change rejected"))}
         hiddenFields={{ requestId, decision: "REJECT" }}
-        confirmLabel="Reject"
+        confirmLabel={t("Reject")}
         variant="destructive"
       >
         <div className="space-y-2">
-          <Label htmlFor={`reject-note-${requestId}`}>Why are you rejecting it?</Label>
+          <Label htmlFor={`reject-note-${requestId}`}>{t("Why are you rejecting it?")}</Label>
           <Textarea
             id={`reject-note-${requestId}`}
             name="note"
             rows={3}
             maxLength={500}
             required
-            placeholder="So the admin knows what to change."
+            placeholder={t("So the admin knows what to change.")}
           />
         </div>
       </ConfirmationDialog>

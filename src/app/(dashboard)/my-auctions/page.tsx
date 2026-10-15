@@ -22,7 +22,7 @@ import { formatPaise } from "@/lib/money";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
-  return { title: t("My auction bids") };
+  return { title: t("Auction bids") };
 }
 
 export default async function MyAuctionsPage() {
@@ -45,7 +45,7 @@ export default async function MyAuctionsPage() {
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1>{t("My auction bids")}</h1>
+          <h1>{t("Auction bids")}</h1>
           <p className="text-muted-foreground">
             {t("Every auction you've bid in, and whether you are winning.")}
           </p>

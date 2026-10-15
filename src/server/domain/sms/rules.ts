@@ -1,3 +1,4 @@
+import { msg } from "@/i18n/locales";
 /**
  * SMS rules — pure, no I/O, unit-tested directly (tests/unit/sms-rules.test.ts).
  * How long a text is, how many parts the phone will bill it as, and what to tell a person about
@@ -57,15 +58,17 @@ export function isRecordedOnly(provider: string | null): boolean {
 
 /** What to show next to a message. Never says "delivered" unless a real provider took it. */
 export function smsStateLabel(message: { status: SmsStatus; provider: string | null }): string {
-  if (message.status === "FAILED") return "Failed";
-  if (message.status === "QUEUED") return "Waiting to send";
-  return isRecordedOnly(message.provider) ? "Recorded only (SMS service not connected)" : "Sent";
+  if (message.status === "FAILED") return msg("Failed");
+  if (message.status === "QUEUED") return msg("Waiting to send");
+  return isRecordedOnly(message.provider)
+    ? msg("Recorded only (SMS service not connected)")
+    : msg("Sent");
 }
 
 export const SMS_AUDIENCE_LABEL: Record<SmsAudience, string> = {
-  SINGLE: "One member",
-  ALL_MEMBERS: "All members",
-  VENDORS: "All vendors",
+  SINGLE: msg("One member"),
+  ALL_MEMBERS: msg("All members"),
+  VENDORS: msg("All vendors"),
 };
 
 /** A mobile number we can send to: digits with an optional leading +, 8 to 15 digits (E.164 length). */

@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { useRouter } from "next/navigation";
 import { ListingForm, type CategoryOption } from "@/components/catalog/listing-form";
 import { createListingAction } from "@/server/services/catalog-actions";
@@ -16,6 +17,7 @@ export function NewListingClient({
   categories: CategoryOption[];
   vendors: { id: string; businessName: string }[];
 }) {
+  const t = useT();
   const router = useRouter();
 
   return (
@@ -24,7 +26,7 @@ export function NewListingClient({
       action={createListingAction}
       categories={categories}
       vendors={vendors}
-      submitLabel="Create"
+      submitLabel={t("Create")}
       onSuccess={(id) => router.push(`/admin/catalog/${kindSegment}/${id}` as never)}
     />
   );

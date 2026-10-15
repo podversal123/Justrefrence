@@ -1,3 +1,4 @@
+import { getFormat, getT } from "@/i18n/server";
 import { StatusBadge } from "@/components/ui/status-badge";
 import Link from "next/link";
 import { Store } from "lucide-react";
@@ -12,22 +13,24 @@ import {
 import { EmptyState } from "@/components/ui/empty-state";
 import type { VendorListItem } from "@/server/repositories/vendor-repository";
 
-export function VendorsTable({
+export async function VendorsTable({
   vendors,
   hasActiveFilters,
 }: {
   vendors: VendorListItem[];
   hasActiveFilters: boolean;
 }) {
+  const t = await getT();
+  const { formatDate } = await getFormat();
   if (vendors.length === 0) {
     return (
       <EmptyState
         icon={Store}
-        title={hasActiveFilters ? "No vendors match your filters" : "No vendors yet"}
+        title={hasActiveFilters ? t("No vendors match your filters") : t("No vendors yet")}
         description={
           hasActiveFilters
-            ? "Try a different search term or clear the filters."
-            : "Create the first vendor to get started."
+            ? t("Try a different search term or clear the filters.")
+            : t("Create the first vendor to get started.")
         }
       />
     );
@@ -39,10 +42,10 @@ export function VendorsTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Business</TableHead>
-              <TableHead>Contact</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Created</TableHead>
+              <TableHead>{t("Business")}</TableHead>
+              <TableHead>{t("Contact")}</TableHead>
+              <TableHead>{t("Status")}</TableHead>
+              <TableHead>{t("Created")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -61,7 +64,7 @@ export function VendorsTable({
                   <StatusBadge status={vendor.approvalStatus} />
                 </TableCell>
                 <TableCell className="text-muted-foreground">
-                  {vendor.createdAt.toLocaleDateString()}
+                  {formatDate(vendor.createdAt)}
                 </TableCell>
               </TableRow>
             ))}
@@ -84,7 +87,7 @@ export function VendorsTable({
               <StatusBadge status={vendor.approvalStatus} />
             </div>
             <p className="text-muted-foreground mt-2 text-xs">
-              Created {vendor.createdAt.toLocaleDateString()}
+              {t("Created {date}", { date: formatDate(vendor.createdAt) })}
             </p>
           </Link>
         ))}

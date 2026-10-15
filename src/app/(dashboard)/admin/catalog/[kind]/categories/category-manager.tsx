@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { useState } from "react";
 import { useActionState } from "@/lib/use-action-state";
 import { useFormStatus } from "react-dom";
@@ -36,15 +37,17 @@ const nullState: ApiResult<{ id: string }> = {
 };
 
 function SubmitButton({ label }: { label: string }) {
+  const t = useT();
   const { pending } = useFormStatus();
   return (
     <Button type="submit" disabled={pending}>
-      {pending ? "Saving…" : label}
+      {pending ? t("Saving…") : label}
     </Button>
   );
 }
 
 function CreateCategoryDialog({ kind }: { kind: CatalogKind }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [state, formAction] = useActionState(createCategoryAction, nullState);
 
@@ -54,14 +57,14 @@ function CreateCategoryDialog({ kind }: { kind: CatalogKind }) {
         render={
           <Button size="sm">
             <Plus />
-            New category
+            {t("New category")}
           </Button>
         }
       />
       <DialogContent>
         <form action={formAction} className="space-y-4" noValidate>
           <DialogHeader>
-            <DialogTitle>New category</DialogTitle>
+            <DialogTitle>{t("New category")}</DialogTitle>
           </DialogHeader>
           <input type="hidden" name="kind" value={kind} />
           {state !== nullState && !state.success ? (
@@ -71,11 +74,11 @@ function CreateCategoryDialog({ kind }: { kind: CatalogKind }) {
             </Alert>
           ) : null}
           <div className="space-y-2">
-            <Label htmlFor="cat-name">Name</Label>
+            <Label htmlFor="cat-name">{t("Name")}</Label>
             <Input id="cat-name" name="name" required />
           </div>
           <DialogFooter>
-            <SubmitButton label="Create" />
+            <SubmitButton label={t("Create")} />
           </DialogFooter>
         </form>
       </DialogContent>
@@ -90,6 +93,7 @@ function CreateSubcategoryDialog({
   kind: CatalogKind;
   categories: { id: string; name: string }[];
 }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [state, formAction] = useActionState(createSubcategoryAction, nullState);
 
@@ -99,14 +103,14 @@ function CreateSubcategoryDialog({
         render={
           <Button size="sm" variant="outline">
             <Plus />
-            New subcategory
+            {t("New subcategory")}
           </Button>
         }
       />
       <DialogContent>
         <form action={formAction} className="space-y-4" noValidate>
           <DialogHeader>
-            <DialogTitle>New subcategory</DialogTitle>
+            <DialogTitle>{t("New subcategory")}</DialogTitle>
           </DialogHeader>
           <input type="hidden" name="kind" value={kind} />
           {state !== nullState && !state.success ? (
@@ -116,10 +120,10 @@ function CreateSubcategoryDialog({
             </Alert>
           ) : null}
           <div className="space-y-2">
-            <Label htmlFor="subcat-category">Category</Label>
+            <Label htmlFor="subcat-category">{t("Category")}</Label>
             <Select name="categoryId" required>
               <SelectTrigger id="subcat-category" className="w-full">
-                <SelectValue placeholder="Choose a category" />
+                <SelectValue placeholder={t("Choose a category")} />
               </SelectTrigger>
               <SelectContent>
                 {categories.map((c) => (
@@ -131,11 +135,11 @@ function CreateSubcategoryDialog({
             </Select>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="subcat-name">Name</Label>
+            <Label htmlFor="subcat-name">{t("Name")}</Label>
             <Input id="subcat-name" name="name" required />
           </div>
           <DialogFooter>
-            <SubmitButton label="Create" />
+            <SubmitButton label={t("Create")} />
           </DialogFooter>
         </form>
       </DialogContent>
@@ -156,6 +160,7 @@ export function CategoryManager({
   kind: CatalogKind;
   categories: CategoryWithSubcategories[];
 }) {
+  const t = useT();
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2">
@@ -168,8 +173,8 @@ export function CategoryManager({
       {categories.length === 0 ? (
         <EmptyState
           icon={FolderTree}
-          title="No categories yet"
-          description="Create the first category to organize listings."
+          title={t("No categories yet")}
+          description={t("Create the first category to organize listings.")}
         />
       ) : (
         <div className="space-y-3">
@@ -178,7 +183,7 @@ export function CategoryManager({
               <p className="font-medium">{category.name}</p>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {category.subcategories.length === 0 ? (
-                  <span className="text-muted-foreground text-xs">No subcategories</span>
+                  <span className="text-muted-foreground text-xs">{t("No subcategories")}</span>
                 ) : (
                   category.subcategories.map((sub) => (
                     <Badge key={sub.id} variant="secondary">

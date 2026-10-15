@@ -35,7 +35,7 @@ export function useLocale(): Locale {
   return useContext(LocaleContext).locale;
 }
 
-/** `const t = useT();` then `t("My orders")`. For Client Components. */
+/** `const t = useT();` then `t("Orders")`. For Client Components. */
 export function useT() {
   const { messages } = useContext(LocaleContext);
   return useCallback(

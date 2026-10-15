@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { useRouter } from "next/navigation";
 import type { Route } from "next";
 import { Input } from "@/components/ui/input";
@@ -17,17 +18,18 @@ interface PostValues {
 
 /** Create (no `post`) or edit (`post`) a blog post. Body is plain text; blank lines separate paragraphs. */
 export function BlogForm({ post }: { post?: PostValues }) {
+  const t = useT();
   const router = useRouter();
   const fields = (errors: Record<string, string[] | undefined>) => (
     <>
       {post ? <input type="hidden" name="postId" value={post.id} /> : null}
-      <FormField htmlFor="post-title" label="Title" error={errors["title"]}>
+      <FormField htmlFor="post-title" label={t("Title")} error={errors["title"]}>
         <Input id="post-title" name="title" defaultValue={post?.title} maxLength={160} required />
       </FormField>
       <FormField
         htmlFor="post-excerpt"
-        label="Short summary"
-        hint="Shown on the blog list. Optional."
+        label={t("Short summary")}
+        hint={t("Shown on the blog list. Optional.")}
         error={errors["excerpt"]}
       >
         <Input
@@ -39,8 +41,8 @@ export function BlogForm({ post }: { post?: PostValues }) {
       </FormField>
       <FormField
         htmlFor="post-body"
-        label="Post"
-        hint="Plain text. Leave a blank line between paragraphs."
+        label={t("Post")}
+        hint={t("Plain text. Leave a blank line between paragraphs.")}
         error={errors["body"]}
       >
         <Textarea
@@ -58,9 +60,9 @@ export function BlogForm({ post }: { post?: PostValues }) {
   return post ? (
     <ActionForm
       action={updateBlogPostAction}
-      submitLabel="Save changes"
-      pendingLabel="Saving…"
-      successMessage="Post saved"
+      submitLabel={t("Save changes")}
+      pendingLabel={t("Saving…")}
+      successMessage={t("Post saved")}
       resetOnSuccess={false}
     >
       {fields}
@@ -68,9 +70,9 @@ export function BlogForm({ post }: { post?: PostValues }) {
   ) : (
     <ActionForm
       action={createBlogPostAction}
-      submitLabel="Save draft"
-      pendingLabel="Saving…"
-      successMessage="Draft saved"
+      submitLabel={t("Save draft")}
+      pendingLabel={t("Saving…")}
+      successMessage={t("Draft saved")}
       onSuccess={(data) => router.push(`/admin/blog/${data.postId}` as Route)}
     >
       {fields}

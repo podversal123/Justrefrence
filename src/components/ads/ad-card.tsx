@@ -43,7 +43,7 @@ export async function AdPreview({
       <div className="min-w-0 flex-1 space-y-1">
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant={paused ? "secondary" : (BADGE[ad.status] ?? "secondary")}>
-            {adStateLabel(ad)}
+            {t(adStateLabel(ad))}
           </Badge>
           {vendorName ? <span className="text-muted-foreground text-xs">{vendorName}</span> : null}
         </div>

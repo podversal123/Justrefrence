@@ -1,3 +1,4 @@
+import { getFormat, getT } from "@/i18n/server";
 import type { Metadata, Route } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -17,13 +18,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatDate } from "@/lib/format";
 import { formatPaise } from "@/lib/money";
 import { financialYearDays } from "@/lib/day-range";
 import { maskPan } from "@/server/domain/identity/masking";
 import { getFinancialYear } from "@/server/domain/commerce/financial-year";
 
-export const metadata: Metadata = { title: "TDS list" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("TDS list") };
+}
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -32,6 +35,8 @@ export default async function AdminTdsPage({
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
+  const t = await getT();
+  const { formatDate } = await getFormat();
   const session = await getAuthSession();
   if (!session) redirect("/login");
   if (!session.permissions.has("tds:read:any")) redirect("/unauthorized");
@@ -66,9 +71,9 @@ export default async function AdminTdsPage({
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1>TDS list</h1>
+          <h1>{t("TDS list")}</h1>
           <p className="text-muted-foreground">
-            Tax deducted on member payouts, from the payouts marked as paid.
+            {t("Tax deducted on member payouts, from the payouts marked as paid.")}
           </p>
         </div>
         {session.permissions.has("tds_report:export") ? (
@@ -78,7 +83,7 @@ export default async function AdminTdsPage({
             render={
               <a href={exportHref} download>
                 <Download />
-                Download CSV
+                {t("Download CSV")}
               </a>
             }
           />
@@ -88,38 +93,38 @@ export default async function AdminTdsPage({
       <div className="grid gap-3 sm:grid-cols-3">
         <StatCard
           icon={Percent}
-          label="TDS deducted"
+          label={t("TDS deducted")}
           value={formatPaise(totals.tds.toString())}
-          sublabel={filtered ? "In the selected dates" : "All time"}
+          sublabel={filtered ? t("In the selected dates") : t("All time")}
         />
         <StatCard
           icon={Wallet}
-          label="Gross payouts"
+          label={t("Gross payouts")}
           value={formatPaise(totals.gross.toString())}
-          sublabel={`Net paid ${formatPaise(totals.net.toString())}`}
+          sublabel={t("Net paid {amount}", { amount: formatPaise(totals.net.toString()) })}
         />
         <StatCard
           icon={Receipt}
-          label="Payouts paid"
+          label={t("Payouts paid")}
           value={totals.count.toLocaleString()}
-          sublabel={filtered ? "In the selected dates" : "All time"}
+          sublabel={filtered ? t("In the selected dates") : t("All time")}
         />
       </div>
 
       <form method="get" className="flex flex-wrap items-end gap-3" role="search">
         <div className="space-y-1">
           <label htmlFor="tds-from" className="text-xs font-medium">
-            Paid from
+            {t("Paid from")}
           </label>
           <Input id="tds-from" name="from" type="date" defaultValue={from} className="w-40" />
         </div>
         <div className="space-y-1">
           <label htmlFor="tds-to" className="text-xs font-medium">
-            Paid to
+            {t("Paid to")}
           </label>
           <Input id="tds-to" name="to" type="date" defaultValue={to} className="w-40" />
         </div>
-        <Button type="submit">Apply</Button>
+        <Button type="submit">{t("Apply")}</Button>
         {fyLinks.map((fy) => (
           <Button
             key={fy.label}
@@ -132,7 +137,7 @@ export default async function AdminTdsPage({
           <Button
             variant="ghost"
             nativeButton={false}
-            render={<Link href={"/admin/tds" as Route}>Clear</Link>}
+            render={<Link href={"/admin/tds" as Route}>{t("Clear")}</Link>}
           />
         ) : null}
       </form>
@@ -140,21 +145,23 @@ export default async function AdminTdsPage({
       {items.length === 0 ? (
         <EmptyState
           icon={Receipt}
-          title={filtered ? "No paid payouts in these dates" : "No paid payouts yet"}
-          description="TDS appears here once a payout is marked as paid with the TDS amount recorded."
+          title={filtered ? t("No paid payouts in these dates") : t("No paid payouts yet")}
+          description={t(
+            "TDS appears here once a payout is marked as paid with the TDS amount recorded.",
+          )}
         />
       ) : (
         <div className="surface-card overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Paid on</TableHead>
-                <TableHead>Member</TableHead>
-                <TableHead>PAN</TableHead>
-                <TableHead className="text-right">Gross</TableHead>
-                <TableHead className="text-right">TDS</TableHead>
-                <TableHead className="text-right">Net paid</TableHead>
-                <TableHead>Reference</TableHead>
+                <TableHead>{t("Paid on")}</TableHead>
+                <TableHead>{t("Member")}</TableHead>
+                <TableHead>{t("PAN")}</TableHead>
+                <TableHead className="text-right">{t("Gross")}</TableHead>
+                <TableHead className="text-right">{t("TDS")}</TableHead>
+                <TableHead className="text-right">{t("Net paid")}</TableHead>
+                <TableHead>{t("Reference")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -176,7 +183,7 @@ export default async function AdminTdsPage({
                       {pan ? (
                         maskPan(pan)
                       ) : (
-                        <span className="text-destructive font-sans">Missing</span>
+                        <span className="text-destructive font-sans">{t("Missing")}</span>
                       )}
                     </TableCell>
                     <TableCell className="text-right tabular-nums">

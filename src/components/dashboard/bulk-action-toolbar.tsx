@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import type { ReactNode } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,7 @@ export function BulkActionToolbar({
   actions: ReactNode;
   className?: string;
 }) {
+  const t = useT();
   if (count === 0) return null;
 
   return (
@@ -34,10 +36,10 @@ export function BulkActionToolbar({
       )}
     >
       <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon-sm" onClick={onClear} aria-label="Clear selection">
+        <Button variant="ghost" size="icon-sm" onClick={onClear} aria-label={t("Clear selection")}>
           <X />
         </Button>
-        <span className="text-sm font-medium">{count} selected</span>
+        <span className="text-sm font-medium">{t("{count} selected", { count })}</span>
       </div>
       <div className="flex items-center gap-2">{actions}</div>
     </div>

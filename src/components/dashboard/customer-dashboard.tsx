@@ -44,9 +44,9 @@ import { DashboardNotificationList } from "./dashboard-notification-list";
 
 const QUICK_ACTIONS: { href: Route; label: string; icon: LucideIcon }[] = [
   { href: "/products" as Route, label: msg("Browse products"), icon: ShoppingBag },
-  { href: "/referrals" as Route, label: msg("My referrals"), icon: Users },
-  { href: "/orders" as Route, label: msg("My orders"), icon: Package },
-  { href: "/profile" as Route, label: msg("My profile"), icon: UserCircle },
+  { href: "/referrals" as Route, label: msg("Referrals"), icon: Users },
+  { href: "/orders" as Route, label: msg("Orders"), icon: Package },
+  { href: "/profile" as Route, label: msg("Profile"), icon: UserCircle },
   { href: "/cart" as Route, label: msg("Cart"), icon: ShoppingCart },
 ];
 

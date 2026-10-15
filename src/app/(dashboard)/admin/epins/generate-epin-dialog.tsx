@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { useState } from "react";
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
@@ -41,10 +42,11 @@ const initialState: ApiResult<{ rawCode: string; codeLast4: string }> = {
 };
 
 function SubmitButton() {
+  const t = useT();
   const { pending } = useFormStatus();
   return (
     <Button type="submit" disabled={pending}>
-      {pending ? "Generating…" : "Generate e-pin"}
+      {pending ? t("Generating…") : t("Generate e-pin")}
     </Button>
   );
 }
@@ -63,6 +65,7 @@ function formatCodeForDisplay(code: string): string {
  * admin can't accidentally navigate away without having seen the code.
  */
 export function GenerateEpinDialog({ plans }: { plans: GenerateEpinPlanOption[] }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [state, formAction] = useActionState(generateEpinAction, initialState);
   const [revealed, setRevealed] = useState<{ rawCode: string; codeLast4: string } | null>(null);
@@ -107,7 +110,7 @@ export function GenerateEpinDialog({ plans }: { plans: GenerateEpinPlanOption[] 
         render={
           <Button>
             <Plus />
-            Generate e-pin
+            {t("Generate e-pin")}
           </Button>
         }
       />
@@ -115,8 +118,10 @@ export function GenerateEpinDialog({ plans }: { plans: GenerateEpinPlanOption[] 
         {revealed ? (
           <div className="space-y-4">
             <DialogHeader>
-              <DialogTitle>E-pin generated</DialogTitle>
-              <DialogDescription>Copy this code now. It cannot be shown again.</DialogDescription>
+              <DialogTitle>{t("E-pin generated")}</DialogTitle>
+              <DialogDescription>
+                {t("Copy this code now. It cannot be shown again.")}
+              </DialogDescription>
             </DialogHeader>
 
             <div className="bg-surface-sunken flex flex-col items-center gap-2 rounded-lg p-4">
@@ -125,31 +130,33 @@ export function GenerateEpinDialog({ plans }: { plans: GenerateEpinPlanOption[] 
               </p>
               <Button type="button" variant="outline" size="sm" onClick={handleCopy}>
                 {copied ? <Check /> : <Copy />}
-                {copied ? "Copied" : "Copy code"}
+                {copied ? t("Copied") : t("Copy code")}
               </Button>
             </div>
 
             <Alert variant="warning">
               <TriangleAlert className="size-4" />
               <AlertDescription>
-                This is the only time this code will be shown. Store it securely and hand it off
-                now. Justreference cannot retrieve or redisplay it later.
+                {t(
+                  "This is the only time this code will be shown. Store it securely and hand it off now. Justreference cannot retrieve or redisplay it later.",
+                )}
               </AlertDescription>
             </Alert>
 
             <DialogFooter>
               <Button type="button" onClick={handleConfirmClose}>
-                I&apos;ve copied it, close
+                {t("I've copied it, close")}
               </Button>
             </DialogFooter>
           </div>
         ) : (
           <form action={formAction} className="space-y-4" noValidate>
             <DialogHeader>
-              <DialogTitle>Generate e-pin</DialogTitle>
+              <DialogTitle>{t("Generate e-pin")}</DialogTitle>
               <DialogDescription>
-                Creates a single-use prepaid code for a subscription plan. The code is shown once,
-                immediately after generation.
+                {t(
+                  "Creates a single-use prepaid code for a subscription plan. The code is shown once, immediately after generation.",
+                )}
               </DialogDescription>
             </DialogHeader>
 
@@ -164,18 +171,18 @@ export function GenerateEpinDialog({ plans }: { plans: GenerateEpinPlanOption[] 
               <Alert variant="warning">
                 <TriangleAlert className="size-4" />
                 <AlertDescription>
-                  No active subscription plans exist yet. Create one first at{" "}
-                  <Link href="/admin/subscription-plans">Subscription plans</Link> before generating
-                  an e-pin.
+                  {t("No active subscription plans exist yet. Create one first at")}{" "}
+                  <Link href="/admin/subscription-plans">{t("Subscription plans")}</Link>
+                  {t(", then generate an e-pin.")}
                 </AlertDescription>
               </Alert>
             ) : (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="epin-planId">Plan</Label>
+                  <Label htmlFor="epin-planId">{t("Plan")}</Label>
                   <Select name="planId" required>
                     <SelectTrigger id="epin-planId" className="w-full">
-                      <SelectValue placeholder="Select a plan" />
+                      <SelectValue placeholder={t("Select a plan")} />
                     </SelectTrigger>
                     <SelectContent>
                       {plans.map((plan) => (
@@ -188,13 +195,13 @@ export function GenerateEpinDialog({ plans }: { plans: GenerateEpinPlanOption[] 
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="epin-expiresInDays">Expiry (days, optional)</Label>
+                  <Label htmlFor="epin-expiresInDays">{t("Expiry (days, optional)")}</Label>
                   <Input
                     id="epin-expiresInDays"
                     name="expiresInDays"
                     type="number"
                     min={1}
-                    placeholder="Leave blank for no expiry"
+                    placeholder={t("Leave blank for no expiry")}
                   />
                 </div>
               </>

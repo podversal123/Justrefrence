@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/i18n/provider";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   Select,
@@ -49,6 +50,7 @@ export function SelectFilter({
   clearValue?: string;
   className?: string;
 }) {
+  const t = useT();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -62,16 +64,18 @@ export function SelectFilter({
     router.push(`${pathname}?${params.toString()}` as never);
   }
 
+  const selectItems = [
+    { value: clearValue, label: placeholder },
+    ...options.filter((o) => o.value !== clearValue),
+  ];
+
   return (
-    <Select value={current} onValueChange={update}>
-      <SelectTrigger className={className ?? "w-full sm:w-44"} aria-label={ariaLabel}>
+    <Select value={current} onValueChange={update} items={selectItems}>
+      <SelectTrigger className={className ?? "w-full sm:w-44"} aria-label={t(ariaLabel)}>
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>
-        {[
-          { value: clearValue, label: placeholder },
-          ...options.filter((o) => o.value !== clearValue),
-        ].map((opt) => (
+        {selectItems.map((opt) => (
           <SelectItem key={opt.value} value={opt.value}>
             {opt.label}
           </SelectItem>

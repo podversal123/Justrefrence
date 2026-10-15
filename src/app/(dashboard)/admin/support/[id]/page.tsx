@@ -1,3 +1,4 @@
+import { getT } from "@/i18n/server";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -10,9 +11,13 @@ import {
 import { TicketHeader, TicketThread } from "@/components/support/ticket-thread";
 import { TicketReplyForm, TicketStatusControls } from "@/components/support/ticket-controls";
 
-export const metadata: Metadata = { title: "Support ticket" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("Support ticket") };
+}
 
 export default async function AdminTicketPage({ params }: { params: Promise<{ id: string }> }) {
+  const t = await getT();
   const session = await getAuthSession();
   if (!session) redirect("/login");
   if (!session.permissions.has("ticket:read:any")) redirect("/unauthorized");
@@ -31,7 +36,7 @@ export default async function AdminTicketPage({ params }: { params: Promise<{ id
         className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-sm"
       >
         <ArrowLeft className="size-4" />
-        All tickets
+        {t("All tickets")}
       </Link>
       <TicketHeader
         ticketLabel={formatTicketNo(ticket.ticketNo)}
@@ -44,7 +49,7 @@ export default async function AdminTicketPage({ params }: { params: Promise<{ id
       />
       <TicketThread messages={ticket.messages} />
       {closed ? (
-        <p className="text-muted-foreground text-sm">This ticket is closed.</p>
+        <p className="text-muted-foreground text-sm">{t("This ticket is closed.")}</p>
       ) : canRespond ? (
         <>
           <TicketReplyForm ticketId={ticket.id} staff />

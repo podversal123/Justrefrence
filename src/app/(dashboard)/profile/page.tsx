@@ -20,7 +20,7 @@ import { KycDocumentsCard } from "@/components/kyc/kyc-documents-card";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
-  return { title: t("My profile") };
+  return { title: t("Profile") };
 }
 
 const TABS = ["personal", "addresses", "bank", "kyc", "password"] as const;
@@ -62,7 +62,7 @@ export default async function ProfilePage({
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
       <div>
-        <h1>{t("My profile")}</h1>
+        <h1>{t("Profile")}</h1>
         <p className="text-muted-foreground">
           {t("Your details, addresses, bank account and password.")}
         </p>

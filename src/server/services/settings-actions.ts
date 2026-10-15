@@ -32,6 +32,7 @@ export async function updateSiteSettingsAction(
     contactPhone: formData.get("contactPhone") ?? undefined,
     contactAddress: formData.get("contactAddress") ?? undefined,
     contactHours: formData.get("contactHours") ?? undefined,
+    idleLogoutMinutes: formData.get("idleLogoutMinutes") ?? undefined,
   });
   if (!parsed.success) return validationFailure("Check the highlighted settings.", parsed.error);
 

@@ -25,7 +25,7 @@ export function messagesFor(locale: Locale): Messages {
 
 export type TFunction = (text: string, vars?: TranslateVars) => string;
 
-/** `const t = await getT();` then `t("My orders")`. For Server Components and Server Actions. */
+/** `const t = await getT();` then `t("Orders")`. For Server Components and Server Actions. */
 export async function getT(): Promise<TFunction> {
   const messages = messagesFor(await getLocale());
   return (text, vars) => translate(messages, text, vars);
