@@ -2,17 +2,8 @@
 
 import { useLocale, useT } from "@/i18n/provider";
 import { localeTag, type Locale } from "@/i18n/locales";
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatPaise } from "@/lib/money";
+import { ChartCard, TrendChart, VIZ } from "./chart-kit";
+import { formatRupeesCompact } from "@/lib/money";
 
 interface RevenuePoint {
   day: string;
@@ -27,62 +18,19 @@ function shortDay(day: string, locale: Locale): string {
 export function RevenueChart({ data }: { data: RevenuePoint[] }) {
   const t = useT();
   const locale = useLocale();
-  const chartData = data.map((d) => ({
-    day: shortDay(d.day, locale),
-    amountRupees: Number(d.amount) / 100,
+  const rows = data.map((d) => ({
+    label: shortDay(d.day, locale),
+    revenue: Number(d.amount) / 100,
   }));
-  const hasAnyRevenue = chartData.some((d) => d.amountRupees > 0);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">{t("Revenue")}</CardTitle>
-        <CardDescription>{t("Captured order value per day.")}</CardDescription>
-      </CardHeader>
-      <CardContent className="h-64">
-        {hasAnyRevenue ? (
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-              <defs>
-                <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="var(--color-primary)" stopOpacity={0.3} />
-                  <stop offset="100%" stopColor="var(--color-primary)" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-border" />
-              <XAxis
-                dataKey="day"
-                tickLine={false}
-                axisLine={false}
-                fontSize={11}
-                minTickGap={24}
-              />
-              <YAxis
-                tickLine={false}
-                axisLine={false}
-                fontSize={11}
-                width={48}
-                tickFormatter={(v: number) => `₹${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`}
-              />
-              <Tooltip
-                formatter={(value) => formatPaise(String(Math.round(Number(value) * 100)))}
-                contentStyle={{ fontSize: 12, borderRadius: 8 }}
-              />
-              <Area
-                type="monotone"
-                dataKey="amountRupees"
-                stroke="var(--color-primary)"
-                fill="url(#revenueGradient)"
-                strokeWidth={2}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        ) : (
-          <div className="text-muted-foreground flex h-full items-center justify-center text-sm">
-            {t("No revenue in this period yet.")}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+    <ChartCard title={t("Revenue")} description={t("Captured order value per day.")}>
+      <TrendChart
+        data={rows}
+        series={[{ key: "revenue", label: t("Revenue"), color: VIZ[0] }]}
+        format={formatRupeesCompact}
+        emptyMessage={t("Revenue will show here once orders are paid.")}
+      />
+    </ChartCard>
   );
 }

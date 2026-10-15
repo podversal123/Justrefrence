@@ -2,9 +2,8 @@
 
 import { useLocale, useT } from "@/i18n/provider";
 import { localeTag, type Locale } from "@/i18n/locales";
-import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatPaise } from "@/lib/money";
+import { ChartCard, TrendChart, VIZ } from "./chart-kit";
+import { formatRupeesCompact } from "@/lib/money";
 
 interface WalletPoint {
   day: string;
@@ -19,63 +18,42 @@ function shortDay(day: string, locale: Locale): string {
   });
 }
 
-export function WalletActivityChart({ data }: { data: WalletPoint[] }) {
+/**
+ * Money in and money out per day. `title` and `description` let the member dashboard reuse it for
+ * one person's own wallet; by default it is the platform-wide view admins see.
+ */
+export function WalletActivityChart({
+  data,
+  title,
+  description,
+}: {
+  data: WalletPoint[];
+  title?: string;
+  description?: string;
+}) {
   const t = useT();
   const locale = useLocale();
-  const chartData = data.map((d) => ({
-    day: shortDay(d.day, locale),
-    creditsRupees: Number(d.credits) / 100,
-    debitsRupees: Number(d.debits) / 100,
+  const rows = data.map((d) => ({
+    label: shortDay(d.day, locale),
+    in: Number(d.credits) / 100,
+    out: Number(d.debits) / 100,
   }));
-  const hasActivity = chartData.some((d) => d.creditsRupees > 0 || d.debitsRupees > 0);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">{t("Wallet activity")}</CardTitle>
-        <CardDescription>{t("Credits vs. debits across all member wallets.")}</CardDescription>
-      </CardHeader>
-      <CardContent className="h-40">
-        {hasActivity ? (
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-              <XAxis
-                dataKey="day"
-                tickLine={false}
-                axisLine={false}
-                fontSize={10}
-                minTickGap={32}
-              />
-              <Tooltip
-                formatter={(value) => formatPaise(String(Math.round(Number(value) * 100)))}
-                contentStyle={{ fontSize: 12, borderRadius: 8 }}
-              />
-              <Area
-                type="monotone"
-                dataKey="creditsRupees"
-                name="Credits"
-                stroke="oklch(0.65 0.18 145)"
-                fill="oklch(0.65 0.18 145)"
-                fillOpacity={0.15}
-                strokeWidth={1.5}
-              />
-              <Area
-                type="monotone"
-                dataKey="debitsRupees"
-                name="Debits"
-                stroke="oklch(0.6 0.2 25)"
-                fill="oklch(0.6 0.2 25)"
-                fillOpacity={0.15}
-                strokeWidth={1.5}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        ) : (
-          <div className="text-muted-foreground flex h-full items-center justify-center text-sm">
-            {t("No wallet activity in this period yet.")}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+    <ChartCard
+      title={title ?? t("Wallet activity")}
+      description={description ?? t("Credits vs. debits across all member wallets.")}
+    >
+      <TrendChart
+        data={rows}
+        series={[
+          { key: "in", label: t("Money in"), color: VIZ[0] },
+          { key: "out", label: t("Money out"), color: VIZ[1] },
+        ]}
+        kind="bar"
+        format={formatRupeesCompact}
+        emptyMessage={t("Money in and out of the wallet will show here.")}
+      />
+    </ChartCard>
   );
 }

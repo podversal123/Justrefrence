@@ -33,6 +33,7 @@ import { StatCard } from "./stat-card";
 import { Widget, WidgetToggleMenu, WidgetVisibilityProvider } from "./widget-visibility";
 import { RevenueChart } from "./revenue-chart";
 import { OrderStatusChart } from "./order-status-chart";
+import { CatalogMixChart } from "./admin-charts";
 
 /**
  * Vendor-id-prefixed so these never collide with the admin dashboard's own
@@ -49,6 +50,7 @@ const WIDGETS = [
   { id: "vendor-sales", label: msg("Sales") },
   { id: "vendor-revenue-chart", label: msg("Sales chart") },
   { id: "vendor-order-status-chart", label: msg("Orders-by-status chart") },
+  { id: "vendor-catalog-chart", label: msg("Your listings chart") },
 ];
 
 export async function VendorDashboard({ session }: { session: AuthSession }) {
@@ -173,12 +175,21 @@ export async function VendorDashboard({ session }: { session: AuthSession }) {
           </Widget>
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid gap-4 lg:grid-cols-3">
           <Widget id="vendor-revenue-chart">
             <RevenueChart data={revenueSeries} />
           </Widget>
           <Widget id="vendor-order-status-chart">
             <OrderStatusChart data={orderStatusCounts} />
+          </Widget>
+          <Widget id="vendor-catalog-chart">
+            <CatalogMixChart
+              products={catalog.products.active}
+              services={catalog.services.active}
+              projects={catalog.projects.active}
+              title={t("Your live listings")}
+              description={t("What buyers can see right now, by type.")}
+            />
           </Widget>
         </div>
 

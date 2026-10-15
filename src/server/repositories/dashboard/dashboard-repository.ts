@@ -23,6 +23,22 @@ export async function countActiveMembers(): Promise<number> {
   return prisma.memberProfile.count({ where: { user: { status: "ACTIVE" } } });
 }
 
+/** New members per day in the range, for the "Members joined" chart. Days with nobody are left out. */
+export async function getDailyNewMembers(
+  range: ResolvedDateRange,
+): Promise<{ day: string; count: number }[]> {
+  const from = range.from ?? new Date(0);
+  const rows = await prisma.$queryRaw<{ day: string; count: bigint }[]>`
+    SELECT to_char(date_trunc('day', created_at), 'YYYY-MM-DD') AS day,
+           COUNT(*)::bigint AS count
+    FROM member_profiles
+    WHERE created_at >= ${from} AND created_at <= ${range.to}
+    GROUP BY 1
+    ORDER BY 1
+  `;
+  return rows.map((r) => ({ day: r.day, count: Number(r.count) }));
+}
+
 // --- Vendors ---
 
 export async function getVendorCounts(): Promise<{
@@ -36,6 +52,17 @@ export async function getVendorCounts(): Promise<{
     prisma.vendorProfile.count({ where: { approvalStatus: "PENDING" } }),
   ]);
   return { total, approved, pending };
+}
+
+/** Vendors grouped by where they stand, for the "Vendors by status" chart. */
+export async function getVendorStatusCounts(): Promise<
+  { status: "APPROVED" | "PENDING" | "REJECTED" | "SUSPENDED"; count: number }[]
+> {
+  const grouped = await prisma.vendorProfile.groupBy({
+    by: ["approvalStatus"],
+    _count: true,
+  });
+  return grouped.map((g) => ({ status: g.approvalStatus, count: g._count }));
 }
 
 // --- Catalog ---
@@ -102,6 +129,40 @@ export async function getVendorCatalogCounts(vendorId: string): Promise<{
     services: { total: serviceTotal, active: serviceActive },
     projects: { total: projectTotal, active: projectActive },
   };
+}
+
+/**
+ * Live listings per category across products, services and projects, biggest first. A category name
+ * that exists under two kinds is shown once per kind, each with its own count.
+ */
+export async function getListingsByCategory(
+  limit = 6,
+): Promise<{ label: string; count: number }[]> {
+  const live = { deletedAt: null, approvalStatus: "APPROVED" as const, isActive: true };
+  const [products, services, projects] = await Promise.all([
+    prisma.product.groupBy({ by: ["categoryId"], where: live, _count: true }),
+    prisma.service.groupBy({ by: ["categoryId"], where: live, _count: true }),
+    prisma.project.groupBy({ by: ["categoryId"], where: live, _count: true }),
+  ]);
+  const [productNames, serviceNames, projectNames] = await Promise.all([
+    prisma.productCategory.findMany({ select: { id: true, name: true } }),
+    prisma.serviceCategory.findMany({ select: { id: true, name: true } }),
+    prisma.projectCategory.findMany({ select: { id: true, name: true } }),
+  ]);
+  const named = (
+    rows: { categoryId: string; _count: number }[],
+    names: { id: string; name: string }[],
+  ) => {
+    const byId = new Map(names.map((n) => [n.id, n.name]));
+    return rows.map((r) => ({ label: byId.get(r.categoryId) ?? "Other", count: r._count }));
+  };
+  return [
+    ...named(products, productNames),
+    ...named(services, serviceNames),
+    ...named(projects, projectNames),
+  ]
+    .sort((a, b) => b.count - a.count)
+    .slice(0, limit);
 }
 
 export async function countPendingListingApprovals(): Promise<number> {

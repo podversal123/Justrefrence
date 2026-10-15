@@ -321,3 +321,28 @@ export async function sumLedgerReport(walletId: string, filter: LedgerReportFilt
     count: (credit?._count ?? 0) + (debit?._count ?? 0),
   };
 }
+
+/** One wallet's money in and out per day, for the member dashboard chart. Days with no movement are left out. */
+export async function getDailyActivityForWallet(
+  walletId: string,
+  from: Date,
+  to: Date,
+): Promise<{ day: string; credits: bigint; debits: bigint }[]> {
+  const rows = await prisma.$queryRaw<{ day: string; direction: string; amount: bigint }[]>`
+    SELECT to_char(date_trunc('day', created_at), 'YYYY-MM-DD') AS day,
+           direction,
+           COALESCE(SUM(amount), 0)::bigint AS amount
+    FROM wallet_transactions
+    WHERE wallet_id = ${walletId}::uuid AND created_at >= ${from} AND created_at <= ${to}
+    GROUP BY 1, 2
+    ORDER BY 1
+  `;
+  const byDay = new Map<string, { day: string; credits: bigint; debits: bigint }>();
+  for (const row of rows) {
+    const entry = byDay.get(row.day) ?? { day: row.day, credits: 0n, debits: 0n };
+    if (row.direction === "CREDIT") entry.credits = row.amount;
+    else entry.debits = row.amount;
+    byDay.set(row.day, entry);
+  }
+  return [...byDay.values()];
+}

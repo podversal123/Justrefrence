@@ -34,3 +34,14 @@ export function paiseToFixedRupees(paise: bigint | string): string {
   const fraction = (abs % 100n).toString().padStart(2, "0");
   return `${negative ? "-" : ""}${rupees}.${fraction}`;
 }
+
+/** A short rupee amount for chart axes and tooltips: ₹250, ₹1.2K, ₹3.5L. Takes rupees, not paise. */
+export function formatRupeesCompact(rupees: number): string {
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    notation: "compact",
+    maximumFractionDigits: Math.abs(rupees) < 1000 ? 2 : 1,
+    minimumFractionDigits: 0,
+  }).format(rupees);
+}

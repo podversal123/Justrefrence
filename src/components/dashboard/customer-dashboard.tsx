@@ -22,9 +22,13 @@ import {
 } from "lucide-react";
 import type { AuthSession } from "@/server/auth/session";
 import {
+  getDailyActivityForWallet,
   getOrCreateWallet,
   listWalletTransactions,
 } from "@/server/repositories/wallet/wallet-repository";
+import { getMemberProfileByUserId } from "@/server/repositories/identity/member-repository";
+import { getEarningsTotals } from "@/server/repositories/commission/commission-repository";
+import { enumerateDayBuckets, resolveDateRange } from "@/server/domain/dashboard/date-range";
 import { getReferralDashboard } from "@/server/domain/referral/referral-service";
 import { listOrdersForBuyer } from "@/server/repositories/commerce/order-repository";
 import {
@@ -41,6 +45,8 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Button } from "@/components/ui/button";
 import { CopyLinkButton } from "@/app/(dashboard)/referrals/copy-link-button";
 import { DashboardNotificationList } from "./dashboard-notification-list";
+import { WalletActivityChart } from "./wallet-activity-chart";
+import { EarningsSourceChart, EarningsStatusChart, ReferralNetworkChart } from "./member-charts";
 
 const QUICK_ACTIONS: { href: Route; label: string; icon: LucideIcon }[] = [
   { href: "/products" as Route, label: msg("Browse products"), icon: ShoppingBag },
@@ -104,6 +110,41 @@ export async function CustomerDashboard({ session }: { session: AuthSession }) {
     .filter((c) => c.status === "PENDING" || c.status === "ELIGIBLE")
     .reduce((sum, c) => sum + c.totalAmount, 0n);
 
+  // Charts: a failure here only leaves the chart empty, it never breaks the page.
+  const walletRange = resolveDateRange("30D");
+  const walletSeries = enumerateDayBuckets(walletRange).map((day) => ({
+    day,
+    credits: "0",
+    debits: "0",
+  }));
+  if (wallet) {
+    try {
+      const rows = await getDailyActivityForWallet(
+        wallet.id,
+        walletRange.from ?? new Date(0),
+        walletRange.to,
+      );
+      const byDay = new Map(rows.map((r) => [r.day, r]));
+      for (const point of walletSeries) {
+        const row = byDay.get(point.day);
+        if (row) {
+          point.credits = row.credits.toString();
+          point.debits = row.debits.toString();
+        }
+      }
+    } catch {
+      // leave the flat series
+    }
+  }
+  let earningsTotals = { direct: 0n, indirect: 0n, received: 0n, pending: 0n };
+  try {
+    const member = await getMemberProfileByUserId(session.userId);
+    if (member) earningsTotals = await getEarningsTotals(member.id, {});
+  } catch {
+    // leave the zeros
+  }
+  const rupees = (paise: bigint) => Number(paise) / 100;
+
   let orders: Awaited<ReturnType<typeof listOrdersForBuyer>>["items"] = [];
   let ordersError = false;
   try {
@@ -165,6 +206,30 @@ export async function CustomerDashboard({ session }: { session: AuthSession }) {
               : t("No referrals yet")
           }
         />
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <WalletActivityChart
+            data={walletSeries}
+            title={t("Your wallet, last 30 days")}
+            description={t("Money in and out of your wallet each day.")}
+          />
+        </div>
+        <EarningsSourceChart
+          direct={rupees(earningsTotals.direct)}
+          indirect={rupees(earningsTotals.indirect)}
+        />
+        <ReferralNetworkChart
+          direct={referral?.directReferralCount ?? 0}
+          indirect={referral?.indirectReferralCount ?? 0}
+        />
+        <div className="lg:col-span-2">
+          <EarningsStatusChart
+            received={rupees(earningsTotals.received)}
+            pending={rupees(earningsTotals.pending)}
+          />
+        </div>
       </div>
 
       <section className="bg-surface-sunken rounded-xl border p-4 sm:p-5">

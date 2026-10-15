@@ -1,68 +1,53 @@
 "use client";
 
 import { useT } from "@/i18n/provider";
-import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChartCard, DonutBreakdown, VIZ } from "./chart-kit";
 
 interface StatusCount {
   status: string;
   count: number;
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  PLACED: "var(--muted-foreground)",
-  PAID: "var(--color-primary)",
-  PROCESSING: "oklch(0.7 0.15 230)",
-  SHIPPED: "oklch(0.75 0.15 200)",
-  DELIVERED: "oklch(0.7 0.15 160)",
-  COMPLETED: "oklch(0.65 0.18 145)",
-  CANCELLED: "oklch(0.55 0.02 0)",
-  REFUNDED: "oklch(0.6 0.2 25)",
-};
+/** Eight raw statuses are too many colours to tell apart, so they are grouped by what they mean. */
+const GROUPS = [
+  { key: "waiting", statuses: ["PLACED", "PAID"], color: VIZ[3] },
+  { key: "progress", statuses: ["PROCESSING", "SHIPPED"], color: VIZ[0] },
+  { key: "delivered", statuses: ["DELIVERED", "COMPLETED"], color: VIZ[2] },
+  { key: "stopped", statuses: ["CANCELLED", "REFUNDED"], color: VIZ[1] },
+] as const;
 
 export function OrderStatusChart({ data }: { data: StatusCount[] }) {
   const t = useT();
   const total = data.reduce((sum, d) => sum + d.count, 0);
+  const labels: Record<(typeof GROUPS)[number]["key"], string> = {
+    waiting: t("Waiting to be processed"),
+    progress: t("Being prepared or on the way"),
+    delivered: t("Delivered or completed"),
+    stopped: t("Cancelled or refunded"),
+  };
+  const slices = GROUPS.map((group) => ({
+    key: group.key,
+    label: labels[group.key],
+    color: group.color,
+    value: data
+      .filter((d) => (group.statuses as readonly string[]).includes(d.status))
+      .reduce((sum, d) => sum + d.count, 0),
+  }));
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">{t("Orders by status")}</CardTitle>
-        <CardDescription>
-          {total === 1
-            ? t("1 order in this period.")
-            : t("{count} orders in this period.", { count: total })}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="h-64">
-        {total > 0 ? (
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={data}
-                dataKey="count"
-                nameKey="status"
-                innerRadius="55%"
-                outerRadius="80%"
-                paddingAngle={2}
-              >
-                {data.map((entry) => (
-                  <Cell
-                    key={entry.status}
-                    fill={STATUS_COLORS[entry.status] ?? "var(--muted-foreground)"}
-                  />
-                ))}
-              </Pie>
-              <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
-              <Legend wrapperStyle={{ fontSize: 11 }} />
-            </PieChart>
-          </ResponsiveContainer>
-        ) : (
-          <div className="text-muted-foreground flex h-full items-center justify-center text-sm">
-            {t("No orders in this period yet.")}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+    <ChartCard
+      title={t("Orders by status")}
+      description={
+        total === 1
+          ? t("1 order in this period.")
+          : t("{count} orders in this period.", { count: total })
+      }
+    >
+      <DonutBreakdown
+        data={slices}
+        centerLabel={t("orders")}
+        emptyMessage={t("Orders will show here as customers place them.")}
+      />
+    </ChartCard>
   );
 }

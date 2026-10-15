@@ -25,6 +25,12 @@ import { WidgetVisibilityProvider, WidgetToggleMenu, Widget } from "./widget-vis
 import { RevenueChart } from "./revenue-chart";
 import { OrderStatusChart } from "./order-status-chart";
 import { WalletActivityChart } from "./wallet-activity-chart";
+import {
+  CatalogMixChart,
+  CategoryListingsChart,
+  MembersJoinedChart,
+  VendorStatusChart,
+} from "./admin-charts";
 import { RecentOrdersTable } from "./recent-orders-table";
 import { PendingApprovalsTable } from "./pending-approvals-table";
 
@@ -45,6 +51,10 @@ const WIDGETS = [
   { id: "revenue-chart", label: msg("Revenue chart") },
   { id: "order-status-chart", label: msg("Orders-by-status chart") },
   { id: "wallet-activity-chart", label: msg("Wallet activity chart") },
+  { id: "members-chart", label: msg("Members joined chart") },
+  { id: "catalog-mix-chart", label: msg("Catalogue mix chart") },
+  { id: "vendor-status-chart", label: msg("Vendors-by-status chart") },
+  { id: "category-chart", label: msg("Top categories chart") },
 ];
 
 export async function AdminDashboard({
@@ -218,6 +228,30 @@ export async function AdminDashboard({
           </Widget>
           <Widget id="order-status-chart">
             <OrderStatusChart data={data.orderStatusCounts} />
+          </Widget>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-3">
+          <Widget id="members-chart">
+            <div className="lg:col-span-2">
+              <MembersJoinedChart data={data.membersSeries} />
+            </div>
+          </Widget>
+          <Widget id="catalog-mix-chart">
+            <CatalogMixChart
+              products={data.catalog.products.active}
+              services={data.catalog.services.active}
+              projects={data.catalog.projects.active}
+            />
+          </Widget>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Widget id="category-chart">
+            <CategoryListingsChart data={data.listingsByCategory} />
+          </Widget>
+          <Widget id="vendor-status-chart">
+            <VendorStatusChart data={data.vendorStatusCounts} />
           </Widget>
         </div>
 
