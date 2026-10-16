@@ -25,6 +25,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatPaise } from "@/lib/money";
+import { BusinessView } from "./business-view";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
@@ -84,14 +85,47 @@ export default async function EarningsPage({
   ];
   const period = filtered ? t("In the selected dates") : t("All time");
 
+  const header = (
+    <div>
+      <h1>{t("Earnings")}</h1>
+      <p className="text-muted-foreground">
+        {t("What you earn when people you referred, and the people they referred, buy.")}
+      </p>
+    </div>
+  );
+  const sectionTabs = (active: "commission" | "business") => (
+    <div className="flex flex-wrap gap-2 border-b pb-3" aria-label={t("Earnings views")}>
+      {(
+        [
+          { key: "commission", label: t("Commission earned"), href: "/earnings" },
+          { key: "business", label: t("Business"), href: "/earnings?tab=business" },
+        ] as const
+      ).map((tab) => (
+        <Button
+          key={tab.key}
+          variant={tab.key === active ? "default" : "outline"}
+          size="sm"
+          nativeButton={false}
+          render={<Link href={tab.href as Route}>{tab.label}</Link>}
+        />
+      ))}
+    </div>
+  );
+
+  if (params["tab"] === "business") {
+    return (
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
+        {header}
+        {sectionTabs("business")}
+        <BusinessView userId={session.userId} referralPath={member.referralPath} params={params} />
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
-      <div>
-        <h1>{t("Earnings")}</h1>
-        <p className="text-muted-foreground">
-          {t("What you earn when people you referred, and the people they referred, buy.")}
-        </p>
-      </div>
+      {header}
+      {sectionTabs("commission")}
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard

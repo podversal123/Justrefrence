@@ -52,7 +52,7 @@ const FEATURED_LIMIT = 4;
 async function HomeHero() {
   let slides: readonly HeroSlide[] = HERO_SLIDES;
   try {
-    const banners = await listActiveBanners();
+    const banners = await listActiveBanners("HOME");
     if (banners.length > 0) {
       slides = banners.map((b) => ({
         id: b.id,

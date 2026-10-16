@@ -5,7 +5,8 @@ import { bannerFieldsSchema } from "@/lib/schemas/banner";
  * An ad has the same fields as a home page banner, with the same safe-link rule (a page on this
  * site, or https only, never javascript: or data: links).
  */
-export const adFieldsSchema = bannerFieldsSchema;
+// An ad has no "show on" choice: it is always placed by the platform, not picked by the vendor.
+export const adFieldsSchema = bannerFieldsSchema.omit({ placement: true });
 
 export const adIdSchema = z.object({ adId: z.string().uuid() });
 

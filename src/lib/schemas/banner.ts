@@ -16,7 +16,12 @@ export function isSafeBannerHref(value: string): boolean {
   }
 }
 
+/** Where a banner shows: the public home page, or members' and sellers' dashboards. */
+export const BANNER_PLACEMENTS = ["HOME", "DASHBOARD"] as const;
+export const bannerPlacementSchema = z.enum(BANNER_PLACEMENTS);
+
 export const bannerFieldsSchema = z.object({
+  placement: bannerPlacementSchema.default("HOME"),
   headline: z
     .string()
     .trim()

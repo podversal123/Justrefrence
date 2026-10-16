@@ -2,7 +2,12 @@ import { getT } from "@/i18n/server";
 import { redirect } from "next/navigation";
 import { getAuthSession } from "@/server/auth/session";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/layout/app-sidebar";
+import {
+  AppSidebar,
+  type SidebarEntry,
+  type SidebarNavItem,
+} from "@/components/layout/app-sidebar";
+import { resolveSidebar } from "@/components/layout/sidebar-structure";
 import { SiteHeader } from "@/components/layout/site-header";
 import { NAV_GROUPS } from "@/components/layout/nav-config";
 import {
@@ -73,14 +78,27 @@ export default async function DashboardLayout({ children }: { children: React.Re
     item.panels.includes(panel) ||
     (sellerWithoutMemberPanel && item.panels.includes("CUSTOMER"));
 
-  const visibleGroups = NAV_GROUPS.map((group) => ({
-    label: t(group.label),
-    items: group.items
-      .filter((item) => !(staffOnly && item.memberOnly))
-      .filter(inThisPanel)
-      .filter((item) => item.visible(session))
-      .map((item) => ({ title: t(item.title), href: item.href, icon: <item.icon /> })),
-  })).filter((group) => group.items.length > 0);
+  // The pages this person may open, by address; the panel's structure then arranges them into
+  // single links and dropdowns (see sidebar-structure.ts).
+  const visiblePages = new Map<string, SidebarNavItem>();
+  for (const group of NAV_GROUPS) {
+    for (const item of group.items) {
+      if (staffOnly && item.memberOnly) continue;
+      if (!inThisPanel(item) || !item.visible(session)) continue;
+      visiblePages.set(item.href, { title: t(item.title), href: item.href, icon: <item.icon /> });
+    }
+  }
+  const entries: SidebarEntry[] = resolveSidebar(panel, visiblePages).map((entry) =>
+    entry.kind === "link"
+      ? entry
+      : {
+          kind: "section",
+          key: entry.section.key,
+          label: t(entry.section.label),
+          icon: entry.section.icon,
+          items: entry.items,
+        },
+  );
 
   const roleLabel = describeRoles(session.roles)
     .split(", ")
@@ -107,7 +125,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     <SidebarProvider>
       <AppSidebar
-        groups={visibleGroups}
+        entries={entries}
         userEmail={session.email}
         roleLabel={roleLabel}
         panel={panel}

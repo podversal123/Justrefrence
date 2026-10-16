@@ -16,8 +16,14 @@
  * Re-running is safe: it stops if the demo orders already exist. There is deliberately no --remove,
  * because order and ledger rows are never deleted (see docs: reversals only).
  *
- * Needs seed-demo-catalog.ts to have run first (demo members, vendors and listings).
+ * Stage "member" gives the demo member (customer.demo) a network and some history, so the Member panel
+ * is worth looking at: two direct referrals and one indirect, their orders and the member's own, the
+ * commissions the member earns from them (some already released to the wallet), and a support ticket.
+ *
+ * Needs seed-demo-catalog.ts to have run first (demo members, vendors and listings), and for the
+ * member stage also create-demo-logins.ts (the demo member).
  */
+import { randomUUID } from "node:crypto";
 import { prisma } from "@/server/lib/prisma";
 import { createRuleVersion } from "@/server/repositories/commission/commission-rule-repository";
 import {
@@ -30,6 +36,7 @@ import { releaseEligibleCommissions } from "@/server/domain/commission/commissio
 import { createNotification } from "@/server/repositories/identity/notification-repository";
 import { createTicket } from "@/server/repositories/support/ticket-repository";
 import { recordAudit } from "@/server/domain/audit/record";
+import { buildReferralPath, formatMemberId } from "@/server/domain/identity/member-id";
 import type { OrderStatus } from "@/server/domain/commerce/order-state-machine";
 
 const DAY = 86_400_000;
@@ -118,6 +125,80 @@ const ORDERS: OrderSpec[] = [
   },
 ];
 
+/** Orders for the member stage: the demo member and the people who joined through them. */
+const MEMBER_ORDERS: OrderSpec[] = [
+  {
+    n: 1,
+    buyer: "customer",
+    lines: [["PRODUCT", "Extension Board", 6]],
+    daysAgo: 21,
+    finalStatus: "COMPLETED",
+  },
+  {
+    n: 2,
+    buyer: "kavya",
+    lines: [["PRODUCT", "QHD IPS Monitor", 1]],
+    daysAgo: 19,
+    finalStatus: "COMPLETED",
+  },
+  {
+    n: 3,
+    buyer: "sameer",
+    lines: [["PRODUCT", "LED Panel", 4]],
+    daysAgo: 17,
+    finalStatus: "COMPLETED",
+  },
+  {
+    n: 4,
+    buyer: "divya",
+    lines: [["PRODUCT", "Toner Cartridge", 5]],
+    daysAgo: 16,
+    finalStatus: "COMPLETED",
+  },
+  {
+    n: 5,
+    buyer: "kavya",
+    lines: [["PRODUCT", "Standing Desk", 1]],
+    daysAgo: 12,
+    finalStatus: "COMPLETED",
+  },
+  {
+    n: 6,
+    buyer: "customer",
+    lines: [["PRODUCT", "LED Panel", 2]],
+    daysAgo: 9,
+    finalStatus: "DELIVERED",
+  },
+  {
+    n: 7,
+    buyer: "sameer",
+    lines: [["PRODUCT", "Extension Board", 8]],
+    daysAgo: 6,
+    finalStatus: "SHIPPED",
+  },
+  {
+    n: 8,
+    buyer: "divya",
+    lines: [["PRODUCT", "QHD IPS Monitor", 1]],
+    daysAgo: 4,
+    finalStatus: "PROCESSING",
+  },
+  {
+    n: 9,
+    buyer: "kavya",
+    lines: [["PRODUCT", "Toner Cartridge", 3]],
+    daysAgo: 2,
+    finalStatus: "PAID",
+  },
+];
+
+/** People who joined through the demo member: [email name, full name, who referred them]. */
+const NETWORK: [string, string, string][] = [
+  ["kavya", "Kavya Rao", "customer"],
+  ["sameer", "Sameer Ali", "customer"],
+  ["divya", "Divya Menon", "kavya"],
+];
+
 const PATH: OrderStatus[] = ["PLACED", "PAID", "PROCESSING", "SHIPPED", "DELIVERED", "COMPLETED"];
 /** Hours after the order was placed that each step happened. */
 const STEP_HOURS: Record<string, number> = {
@@ -130,7 +211,8 @@ const STEP_HOURS: Record<string, number> = {
   CANCELLED: 5,
 };
 
-const email = (name: string) => `${name}@demo.justreference.test`;
+const email = (name: string) =>
+  name === "customer" ? "customer.demo@example.com" : `${name}@demo.justreference.test`;
 
 async function userByEmail(address: string) {
   const user = await prisma.user.findUnique({
@@ -235,9 +317,9 @@ async function backdate(
   });
 }
 
-async function seedOrders(superAdminId: string) {
+async function seedOrders(superAdminId: string, specs: OrderSpec[], keyPrefix: string) {
   const alreadySeeded = await prisma.checkout.count({
-    where: { idempotencyKey: { contains: `:${KEY_PREFIX}` } },
+    where: { idempotencyKey: { contains: `:${keyPrefix}` } },
   });
   if (alreadySeeded > 0) {
     console.log(`Orders: ${alreadySeeded} demo checkouts already exist, none added.`);
@@ -250,7 +332,7 @@ async function seedOrders(superAdminId: string) {
   });
   const releaseDelayDays = rule?.releaseDelayDays ?? 7;
 
-  for (const spec of ORDERS) {
+  for (const spec of specs) {
     const buyer = await userByEmail(email(spec.buyer));
     if (!buyer.memberProfile) throw new Error(`${spec.buyer} has no member profile.`);
 
@@ -262,7 +344,7 @@ async function seedOrders(superAdminId: string) {
     }
 
     const placed = await placeOrder(buyer.id, buyer.memberProfile.id, {
-      idempotencyKey: `${KEY_PREFIX}${spec.n}`,
+      idempotencyKey: `${keyPrefix}${spec.n}`,
     });
     for (const orderId of placed.orderIds) {
       await moveTo(orderId, spec.finalStatus, { userId: superAdminId });
@@ -349,16 +431,112 @@ async function seedTickets() {
   }
 }
 
+/** Creates the people who joined through the demo member, the same way the catalog seed makes members. */
+async function seedNetwork() {
+  const customerRole = await prisma.role.findFirst({ where: { code: "CUSTOMER" } });
+  const now = new Date();
+  const profiles = new Map<string, { id: string; path: string; userId: string }>();
+
+  const root = await userByEmail(email("customer"));
+  const rootProfile = await prisma.memberProfile.findUnique({ where: { userId: root.id } });
+  if (!rootProfile)
+    throw new Error("The demo member has no member profile. Run create-demo-logins.ts.");
+  profiles.set("customer", { id: rootProfile.id, path: rootProfile.referralPath, userId: root.id });
+
+  for (const [key, fullName, referrerKey] of NETWORK) {
+    const address = email(key);
+    const parent = profiles.get(referrerKey);
+    if (!parent) throw new Error(`Referrer ${referrerKey} is missing.`);
+    const user =
+      (await prisma.user.findUnique({ where: { email: address } })) ??
+      (await prisma.user.create({
+        data: {
+          id: randomUUID(),
+          email: address,
+          fullName,
+          status: "ACTIVE",
+          emailVerifiedAt: now,
+        },
+      }));
+    let profile = await prisma.memberProfile.findUnique({ where: { userId: user.id } });
+    if (!profile) {
+      const created = await prisma.memberProfile.create({
+        data: { userId: user.id, referredByUserId: parent.userId, referralPath: "" },
+      });
+      const memberId = formatMemberId(created.memberSeq);
+      profile = await prisma.memberProfile.update({
+        where: { id: created.id },
+        data: {
+          memberId,
+          referralCode: memberId,
+          referralPath: buildReferralPath(parent.path, created.id),
+        },
+      });
+      await prisma.referralRelationship.create({
+        data: { memberId: profile.id, referrerId: parent.id, level: 1, changedAt: now },
+      });
+      console.log(`Network: ${fullName} joined through ${referrerKey} (${memberId})`);
+    }
+    if (customerRole) {
+      const hasRole = await prisma.userRole.findFirst({
+        where: { userId: user.id, roleId: customerRole.id, revokedAt: null },
+      });
+      if (!hasRole)
+        await prisma.userRole.create({ data: { userId: user.id, roleId: customerRole.id } });
+    }
+    profiles.set(key, { id: profile.id, path: profile.referralPath, userId: user.id });
+  }
+
+  // Moves each new member's join date back so "new referrals" has a spread over the weeks.
+  const joined: [string, number][] = [
+    ["kavya", 22],
+    ["sameer", 18],
+    ["divya", 17],
+  ];
+  for (const [key, daysAgo] of joined) {
+    const when = new Date(Date.now() - daysAgo * DAY);
+    const p = profiles.get(key)!;
+    await prisma.$executeRaw`UPDATE member_profiles SET created_at = ${when} WHERE id = ${p.id}::uuid`;
+    await prisma.$executeRaw`UPDATE referral_relationships SET changed_at = ${when} WHERE member_id = ${p.id}::uuid`;
+  }
+}
+
+async function seedMemberTicket() {
+  const user = await userByEmail(email("customer"));
+  const subject = "How long do referral earnings take to reach my wallet?";
+  if ((await prisma.supportTicket.count({ where: { userId: user.id, subject } })) > 0) return;
+  const ticket = await createTicket({
+    userId: user.id,
+    subject,
+    category: "Wallet",
+    priority: "NORMAL",
+    message: "I can see my earnings as waiting. When will they move to my wallet?",
+  });
+  const when = new Date(Date.now() - 2 * DAY);
+  await prisma.$executeRaw`UPDATE support_tickets SET created_at = ${when}, updated_at = ${when} WHERE id = ${ticket.id}::uuid`;
+  await prisma.$executeRaw`UPDATE ticket_messages SET created_at = ${when} WHERE ticket_id = ${ticket.id}::uuid`;
+  console.log(`Support ticket: "${subject}"`);
+}
+
 async function main() {
   const stage = process.argv.find((a) => a.startsWith("--stage="))?.split("=")[1];
-  if (stage !== "super-admin") {
-    throw new Error("Pass --stage=super-admin. Other panels get their own stage later.");
+  if (stage !== "super-admin" && stage !== "member") {
+    throw new Error(
+      "Pass --stage=super-admin or --stage=member. Other panels get their own stage later.",
+    );
   }
   const superAdmin = await userByEmail(SUPER_ADMIN_EMAIL);
   await ensureCommissionRules(superAdmin.id);
-  await seedOrders(superAdmin.id);
-  await seedSellerRequest(superAdmin.id);
-  await seedTickets();
+
+  if (stage === "super-admin") {
+    await seedOrders(superAdmin.id, ORDERS, KEY_PREFIX);
+    await seedSellerRequest(superAdmin.id);
+    await seedTickets();
+  } else {
+    await seedNetwork();
+    await seedOrders(superAdmin.id, MEMBER_ORDERS, "demo-activity-member-order-");
+    await seedMemberTicket();
+  }
 
   const [orders, commissions, walletTx] = await Promise.all([
     prisma.order.count(),

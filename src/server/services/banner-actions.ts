@@ -47,6 +47,7 @@ export async function createBannerAction(
     return failureFrom("banner_denied", error, "You don't have permission to manage banners.");
   }
   const parsed = bannerFieldsSchema.safeParse({
+    placement: formData.get("placement") ?? undefined,
     headline: formData.get("headline"),
     subline: formData.get("subline") ?? undefined,
     ctaLabel: formData.get("ctaLabel"),
@@ -96,6 +97,7 @@ export async function updateBannerAction(
   }
   const id = bannerIdSchema.safeParse(formData.get("id"));
   const parsed = bannerFieldsSchema.safeParse({
+    placement: formData.get("placement") ?? undefined,
     headline: formData.get("headline"),
     subline: formData.get("subline") ?? undefined,
     ctaLabel: formData.get("ctaLabel"),

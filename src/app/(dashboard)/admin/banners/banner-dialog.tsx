@@ -7,6 +7,7 @@ import { AlertCircle, ImagePlus, Pencil, Plus } from "lucide-react";
 import { createBannerAction, updateBannerAction } from "@/server/services/banner-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NativeSelect } from "@/components/ui/native-select";
 import { FormField } from "@/components/ui/form-field";
 import { FormGrid, FULL_ROW } from "@/components/ui/form-grid";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -30,6 +31,8 @@ const initialState: ApiResult<null> = { success: true, data: null, meta: { reque
 
 export interface EditableBanner {
   id: string;
+  /** Where it shows; only banners have this, an ad does not. */
+  placement?: "HOME" | "DASHBOARD";
   headline: string;
   subline: string | null;
   ctaLabel: string;
@@ -155,7 +158,7 @@ export function BannerDialog({
             <DialogDescription>
               {t(
                 options.description ??
-                  "Shown on the home page. The words appear on the left of the photo, so choose a photo that is calm on that side.",
+                  "The words appear on the left of the photo, so choose a photo that is calm on that side.",
               )}
             </DialogDescription>
           </DialogHeader>
@@ -170,6 +173,26 @@ export function BannerDialog({
           {banner ? <input type="hidden" name="id" value={banner.id} /> : null}
 
           <FormGrid>
+            {noun === "banner" ? (
+              <FormField
+                htmlFor="bn-placement"
+                label={t("Show it on")}
+                hint={t(
+                  "Home page banners rotate at the top of the public site. Dashboard offers show to members and sellers after they sign in.",
+                )}
+                error={errors["placement"]}
+                className={FULL_ROW}
+              >
+                <NativeSelect
+                  id="bn-placement"
+                  name="placement"
+                  defaultValue={banner?.placement ?? "HOME"}
+                >
+                  <option value="HOME">{t("The home page")}</option>
+                  <option value="DASHBOARD">{t("Member and seller dashboards")}</option>
+                </NativeSelect>
+              </FormField>
+            ) : null}
             <FormField
               htmlFor="bn-headline"
               label={t("Headline")}

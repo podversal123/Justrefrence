@@ -2063,21 +2063,30 @@ model ChangeRequest {
 // `catalog-public` bucket under `banners/`.
 // ─────────────────────────────────────────────────────────────────────────
 
+/// Where a banner is shown: the rotating picture on the public home page, or the offers on
+/// members' and sellers' dashboards. Kept apart so adding an offer never replaces the home page banners.
+enum BannerPlacement {
+  HOME
+  DASHBOARD
+}
+
 model Banner {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id        String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  placement BannerPlacement @default(HOME)
   headline  String
   subline   String?
-  ctaLabel  String   @map("cta_label")
+  ctaLabel  String          @map("cta_label")
   /// An internal path ("/products") or an https link.
-  ctaHref   String   @map("cta_href")
-  imagePath String   @map("image_path")
-  sortOrder Int      @default(0) @map("sort_order")
-  isActive  Boolean  @default(true) @map("is_active")
-  createdBy String?  @map("created_by") @db.Uuid
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  ctaHref   String          @map("cta_href")
+  imagePath String          @map("image_path")
+  sortOrder Int             @default(0) @map("sort_order")
+  isActive  Boolean         @default(true) @map("is_active")
+  createdBy String?         @map("created_by") @db.Uuid
+  createdAt DateTime        @default(now()) @map("created_at")
+  updatedAt DateTime        @updatedAt @map("updated_at")
 
   @@index([isActive, sortOrder])
+  @@index([placement, isActive, sortOrder])
   @@map("banners")
 }
 

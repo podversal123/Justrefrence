@@ -1,11 +1,13 @@
 import "server-only";
 import { unstable_cache } from "next/cache";
 import { prisma } from "@/server/lib/prisma";
+import type { BannerPlacement } from "@/generated/prisma/enums";
 
 export const BANNERS_TAG = "banners";
 
 export interface BannerRow {
   id: string;
+  placement: BannerPlacement;
   headline: string;
   subline: string | null;
   ctaLabel: string;
@@ -17,6 +19,7 @@ export interface BannerRow {
 
 const SELECT = {
   id: true,
+  placement: true,
   headline: true,
   subline: true,
   ctaLabel: true,
@@ -35,14 +38,14 @@ export function listAllBanners(): Promise<BannerRow[]> {
 }
 
 /**
- * The banners the homepage shows. Cached for a few minutes and refreshed the moment staff change a
- * banner (the tag is revalidated by every banner action), so a busy homepage is not a database query
- * per visitor.
+ * The active banners for one place: the public home page (the default) or members' and sellers'
+ * dashboards. Cached for a few minutes and refreshed the moment staff change a banner (the tag is
+ * revalidated by every banner action), so a busy page is not a database query per visitor.
  */
-export const listActiveBanners = unstable_cache(
-  async (): Promise<BannerRow[]> =>
+const activeBannersCached = unstable_cache(
+  async (placement: BannerPlacement): Promise<BannerRow[]> =>
     prisma.banner.findMany({
-      where: { isActive: true },
+      where: { isActive: true, placement },
       select: SELECT,
       orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
       take: 10,
@@ -50,6 +53,10 @@ export const listActiveBanners = unstable_cache(
   ["banners-active"],
   { tags: [BANNERS_TAG], revalidate: 300 },
 );
+
+export function listActiveBanners(placement: BannerPlacement = "HOME"): Promise<BannerRow[]> {
+  return activeBannersCached(placement);
+}
 
 export function getBanner(id: string) {
   return prisma.banner.findUnique({ where: { id }, select: SELECT });
@@ -62,7 +69,11 @@ export async function nextSortOrder(): Promise<number> {
 
 /** Swap places with the neighbouring banner, in one transaction. Returns false at the end of the list. */
 export async function moveBanner(id: string, direction: "UP" | "DOWN"): Promise<boolean> {
+  const current = await prisma.banner.findUnique({ where: { id }, select: { placement: true } });
+  if (!current) return false;
+  // Banners for the home page and for dashboards are ordered separately.
   const all = await prisma.banner.findMany({
+    where: { placement: current.placement },
     select: { id: true, sortOrder: true },
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
   });
