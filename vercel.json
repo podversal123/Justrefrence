@@ -1,4 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "regions": ["sin1"]
+  "regions": ["sin1"],
+  "crons": [
+    { "path": "/api/cron/release-commissions", "schedule": "30 20 * * *" },
+    { "path": "/api/cron/expire-stale", "schedule": "45 20 * * *" },
+    { "path": "/api/cron/birthday-notifications", "schedule": "0 2 * * *" }
+  ]
 }
