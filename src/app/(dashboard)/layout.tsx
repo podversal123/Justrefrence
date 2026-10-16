@@ -5,10 +5,17 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { SiteHeader } from "@/components/layout/site-header";
 import { NAV_GROUPS } from "@/components/layout/nav-config";
-import { canSwitchPanel, describeRoles, getPanel, isStaff, panelLabelFor } from "@/server/auth/panel";
+import {
+  canSwitchPanel,
+  describeRoles,
+  getPanel,
+  isStaff,
+  panelLabelFor,
+} from "@/server/auth/panel";
 import { IdleLogout } from "@/components/layout/idle-logout";
 import { MaintenanceNotice } from "@/components/portal/maintenance-notice";
 import { canBypassMaintenance, getSiteSettings } from "@/server/lib/site-settings";
+import { countUnreadInbox } from "@/server/repositories/sms/sms-repository";
 import {
   countUnreadNotifications,
   listRecentNotifications,
@@ -80,13 +87,22 @@ export default async function DashboardLayout({ children }: { children: React.Re
     .map((role) => t(role))
     .join(", ");
   const panelLabel = t(panelLabelFor(session));
-  const switchTo =
-    canSwitchPanel(session) ? (panel === "VENDOR" ? "CUSTOMER" : "VENDOR") : null;
+  const switchTo = canSwitchPanel(session) ? (panel === "VENDOR" ? "CUSTOMER" : "VENDOR") : null;
 
   const [notifications, unreadCount] = await Promise.all([
     listRecentNotifications(session.userId),
     countUnreadNotifications(session.userId),
   ]);
+
+  // A member's top bar carries SMS and profile-settings shortcuts next to the bell, as in the client document.
+  const memberShortcuts =
+    panel !== "ADMIN" && session.hasMemberProfile
+      ? {
+          smsUnread: session.permissions.has("sms:read")
+            ? await countUnreadInbox(session.userId).catch(() => 0)
+            : null,
+        }
+      : null;
 
   return (
     <SidebarProvider>
@@ -101,7 +117,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
           switchTo
             ? {
                 panel: switchTo,
-                label: switchTo === "VENDOR" ? t("Switch to Seller / Vendor panel") : t("Switch to Member panel"),
+                label:
+                  switchTo === "VENDOR"
+                    ? t("Switch to Seller / Vendor panel")
+                    : t("Switch to Member panel"),
               }
             : null
         }
@@ -113,6 +132,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           roleLabel={roleLabel}
           notifications={notifications}
           unreadCount={unreadCount}
+          memberShortcuts={memberShortcuts}
         />
         {/* SidebarInset above already renders the page's single <main> landmark. */}
         <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">{children}</div>

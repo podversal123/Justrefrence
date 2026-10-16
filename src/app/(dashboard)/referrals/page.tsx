@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getAuthSession } from "@/server/auth/session";
 import { getReferralDashboard } from "@/server/domain/referral/referral-service";
+import { getMemberIdentity } from "@/server/repositories/identity/member-repository";
+import { MemberIds } from "@/components/member/member-ids";
 import { formatPaise } from "@/lib/money";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -30,14 +32,17 @@ export default async function ReferralsPage() {
     redirect("/dashboard");
   }
 
+  const identity = await getMemberIdentity(session.userId);
+
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8">
       <div>
         <h1>{t("Referrals")}</h1>
-        <p className="text-muted-foreground">
-          {t("Member ID")} <span className="font-mono">{dashboard.memberId}</span> ·{" "}
-          {t("Referral code")} <span className="font-mono">{dashboard.referralCode}</span>
-        </p>
+        <MemberIds
+          memberId={dashboard.memberId ?? ""}
+          referralId={identity?.referralId ?? null}
+          className="mt-2"
+        />
       </div>
 
       <Card>

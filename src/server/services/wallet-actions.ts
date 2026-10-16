@@ -2,10 +2,15 @@
 
 import { revalidatePath } from "next/cache";
 import { authorize } from "@/server/auth/authorize";
-import { setWalletPin, creditMemberWallet } from "@/server/domain/wallet/wallet-service";
+import {
+  changeWalletPin,
+  setWalletPin,
+  creditMemberWallet,
+} from "@/server/domain/wallet/wallet-service";
 import { requestPayout, transitionPayoutStatus } from "@/server/domain/wallet/payout-service";
 import { verifyBankAccount } from "@/server/repositories/identity/bank-repository";
 import {
+  changeWalletPinSchema,
   walletPinSchema,
   requestPayoutSchema,
   updatePayoutStatusSchema,
@@ -83,6 +88,44 @@ export async function setWalletPinAction(
     await setWalletPin(session.userId, parsed.data.pin);
   } catch (error) {
     return failureFrom(error, "Could not set your wallet PIN.");
+  }
+
+  revalidatePath("/wallet");
+  return { success: true, data: null, meta: { requestId: requestId() } };
+}
+
+export async function changeWalletPinAction(
+  _prevState: unknown,
+  formData: FormData,
+): Promise<ApiResult<null>> {
+  let session;
+  try {
+    session = await authorize("wallet_pin:set");
+  } catch (error) {
+    return failureFrom(error, "You don't have permission to change the wallet PIN.");
+  }
+
+  const parsed = changeWalletPinSchema.safeParse({
+    currentPin: formData.get("currentPin"),
+    pin: formData.get("pin"),
+    confirmPin: formData.get("confirmPin"),
+  });
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "Check the PIN fields below.",
+        details: parsed.error.flatten(),
+      },
+      meta: { requestId: requestId() },
+    };
+  }
+
+  try {
+    await changeWalletPin(session.userId, parsed.data.currentPin, parsed.data.pin);
+  } catch (error) {
+    return failureFrom(error, "Could not change your wallet PIN.");
   }
 
   revalidatePath("/wallet");

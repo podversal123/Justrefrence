@@ -131,6 +131,9 @@ export const passwordResetRateLimiter: RateLimiter = createRateLimiter(
 /** Generic public API rate limit: 60 requests per minute per key. */
 export const defaultRateLimiter: RateLimiter = createRateLimiter("default", 60, 60 * 1000);
 
+/** Wrong guesses at the wallet PIN when changing it: 5 per 15 minutes per member. */
+export const walletPinRateLimiter: RateLimiter = createRateLimiter("wallet-pin", 5, 15 * 60 * 1000);
+
 /** OTP requests (registration or mobile login): 5 per 10 minutes per destination. */
 export const otpRequestRateLimiter: RateLimiter = createRateLimiter("otp", 5, 10 * 60 * 1000);
 

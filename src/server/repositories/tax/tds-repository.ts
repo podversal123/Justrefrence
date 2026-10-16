@@ -80,6 +80,23 @@ export async function listTdsRecordsForExport(filter: TdsFilter) {
   return { rows: truncated ? rows.slice(0, TDS_EXPORT_MAX_ROWS) : rows, truncated };
 }
 
+/** One member's own paid payouts with the tax kept from each, newest first, for their TDS report. */
+export async function listTdsForUser(userId: string, filter: TdsFilter, limit = 20) {
+  return prisma.payoutTransaction.findMany({
+    where: { ...whereFor(filter), payoutRequest: { requestedBy: userId } },
+    orderBy: [{ paidAt: "desc" }, { id: "asc" }],
+    take: limit,
+    select: {
+      id: true,
+      paidAt: true,
+      tdsDeducted: true,
+      netAmount: true,
+      transferReference: true,
+      payoutRequest: { select: { amount: true } },
+    },
+  });
+}
+
 /** TDS deducted from one member's own paid payouts, for their account report. */
 export async function sumTdsForUser(userId: string, filter: TdsFilter) {
   const result = await prisma.payoutTransaction.aggregate({

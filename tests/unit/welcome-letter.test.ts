@@ -9,6 +9,7 @@ vi.mock("server-only", () => ({}));
 const { renderWelcomeLetter } = await import("@/server/lib/welcome-letter-pdf");
 
 const member = {
+  issuedAt: new Date("2026-10-16T06:12:00Z"),
   memberName: "Demo Member",
   membershipNumber: "2815618218",
   email: "m@example.com",
@@ -30,6 +31,8 @@ describe("welcome letter", () => {
     const text = textOf(await renderWelcomeLetter({ ...member, referralId: "7543439413" }));
     expect(text).toContain("Membership No.: 2815618218");
     expect(text).toContain("Referral ID No.: 7543439413");
+    // 06:12 UTC is 11:42 in India, where the member lives.
+    expect(text).toContain("Date & Time: 16 Oct 2026, 11:42 am");
   });
 
   it.skipIf(!hasPdftotext)(

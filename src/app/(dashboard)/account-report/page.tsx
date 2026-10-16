@@ -15,7 +15,7 @@ import {
   listLedgerReport,
   sumLedgerReport,
 } from "@/server/repositories/wallet/wallet-repository";
-import { sumTdsForUser } from "@/server/repositories/tax/tds-repository";
+import { listTdsForUser, sumTdsForUser } from "@/server/repositories/tax/tds-repository";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -61,12 +61,13 @@ export default async function AccountReportPage({
   let loaded;
   try {
     const wallet = await getOrCreateWallet(session.userId);
-    const [report, totals, tds] = await Promise.all([
+    const [report, totals, tds, tdsRows] = await Promise.all([
       listLedgerReport(wallet.id, { from, to, direction, cursor: params["cursor"] }),
       sumLedgerReport(wallet.id, { from, to }),
       sumTdsForUser(session.userId, { from, to }),
+      listTdsForUser(session.userId, { from, to }),
     ]);
-    loaded = { wallet, report, totals, tds };
+    loaded = { wallet, report, totals, tds, tdsRows };
   } catch {
     return (
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
@@ -78,7 +79,7 @@ export default async function AccountReportPage({
       </div>
     );
   }
-  const { wallet, report, totals, tds } = loaded;
+  const { wallet, report, totals, tds, tdsRows } = loaded;
 
   const filtered = Boolean(from || to);
   const period = filtered ? t("In the selected dates") : t("All time");
@@ -213,6 +214,59 @@ export default async function AccountReportPage({
       )}
 
       <CursorPagination nextCursor={report.nextCursor} />
+
+      <section className="flex flex-col gap-3" aria-labelledby="tds-report-title">
+        <div>
+          <h2 id="tds-report-title" className="text-lg font-semibold">
+            {t("TDS report")}
+          </h2>
+          <p className="text-muted-foreground text-sm">
+            {t("Tax kept from each payout paid to you, for the dates above.")}
+          </p>
+        </div>
+        {tdsRows.length === 0 ? (
+          <EmptyState
+            icon={Percent}
+            title={t("No TDS yet")}
+            description={t("When a payout is paid to you, the tax kept from it will show here.")}
+          />
+        ) : (
+          <div className="surface-card overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("Paid on")}</TableHead>
+                  <TableHead className="text-right">{t("Payout")}</TableHead>
+                  <TableHead className="text-right">{t("TDS kept")}</TableHead>
+                  <TableHead className="text-right">{t("Sent to your bank")}</TableHead>
+                  <TableHead>{t("Reference")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {tdsRows.map((row) => (
+                  <TableRow key={row.id}>
+                    <TableCell className="whitespace-nowrap">
+                      {row.paidAt ? formatDate(row.paidAt) : "—"}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {formatPaise(row.payoutRequest.amount.toString())}
+                    </TableCell>
+                    <TableCell className="text-right font-medium tabular-nums">
+                      {formatPaise(row.tdsDeducted.toString())}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {formatPaise(row.netAmount.toString())}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-xs">
+                      {row.transferReference ?? "—"}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </section>
     </div>
   );
 }

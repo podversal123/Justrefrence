@@ -26,6 +26,8 @@ const styles = StyleSheet.create({
 });
 
 export interface WelcomeLetterData {
+  /** When the member joined: the date and time printed at the top of the letter. */
+  issuedAt: Date;
   memberName: string;
   membershipNumber: string;
   /** The Member ID of whoever referred this member; left out of the letter when nobody did. */
@@ -33,6 +35,21 @@ export interface WelcomeLetterData {
   email: string;
   mobile: string | null;
   supportEmail: string | null;
+}
+
+/** "16 Oct 2026, 11:42 am" in Indian time, whatever time zone the server runs in. */
+export function formatLetterDateTime(date: Date): string {
+  return new Intl.DateTimeFormat("en-IN", {
+    timeZone: "Asia/Kolkata",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  })
+    .format(date)
+    .replace(" at ", ", ");
 }
 
 function WelcomeLetter({ data }: { data: WelcomeLetterData }) {
@@ -44,6 +61,8 @@ function WelcomeLetter({ data }: { data: WelcomeLetterData }) {
       <Page size="A4" style={styles.page}>
         <Text style={styles.brand}>Justreference</Text>
         <Text style={styles.heading}>MEMBER WELCOME LETTER</Text>
+
+        <Text style={styles.paragraph}>Date &amp; Time: {formatLetterDateTime(data.issuedAt)}</Text>
 
         <Text style={styles.paragraph}>Dear Member,</Text>
         <Text style={styles.name}>{data.memberName.toUpperCase()}</Text>

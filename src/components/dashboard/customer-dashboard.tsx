@@ -48,6 +48,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Button } from "@/components/ui/button";
 import { CopyLinkButton } from "@/app/(dashboard)/referrals/copy-link-button";
 import { DashboardNotificationList } from "./dashboard-notification-list";
+import { MemberIds } from "@/components/member/member-ids";
 import { WalletActivityChart } from "./wallet-activity-chart";
 import { EarningsSourceChart, EarningsStatusChart, ReferralNetworkChart } from "./member-charts";
 
@@ -180,18 +181,11 @@ export async function CustomerDashboard({ session }: { session: AuthSession }) {
           {dateLabel} · {t(BRAND.taglineSecondary)}
         </p>
         {identity ? (
-          <dl className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-sm">
-            <div className="flex items-baseline gap-2">
-              <dt className="text-muted-foreground">{t("Member ID")}</dt>
-              <dd className="font-mono font-semibold tracking-wide">{identity.memberId}</dd>
-            </div>
-            {identity.referralId ? (
-              <div className="flex items-baseline gap-2">
-                <dt className="text-muted-foreground">{t("Referral ID")}</dt>
-                <dd className="font-mono font-semibold tracking-wide">{identity.referralId}</dd>
-              </div>
-            ) : null}
-          </dl>
+          <MemberIds
+            memberId={identity.memberId}
+            referralId={identity.referralId}
+            className="mt-3"
+          />
         ) : null}
       </div>
 

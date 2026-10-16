@@ -20,6 +20,29 @@ export const walletPinSchema = z
   });
 export type WalletPinInput = z.infer<typeof walletPinSchema>;
 
+/** Changing the PIN needs the current one, so a borrowed, unlocked session cannot quietly replace it. */
+export const changeWalletPinSchema = z
+  .object({
+    currentPin: z
+      .string()
+      .trim()
+      .regex(/^\d{6}$/, "Enter your current 6-digit PIN."),
+    pin: z
+      .string()
+      .trim()
+      .regex(/^\d{6}$/, "Enter a 6-digit PIN."),
+    confirmPin: z.string().trim(),
+  })
+  .refine((data) => data.pin === data.confirmPin, {
+    message: "PINs do not match.",
+    path: ["confirmPin"],
+  })
+  .refine((data) => data.pin !== data.currentPin, {
+    message: "Choose a PIN different from your current one.",
+    path: ["pin"],
+  });
+export type ChangeWalletPinInput = z.infer<typeof changeWalletPinSchema>;
+
 export const requestPayoutSchema = z.object({
   bankAccountId: z.string().uuid(),
   amountRupees: z.coerce.number().positive("Enter an amount greater than zero."),

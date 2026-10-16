@@ -15,7 +15,8 @@ import {
   verifyWalletPin,
 } from "@/server/domain/wallet/wallet-pin";
 import { recordAudit } from "@/server/domain/audit/record";
-import { ConflictError, ValidationError } from "@/server/lib/errors";
+import { ConflictError, RateLimitedError, ValidationError } from "@/server/lib/errors";
+import { walletPinRateLimiter } from "@/server/lib/rate-limit";
 import type { WalletTransactionType } from "@/generated/prisma/enums";
 
 export interface CreditWalletInput {
@@ -55,6 +56,38 @@ export async function setWalletPin(userId: string, pin: string): Promise<void> {
   await recordAudit({
     actorId: userId,
     action: "WALLET_PIN_SET",
+    entityType: "wallets",
+    entityId: wallet.id,
+  });
+}
+
+/**
+ * Replaces an existing PIN. The current PIN must be right; a member with no PIN yet has to set one
+ * first. Each wrong attempt counts against a small limit so the current PIN cannot be guessed.
+ */
+export async function changeWalletPin(
+  userId: string,
+  currentPin: string,
+  newPin: string,
+): Promise<void> {
+  if (!isValidPinFormat(newPin)) {
+    throw new ValidationError("Enter a 6-digit PIN.");
+  }
+  const wallet = await getOrCreateWallet(userId);
+  if (!wallet.walletPinHash) {
+    throw new ValidationError("You haven't set a wallet PIN yet. Set one first.");
+  }
+  const attempt = await walletPinRateLimiter.consume(`wallet-pin:${userId}`);
+  if (!attempt.allowed) {
+    throw new RateLimitedError("Too many wrong PINs. Please try again in a few minutes.");
+  }
+  if (!verifyWalletPin(currentPin, wallet.walletPinHash)) {
+    throw new ConflictError("Your current PIN is not correct.");
+  }
+  await setWalletPinHash(wallet.id, hashWalletPin(newPin));
+  await recordAudit({
+    actorId: userId,
+    action: "WALLET_PIN_CHANGED",
     entityType: "wallets",
     entityId: wallet.id,
   });

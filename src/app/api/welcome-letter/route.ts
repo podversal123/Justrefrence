@@ -28,6 +28,7 @@ export async function GET(request: Request) {
       where: { userId },
       select: {
         memberId: true,
+        createdAt: true,
         asMember: { select: { referrer: { select: { memberId: true } } } },
         user: { select: { fullName: true, email: true, phone: true } },
       },
@@ -39,6 +40,7 @@ export async function GET(request: Request) {
   }
 
   const pdf = await renderWelcomeLetter({
+    issuedAt: member.createdAt,
     memberName: member.user.fullName?.trim() || "Member",
     membershipNumber: member.memberId,
     referralId: member.asMember?.referrer.memberId ?? null,

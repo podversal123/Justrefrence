@@ -26,6 +26,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { SetWalletPinForm } from "./set-wallet-pin-form";
 import { PayoutRequestForm } from "./payout-request-form";
+import { ChangeWalletPinDialog } from "./change-wallet-pin-dialog";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
@@ -113,9 +114,12 @@ export default async function WalletPage() {
         </p>
         <div className="mt-4">
           {hasPin ? (
-            <div className="text-success flex items-center gap-2 text-sm font-medium">
-              <ShieldCheck className="size-4" />
-              {t("PIN is set")}
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="text-success flex items-center gap-2 text-sm font-medium">
+                <ShieldCheck className="size-4" />
+                {t("PIN is set")}
+              </div>
+              <ChangeWalletPinDialog />
             </div>
           ) : (
             <SetWalletPinForm />
