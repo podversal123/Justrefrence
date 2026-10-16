@@ -24,6 +24,8 @@ import { DateRangeSelector } from "./date-range-selector";
 import { WidgetVisibilityProvider, WidgetToggleMenu, Widget } from "./widget-visibility";
 import { RevenueChart } from "./revenue-chart";
 import { OrderStatusChart } from "./order-status-chart";
+import { getAuthSession } from "@/server/auth/session";
+import type { Permission } from "@/server/auth/permissions";
 import { WalletActivityChart } from "./wallet-activity-chart";
 import {
   CatalogMixChart,
@@ -73,6 +75,20 @@ export async function AdminDashboard({
   const status = searchParams["status"];
   const cursor = searchParams["cursor"];
 
+  // Money tiles follow what this person may open elsewhere, so a limited Admin is not shown
+  // payouts, commissions or wallet totals they cannot reach.
+  const session = await getAuthSession();
+  const can = (permission: Permission) => session?.permissions.has(permission) ?? false;
+  const showPayouts = can("payout:approve");
+  const showCommissions = can("commission:read:any");
+  const showWallets = can("wallet:read:any");
+  const hiddenWidgets = new Set<string>([
+    ...(showPayouts ? [] : ["pending-payouts"]),
+    ...(showCommissions ? [] : ["commissions"]),
+    ...(showWallets ? [] : ["wallet-activity-chart"]),
+  ]);
+  const widgets = WIDGETS.filter((w) => !hiddenWidgets.has(w.id));
+
   const data = await getAdminDashboardData(range, { search, status, cursor, limit: 10 });
   // Support ticket counts are a nice-to-have on this page: never let them break the dashboard.
   const ticketCounts = await countTicketsByStatus().catch(() => null);
@@ -114,7 +130,7 @@ export async function AdminDashboard({
           )}
           <div className="flex flex-wrap items-center gap-2">
             <DateRangeSelector current={data.range.preset} />
-            <WidgetToggleMenu widgets={WIDGETS} />
+            <WidgetToggleMenu widgets={widgets} />
           </div>
         </div>
 
@@ -182,19 +198,21 @@ export async function AdminDashboard({
               sublabel={t("This period")}
             />
           </Widget>
-          <Widget id="pending-payouts">
-            <StatCard
-              icon={PiggyBank}
-              label={t("Pending payouts")}
-              value={formatPaise(data.pendingPayouts.amount.toString())}
-              sublabel={
-                data.pendingPayouts.count === 1
-                  ? t("1 request")
-                  : t("{count} requests", { count: data.pendingPayouts.count })
-              }
-              tone={data.pendingPayouts.count > 0 ? "warning" : "default"}
-            />
-          </Widget>
+          {showPayouts ? (
+            <Widget id="pending-payouts">
+              <StatCard
+                icon={PiggyBank}
+                label={t("Pending payouts")}
+                value={formatPaise(data.pendingPayouts.amount.toString())}
+                sublabel={
+                  data.pendingPayouts.count === 1
+                    ? t("1 request")
+                    : t("{count} requests", { count: data.pendingPayouts.count })
+                }
+                tone={data.pendingPayouts.count > 0 ? "warning" : "default"}
+              />
+            </Widget>
+          ) : null}
           <Widget id="referral-activity">
             <StatCard
               icon={Receipt}
@@ -203,16 +221,18 @@ export async function AdminDashboard({
               sublabel={t("New referrals this period")}
             />
           </Widget>
-          <Widget id="commissions">
-            <StatCard
-              icon={Percent}
-              label={t("Commissions available")}
-              value={formatPaise(availableCommission.toString())}
-              sublabel={t("{amount} pending", {
-                amount: formatPaise(pendingCommission.toString()),
-              })}
-            />
-          </Widget>
+          {showCommissions ? (
+            <Widget id="commissions">
+              <StatCard
+                icon={Percent}
+                label={t("Commissions available")}
+                value={formatPaise(availableCommission.toString())}
+                sublabel={t("{amount} pending", {
+                  amount: formatPaise(pendingCommission.toString()),
+                })}
+              />
+            </Widget>
+          ) : null}
           <Widget id="support-tickets">
             <StatCard
               icon={Headset}
@@ -267,9 +287,11 @@ export async function AdminDashboard({
           </Widget>
         </div>
 
-        <Widget id="wallet-activity-chart">
-          <WalletActivityChart data={walletSeries} />
-        </Widget>
+        {showWallets ? (
+          <Widget id="wallet-activity-chart">
+            <WalletActivityChart data={walletSeries} />
+          </Widget>
+        ) : null}
 
         <RecentOrdersTable
           items={data.recentOrders.items}
