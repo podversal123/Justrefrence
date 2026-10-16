@@ -11,11 +11,12 @@ import {
 import { canManageListing } from "@/server/domain/catalog/ownership";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { ListingForm } from "@/components/catalog/listing-form";
 import { ListingStatusActions } from "@/components/catalog/listing-status-actions";
-import { ImageUploader } from "@/components/catalog/image-uploader";
-import { DeleteListingButton } from "@/components/catalog/delete-listing-button";
-import { updateListingAction } from "@/server/services/catalog-actions";
+import {
+  ListingDangerZone,
+  ListingDetailsCard,
+  ListingImagesCard,
+} from "@/components/catalog/listing-detail-sections";
 
 interface PageProps {
   params: Promise<{ kind: string; id: string }>;
@@ -74,7 +75,7 @@ export default async function VendorListingDetailPage({ params }: PageProps) {
           <CardTitle>{t("Status")}</CardTitle>
           <CardDescription>
             {listing.approvalStatus === "REJECTED" && listing.rejectedReason
-              ? `Rejected: ${listing.rejectedReason}`
+              ? t("Rejected: {reason}", { reason: listing.rejectedReason })
               : listing.approvalStatus === "PENDING"
                 ? t("Awaiting admin review.")
                 : t("Live in the catalog when active.")}
@@ -91,63 +92,23 @@ export default async function VendorListingDetailPage({ params }: PageProps) {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("Images")}</CardTitle>
-          <CardDescription>
-            {t("The first image is used as the listing thumbnail.")}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ImageUploader kind={kind} itemId={listing.id} images={listing.images} />
-        </CardContent>
-      </Card>
+      <ListingImagesCard kind={kind} listing={listing} />
 
       {canUpdate ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>{t("Details")}</CardTitle>
-            <CardDescription>
-              {t("Editing an approved listing sends it back for re-review.")}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ListingForm
-              kind={kind}
-              action={updateListingAction}
-              categories={categories}
-              initialValues={{
-                id: listing.id,
-                categoryId: listing.categoryId,
-                subcategoryId: listing.subcategoryId,
-                title: listing.title,
-                description: listing.description,
-                price: listing.price !== null ? String(listing.price) : null,
-                sku: "sku" in listing ? (listing.sku as string | null) : undefined,
-                stock: "stock" in listing ? (listing.stock as number) : undefined,
-                pricingType:
-                  "pricingType" in listing ? (listing.pricingType as "FIXED" | "QUOTE") : undefined,
-              }}
-              submitLabel={t("Save changes")}
-            />
-          </CardContent>
-        </Card>
+        <ListingDetailsCard
+          kind={kind}
+          listing={listing}
+          categories={categories}
+          description={t("Editing an approved listing sends it back for re-review.")}
+        />
       ) : null}
 
       {canDelete ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-destructive text-sm">{t("Danger zone")}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <DeleteListingButton
-              kind={kind}
-              id={listing.id}
-              title={listing.title}
-              redirectTo={`/vendor/catalog/${kindSegment}`}
-            />
-          </CardContent>
-        </Card>
+        <ListingDangerZone
+          kind={kind}
+          listing={listing}
+          redirectTo={`/vendor/catalog/${kindSegment}`}
+        />
       ) : null}
     </div>
   );

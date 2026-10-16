@@ -33,6 +33,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { BulkActionToolbar } from "@/components/dashboard/bulk-action-toolbar";
+import { BulkApproveAction, BulkRejectAction } from "@/components/dashboard/bulk-dialogs";
 import { DetailDrawer } from "@/components/dashboard/detail-drawer";
 import { toast } from "@/components/ui/toast";
 import { updateVendorStatusAction } from "@/server/services/vendor-actions";
@@ -187,127 +188,6 @@ function RowApprovalFooter({
   );
 }
 
-function BulkApproveAction({
-  rows,
-  onConfirm,
-}: {
-  rows: PendingApprovalRow[];
-  onConfirm: () => Promise<void>;
-}) {
-  const t = useT();
-  const [open, setOpen] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const count = rows.length;
-
-  async function handleConfirm() {
-    setBusy(true);
-    await onConfirm();
-    setBusy(false);
-    setOpen(false);
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger
-        render={
-          <Button size="sm">
-            <Check />
-            {t("Approve selected")}
-          </Button>
-        }
-      />
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>
-            {count === 1 ? t("Approve 1 item?") : t("Approve {count} items?", { count })}
-          </DialogTitle>
-          <DialogDescription>
-            {t(
-              "Each vendor or listing is approved individually, the same as approving one at a time.",
-            )}
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={busy}>
-            {t("Cancel")}
-          </Button>
-          <Button onClick={handleConfirm} disabled={busy}>
-            {busy ? t("Approving…") : t("Approve all")}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function BulkRejectAction({
-  rows,
-  onConfirm,
-}: {
-  rows: PendingApprovalRow[];
-  onConfirm: (reason: string) => Promise<void>;
-}) {
-  const t = useT();
-  const [open, setOpen] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [reason, setReason] = useState("");
-  const count = rows.length;
-
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setBusy(true);
-    await onConfirm(reason);
-    setBusy(false);
-    setOpen(false);
-    setReason("");
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger
-        render={
-          <Button size="sm" variant="destructive">
-            <X />
-            {t("Reject selected")}
-          </Button>
-        }
-      />
-      <DialogContent>
-        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-          <DialogHeader>
-            <DialogTitle>
-              {count === 1 ? t("Reject 1 item?") : t("Reject {count} items?", { count })}
-            </DialogTitle>
-            <DialogDescription>
-              {t("The same reason is applied to every selected vendor or listing.")}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-2">
-            <Label htmlFor="bulk-reject-reason">{t("Reason")}</Label>
-            <Textarea
-              id="bulk-reject-reason"
-              value={reason}
-              onChange={(event) => setReason(event.target.value)}
-              required
-              rows={3}
-            />
-          </div>
-
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={busy}>
-              {t("Cancel")}
-            </Button>
-            <Button type="submit" variant="destructive" disabled={busy}>
-              {busy ? t("Rejecting…") : t("Reject all")}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 export function PendingApprovalsTable({ items }: { items: PendingApprovalRow[] }) {
   const t = useT();
   const { formatDate } = useFormat();
@@ -438,8 +318,26 @@ export function PendingApprovalsTable({ items }: { items: PendingApprovalRow[] }
             onClear={clearSelection}
             actions={
               <>
-                <BulkApproveAction rows={selectedRows} onConfirm={handleBulkApprove} />
-                <BulkRejectAction rows={selectedRows} onConfirm={handleBulkReject} />
+                <BulkApproveAction
+                  title={
+                    selectedRows.length === 1
+                      ? t("Approve 1 item?")
+                      : t("Approve {count} items?", { count: selectedRows.length })
+                  }
+                  description={t(
+                    "Each vendor or listing is approved individually, the same as approving one at a time.",
+                  )}
+                  onConfirm={handleBulkApprove}
+                />
+                <BulkRejectAction
+                  title={
+                    selectedRows.length === 1
+                      ? t("Reject 1 item?")
+                      : t("Reject {count} items?", { count: selectedRows.length })
+                  }
+                  description={t("The same reason is applied to every selected vendor or listing.")}
+                  onConfirm={handleBulkReject}
+                />
               </>
             }
           />

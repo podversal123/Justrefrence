@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { BulkActionToolbar } from "@/components/dashboard/bulk-action-toolbar";
+import { BulkApproveAction, BulkRejectAction } from "@/components/dashboard/bulk-dialogs";
 import { DetailDrawer } from "@/components/dashboard/detail-drawer";
 import { toast } from "@/components/ui/toast";
 import { updatePayoutStatusAction } from "@/server/services/wallet-actions";
@@ -355,129 +356,6 @@ function MarkFailedDialog({
   );
 }
 
-function BulkApproveAction({
-  count,
-  onConfirm,
-}: {
-  count: number;
-  onConfirm: () => Promise<void>;
-}) {
-  const t = useT();
-  const [open, setOpen] = useState(false);
-  const [busy, setBusy] = useState(false);
-
-  async function handleConfirm() {
-    setBusy(true);
-    await onConfirm();
-    setBusy(false);
-    setOpen(false);
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger
-        render={
-          <Button size="sm">
-            <Check />
-            {t("Approve selected")}
-          </Button>
-        }
-      />
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>
-            {count === 1
-              ? t("Approve 1 payout request?")
-              : t("Approve {count} payout requests?", { count })}
-          </DialogTitle>
-          <DialogDescription>
-            {t("Each request is approved individually, the same as approving one at a time.")}
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={busy}>
-            {t("Cancel")}
-          </Button>
-          <Button onClick={handleConfirm} disabled={busy}>
-            {busy ? t("Approving…") : t("Approve all")}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function BulkRejectAction({
-  count,
-  onConfirm,
-}: {
-  count: number;
-  onConfirm: (reason: string) => Promise<void>;
-}) {
-  const t = useT();
-  const [open, setOpen] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [reason, setReason] = useState("");
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setBusy(true);
-    await onConfirm(reason);
-    setBusy(false);
-    setOpen(false);
-    setReason("");
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger
-        render={
-          <Button size="sm" variant="destructive">
-            <X />
-            {t("Reject selected")}
-          </Button>
-        }
-      />
-      <DialogContent>
-        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-          <DialogHeader>
-            <DialogTitle>
-              {count === 1
-                ? t("Reject 1 payout request?")
-                : t("Reject {count} payout requests?", { count })}
-            </DialogTitle>
-            <DialogDescription>
-              {t(
-                "The same reason is applied to every selected request, and each one's held funds return to the member's balance.",
-              )}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-2">
-            <Label htmlFor="bulk-reject-reason">{t("Reason")}</Label>
-            <Textarea
-              id="bulk-reject-reason"
-              value={reason}
-              onChange={(event) => setReason(event.target.value)}
-              required
-              rows={3}
-            />
-          </div>
-
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={busy}>
-              {t("Cancel")}
-            </Button>
-            <Button type="submit" variant="destructive" disabled={busy}>
-              {busy ? t("Rejecting…") : t("Reject all")}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 function PayoutRowFooter({
   row,
   busy,
@@ -646,8 +524,28 @@ export function PayoutsTable({ items }: { items: PayoutDetailRow[] }) {
         onClear={clearSelection}
         actions={
           <>
-            <BulkApproveAction count={selectedRows.length} onConfirm={handleBulkApprove} />
-            <BulkRejectAction count={selectedRows.length} onConfirm={handleBulkReject} />
+            <BulkApproveAction
+              title={
+                selectedRows.length === 1
+                  ? t("Approve 1 payout request?")
+                  : t("Approve {count} payout requests?", { count: selectedRows.length })
+              }
+              description={t(
+                "Each request is approved individually, the same as approving one at a time.",
+              )}
+              onConfirm={handleBulkApprove}
+            />
+            <BulkRejectAction
+              title={
+                selectedRows.length === 1
+                  ? t("Reject 1 payout request?")
+                  : t("Reject {count} payout requests?", { count: selectedRows.length })
+              }
+              description={t(
+                "The same reason is applied to every selected request, and each one's held funds return to the member's balance.",
+              )}
+              onConfirm={handleBulkReject}
+            />
           </>
         }
       />
