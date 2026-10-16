@@ -467,7 +467,6 @@ export const HI_MESSAGES: Messages = {
   Completed: "पूरा हुआ",
   "Condition, delivery, anything a bidder should know.":
     "स्थिति, डिलीवरी, या कुछ भी जो बोली लगाने वाले को पता होना चाहिए।",
-  "Configure how referral commissions are calculated.": "तय करें कि रेफरल कमीशन कैसे गिना जाए।",
   Confirm: "पुष्टि करें",
   "Confirm PIN": "पिन की पुष्टि करें",
   "Confirm new password": "नए पासवर्ड की पुष्टि करें",
@@ -487,8 +486,6 @@ export const HI_MESSAGES: Messages = {
   "Contact person": "संपर्क करने वाला व्यक्ति",
   "Contact us": "हमसे संपर्क करें",
   "Continue to my account": "मेरे खाते में जाएँ",
-  "Controls only a Super Admin has: role management, vendor approval and system settings.":
-    "वे नियंत्रण जो सिर्फ़ सुपर एडमिन के पास हैं: भूमिकाओं का प्रबंधन, विक्रेता की मंज़ूरी और सिस्टम सेटिंग्स।",
   Conversation: "बातचीत",
   Copied: "कॉपी हो गया",
   "Copy code": "कोड कॉपी करें",
@@ -646,8 +643,6 @@ export const HI_MESSAGES: Messages = {
   Deactivated: "बंद किया गया",
   "Decided requests are listed here.": "तय हो चुके अनुरोध यहाँ दिखते हैं।",
   Decision: "फ़ैसला",
-  "Define roles and the permissions each one grants.":
-    "भूमिकाएँ तय करें और हर एक कौन सी अनुमतियाँ देती है।",
   Delete: "हटाएँ",
   "Delete draft": "ड्राफ़्ट हटाएँ",
   "Delete post": "पोस्ट हटाएँ",
@@ -809,8 +804,6 @@ export const HI_MESSAGES: Messages = {
     "कुछ भी लिस्ट करने से पहले हमारी टीम हर विक्रेता की जाँच करती है, इसलिए खरीदार जाँचे-परखे व्यवसायों से ही लेन-देन करते हैं।",
   "Everyone in your downline, direct and indirect.": "आपके डाउनलाइन में सभी, सीधे और अप्रत्यक्ष।",
   Everything: "सब कुछ",
-  "Everything Admin sees below, plus the platform-level controls only Super Admin can reach.":
-    "नीचे जो कुछ एडमिन देखता है, उसके साथ वे प्लेटफ़ॉर्म-स्तर के नियंत्रण भी जो सिर्फ़ सुपर एडमिन के पास हैं।",
   Expired: "खत्म हो गया",
   "Expired or not started": "खत्म हो चुके या अभी शुरू नहीं हुए",
   "Expired {date}": "{date} को खत्म हुआ",
@@ -1024,8 +1017,6 @@ export const HI_MESSAGES: Messages = {
   "Lowest price you accept (₹), optional": "सबसे कम कीमत जो आप स्वीकार करेंगे (₹), वैकल्पिक",
   "Lowest total (L1)": "सबसे कम कुल राशि (L1)",
   Main: "मुख्य",
-  "Manage administrator accounts and their role assignments.":
-    "एडमिन खाते और उनकी भूमिकाएँ संभालें।",
   "Manage catalog": "कैटलॉग संभालें",
   "Manage every vendor's {kind}.": "हर विक्रेता के {kind} संभालें।",
   "Manage this requirement": "इस आवश्यकता को संभालें",
@@ -1317,7 +1308,6 @@ export const HI_MESSAGES: Messages = {
   "Open ticket": "टिकट खोलें",
   "Opened by {name}": "{name} ने खोला",
   "Opening…": "खुल रहा है…",
-  "Operational dashboard": "संचालन का डैशबोर्ड",
   "Optional.": "वैकल्पिक।",
   "Optional. A default message is used if this is empty.":
     "वैकल्पिक। खाली होने पर एक डिफ़ॉल्ट संदेश इस्तेमाल होता है।",
@@ -1424,7 +1414,6 @@ export const HI_MESSAGES: Messages = {
   Plan: "प्लान",
   "Plan activated": "प्लान चालू हो गया",
   "Plan deactivated": "प्लान बंद हो गया",
-  "Platform controls": "प्लेटफ़ॉर्म के नियंत्रण",
   "Platform fee": "प्लेटफ़ॉर्म शुल्क",
   "Please sign in again.": "कृपया फिर से साइन इन करें।",
   "Please sign in to manage your cart.": "अपना कार्ट संभालने के लिए साइन इन करें।",
@@ -1597,14 +1586,10 @@ export const HI_MESSAGES: Messages = {
     "रिवर्स नीलामी: सबसे कम कुल राशि जीतती है, और हर नई बोली आपकी पिछली बोली से कम होनी चाहिए।",
   Reversed: "पलटा गया",
   "Review & credit wallet": "समीक्षा करें और वॉलेट में जमा करें",
-  "Review a record of sensitive actions taken across the platform.":
-    "प्लेटफ़ॉर्म पर की गई संवेदनशील कार्रवाइयों का रिकॉर्ड देखें।",
   "Review your items before checkout.": "चेकआउट से पहले अपने आइटम देख लें।",
   "Review your order before placing it.": "ऑर्डर देने से पहले उसे देख लें।",
   "Review, approve, and record member payout requests.":
     "सदस्यों के पेआउट अनुरोधों की समीक्षा करें, उन्हें मंज़ूर करें और दर्ज करें।",
-  "Review, approve, or reject pending vendor applications.":
-    "लंबित विक्रेता आवेदनों की समीक्षा करें, उन्हें मंज़ूर या अस्वीकार करें।",
   "Reviewed {date}": "{date} को समीक्षा हुई",
   "Revise your bid": "अपनी बोली बदलें",
   Revoke: "रद्द करें",
@@ -1907,7 +1892,6 @@ export const HI_MESSAGES: Messages = {
   "The plan behind this e-pin no longer exists.": "इस ई-पिन वाला प्लान अब मौजूद नहीं है।",
   "The promoters have worked with well-known names in diverse areas of business management. That experience shaped what this platform is for: {purpose} It brings buyers and approved vendors together, and rewards the people who make the introduction.":
     "प्रमोटरों ने व्यवसाय प्रबंधन के कई क्षेत्रों में जाने-माने नामों के साथ काम किया है। उसी अनुभव ने तय किया कि यह प्लेटफ़ॉर्म किसलिए है: {purpose} यह खरीदारों और मंज़ूर विक्रेताओं को साथ लाता है, और जोड़ने वालों को इनाम देता है।",
-  "The same platform data Admin sees.": "वही प्लेटफ़ॉर्म डेटा जो एडमिन देखता है।",
   "The same reason is applied to every selected request, and each one's held funds return to the member's balance.":
     "चुने हुए हर अनुरोध पर यही कारण लागू होता है, और हर एक की रोकी गई रकम सदस्य के बैलेंस में लौट आती है।",
   "The same reason is applied to every selected vendor or listing.":
@@ -2107,7 +2091,6 @@ export const HI_MESSAGES: Messages = {
   Vendor: "विक्रेता",
   "Vendor applications and new listings awaiting review.":
     "विक्रेता के आवेदन और नई लिस्टिंग जो समीक्षा का इंतज़ार कर रही हैं।",
-  "Vendor approvals": "विक्रेता मंज़ूरियाँ",
   "Vendor details": "विक्रेता का विवरण",
   "Vendor not found.": "विक्रेता नहीं मिला।",
   "Vendor orders": "विक्रेता ऑर्डर",
@@ -2678,4 +2661,25 @@ export const HI_MESSAGES: Messages = {
   "Money out": "गया पैसा",
   "Money in and out of the wallet will show here.": "वॉलेट में आया और गया पैसा यहाँ दिखेगा।",
   "Waiting to be released": "जारी होने का इंतज़ार",
+  "Seller requests": "विक्रेता अनुरोध",
+  "Listings to approve": "मंज़ूरी के लिए लिस्टिंग",
+  "Changes to approve": "मंज़ूरी के लिए बदलाव",
+  "Payout requests": "पेआउट अनुरोध",
+  "Documents to check": "जाँचने के लिए दस्तावेज़",
+  "Open support tickets": "खुले सपोर्ट टिकट",
+  "Ads to approve": "मंज़ूरी के लिए विज्ञापन",
+  "Waiting for you": "आपके फ़ैसले का इंतज़ार",
+  "Nothing is waiting for a decision. You are all caught up.": "किसी फ़ैसले का इंतज़ार नहीं है। सब निपट चुका है।",
+  "These are waiting for a decision. Open one to deal with it.": "ये फ़ैसले का इंतज़ार कर रहे हैं। निपटाने के लिए किसी एक को खोलें।",
+  "Decide what each role is allowed to do.": "तय करें कि हर रोल क्या-क्या कर सकता है।",
+  "Add admins and choose their roles.": "एडमिन जोड़ें और उनके रोल चुनें।",
+  "Set how much referrers earn.": "तय करें कि रेफर करने वालों को कितनी कमाई मिले।",
+  "Maintenance mode, contact details and auto logout.": "मेंटेनेंस मोड, संपर्क जानकारी और ऑटो लॉगआउट।",
+  "See who did what, and when.": "देखें किसने क्या किया, और कब।",
+  "Super Admin dashboard": "सुपर एडमिन डैशबोर्ड",
+  "You can see and manage everything on the platform from here.": "यहाँ से आप प्लेटफ़ॉर्म की हर चीज़ देख और संभाल सकते हैं।",
+  "Only for Super Admin": "सिर्फ़ सुपर एडमिन के लिए",
+  "Admins can't open these. You decide who gets access.": "एडमिन इन्हें नहीं खोल सकते। किसे पहुँच मिले, यह आप तय करते हैं।",
+  "Platform overview": "प्लेटफ़ॉर्म एक नज़र में",
+  "Members, listings, orders and money across the platform.": "पूरे प्लेटफ़ॉर्म के सदस्य, लिस्टिंग, ऑर्डर और पैसा।",
 };

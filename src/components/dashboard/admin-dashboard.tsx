@@ -59,8 +59,11 @@ const WIDGETS = [
 
 export async function AdminDashboard({
   searchParams,
+  embedded = false,
 }: {
   searchParams: Record<string, string | undefined>;
+  /** True when shown inside the Super Admin dashboard, which supplies its own page title. */
+  embedded?: boolean;
 }) {
   const t = await getT();
   const range: DateRangePreset = isDateRangePreset(searchParams["range"])
@@ -96,10 +99,19 @@ export async function AdminDashboard({
     <WidgetVisibilityProvider>
       <div className="flex flex-col gap-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1>{t("Dashboard")}</h1>
-            <p className="text-muted-foreground">{t("An overview of the platform.")}</p>
-          </div>
+          {embedded ? (
+            <div>
+              <h2 className="text-lg font-semibold">{t("Platform overview")}</h2>
+              <p className="text-muted-foreground text-sm">
+                {t("Members, listings, orders and money across the platform.")}
+              </p>
+            </div>
+          ) : (
+            <div>
+              <h1>{t("Dashboard")}</h1>
+              <p className="text-muted-foreground">{t("An overview of the platform.")}</p>
+            </div>
+          )}
           <div className="flex flex-wrap items-center gap-2">
             <DateRangeSelector current={data.range.preset} />
             <WidgetToggleMenu widgets={WIDGETS} />
