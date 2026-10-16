@@ -28,20 +28,20 @@ export async function GET(request: Request) {
       where: { userId },
       select: {
         memberId: true,
-        referralCode: true,
+        asMember: { select: { referrer: { select: { memberId: true } } } },
         user: { select: { fullName: true, email: true, phone: true } },
       },
     }),
     getSiteSettings(),
   ]);
-  if (!member?.memberId || !member.referralCode) {
+  if (!member?.memberId) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
   const pdf = await renderWelcomeLetter({
     memberName: member.user.fullName?.trim() || "Member",
     membershipNumber: member.memberId,
-    referralId: member.referralCode,
+    referralId: member.asMember?.referrer.memberId ?? null,
     email: member.user.email,
     mobile: member.user.phone,
     supportEmail: settings.contactEmail || null,

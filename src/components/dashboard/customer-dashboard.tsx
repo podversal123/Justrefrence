@@ -26,7 +26,10 @@ import {
   getOrCreateWallet,
   listWalletTransactions,
 } from "@/server/repositories/wallet/wallet-repository";
-import { getMemberProfileByUserId } from "@/server/repositories/identity/member-repository";
+import {
+  getMemberIdentity,
+  getMemberProfileByUserId,
+} from "@/server/repositories/identity/member-repository";
 import { getEarningsTotals } from "@/server/repositories/commission/commission-repository";
 import { enumerateDayBuckets, resolveDateRange } from "@/server/domain/dashboard/date-range";
 import { getReferralDashboard } from "@/server/domain/referral/referral-service";
@@ -136,6 +139,7 @@ export async function CustomerDashboard({ session }: { session: AuthSession }) {
       // leave the flat series
     }
   }
+  const identity = await getMemberIdentity(session.userId).catch(() => null);
   let earningsTotals = { direct: 0n, indirect: 0n, received: 0n, pending: 0n };
   try {
     const member = await getMemberProfileByUserId(session.userId);
@@ -175,6 +179,20 @@ export async function CustomerDashboard({ session }: { session: AuthSession }) {
         <p className="text-muted-foreground">
           {dateLabel} · {t(BRAND.taglineSecondary)}
         </p>
+        {identity ? (
+          <dl className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-sm">
+            <div className="flex items-baseline gap-2">
+              <dt className="text-muted-foreground">{t("Member ID")}</dt>
+              <dd className="font-mono font-semibold tracking-wide">{identity.memberId}</dd>
+            </div>
+            {identity.referralId ? (
+              <div className="flex items-baseline gap-2">
+                <dt className="text-muted-foreground">{t("Referral ID")}</dt>
+                <dd className="font-mono font-semibold tracking-wide">{identity.referralId}</dd>
+              </div>
+            ) : null}
+          </dl>
+        ) : null}
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">

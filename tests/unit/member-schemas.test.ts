@@ -32,10 +32,23 @@ describe("registerSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("uppercases and trims an optional referral code", () => {
-    const result = registerSchema.safeParse({ ...validRegister, referralCode: " jr-000042 " });
+  it("trims an optional 10-digit Referral ID", () => {
+    const result = registerSchema.safeParse({ ...validRegister, referralCode: " 4205551234 " });
     expect(result.success).toBe(true);
-    if (result.success) expect(result.data.referralCode).toBe("JR-000042");
+    if (result.success) expect(result.data.referralCode).toBe("4205551234");
+  });
+
+  it("rejects a Referral ID that is not exactly 10 digits", () => {
+    for (const bad of ["JR-000042", "420555123", "42055512345", "42055512ab", "4205 551234"]) {
+      const result = registerSchema.safeParse({ ...validRegister, referralCode: bad });
+      expect(result.success, bad).toBe(false);
+    }
+  });
+
+  it("treats a blank Referral ID as nobody referred them", () => {
+    const result = registerSchema.safeParse({ ...validRegister, referralCode: "   " });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.referralCode).toBeUndefined();
   });
 
   it("leaves referralCode undefined when omitted", () => {

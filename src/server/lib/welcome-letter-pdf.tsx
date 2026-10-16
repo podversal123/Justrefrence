@@ -28,7 +28,8 @@ const styles = StyleSheet.create({
 export interface WelcomeLetterData {
   memberName: string;
   membershipNumber: string;
-  referralId: string;
+  /** The Member ID of whoever referred this member; left out of the letter when nobody did. */
+  referralId: string | null;
   email: string;
   mobile: string | null;
   supportEmail: string | null;
@@ -48,7 +49,8 @@ function WelcomeLetter({ data }: { data: WelcomeLetterData }) {
         <Text style={styles.name}>{data.memberName.toUpperCase()}</Text>
         <View style={styles.details}>
           <Text>
-            Membership No.: {data.membershipNumber} | Referral ID No.: {data.referralId}
+            Membership No.: {data.membershipNumber}
+            {data.referralId ? ` | Referral ID No.: ${data.referralId}` : ""}
           </Text>
           <Text>Email: {data.email}</Text>
           {data.mobile ? <Text>Mobile No.: {data.mobile}</Text> : null}

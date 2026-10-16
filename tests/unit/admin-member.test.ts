@@ -27,14 +27,21 @@ describe("adminCreateMemberSchema", () => {
     }
   });
 
-  it("uppercases the referral code and validates the mobile number", () => {
+  it("accepts a 10-digit Referral ID and validates the mobile number", () => {
     const ok = adminCreateMemberSchema.safeParse({
       fullName: "Asha Rao",
       email: "asha@example.com",
       phone: "+919876543210",
-      referralCode: "jr-000001",
+      referralCode: " 4205551234 ",
     });
-    expect(ok.success && ok.data.referralCode).toBe("JR-000001");
+    expect(ok.success && ok.data.referralCode).toBe("4205551234");
+    expect(
+      adminCreateMemberSchema.safeParse({
+        fullName: "Asha Rao",
+        email: "asha@example.com",
+        referralCode: "JR-000001",
+      }).success,
+    ).toBe(false);
     expect(
       adminCreateMemberSchema.safeParse({ fullName: "Asha Rao", email: "a@b.co", phone: "12345" })
         .success,

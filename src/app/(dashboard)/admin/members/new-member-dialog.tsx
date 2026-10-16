@@ -149,10 +149,16 @@ export function NewMemberDialog() {
               </FormField>
               <FormField
                 htmlFor="nm-referral"
-                label={t("Referral code (optional)")}
+                label={t("Referral ID (optional)")}
                 error={errors["referralCode"]}
               >
-                <Input id="nm-referral" name="referralCode" placeholder={t("JR-000001")} />
+                <Input
+                  id="nm-referral"
+                  name="referralCode"
+                  inputMode="numeric"
+                  maxLength={10}
+                  placeholder="1234567890"
+                />
               </FormField>
             </FormGrid>
 

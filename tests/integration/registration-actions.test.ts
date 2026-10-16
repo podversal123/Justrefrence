@@ -145,11 +145,23 @@ describe("requestRegistrationAction", () => {
 
     const result = await requestRegistrationAction(
       undefined,
-      formData({ ...VALID_REGISTRATION, referralCode: "JR-999999" }),
+      formData({ ...VALID_REGISTRATION, referralCode: "9999999999" }),
     );
 
     expect(result.success).toBe(false);
     if (!result.success) expect(result.error.code).toBe("VALIDATION_ERROR");
+    expect(mockCreateUser).not.toHaveBeenCalled();
+  });
+
+  it("rejects a Referral ID in the old JR- format before looking anything up", async () => {
+    const result = await requestRegistrationAction(
+      undefined,
+      formData({ ...VALID_REGISTRATION, referralCode: "JR-000042" }),
+    );
+
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error.code).toBe("VALIDATION_ERROR");
+    expect(mockGetMemberProfileByReferralCode).not.toHaveBeenCalled();
     expect(mockCreateUser).not.toHaveBeenCalled();
   });
 
@@ -310,13 +322,13 @@ describe("confirmRegistrationAction", () => {
       id: "referrer-member-1",
       userId: "referrer-user-1",
       referralPath: "aaaa",
-      referralCode: "JR-000042",
+      referralCode: "4205551234",
     });
     mockFindRoleByCode.mockResolvedValue({ id: "role-customer", code: "CUSTOMER" });
     mockCreateMemberProfile.mockResolvedValue({
       id: "member-2",
-      memberId: "JR-000002",
-      referralCode: "JR-000002",
+      memberId: "7310002345",
+      referralCode: "7310002345",
     });
 
     await confirmRegistrationAction(
@@ -324,7 +336,7 @@ describe("confirmRegistrationAction", () => {
       formData({
         userId: "11111111-1111-4111-8111-111111111111",
         code: "123456",
-        referralCode: "jr-000042",
+        referralCode: "4205551234",
       }),
     );
 

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MEMBER_ID_PATTERN } from "@/server/domain/identity/member-id";
 import { passwordRules } from "@/lib/schemas/auth";
 import { mobileSchema, optionalLandlineSchema, optionalMobileSchema } from "@/lib/schemas/contact";
 import { optionalGstinSchema, optionalPanSchema } from "@/lib/schemas/tax-ids";
@@ -14,6 +15,20 @@ const phoneSchema = mobileSchema;
 export const otpChannelSchema = z.enum(["EMAIL", "SMS", "WHATSAPP"]);
 export type OtpChannelInput = z.infer<typeof otpChannelSchema>;
 
+/**
+ * The Referral ID someone types when signing up: the 10-digit ID of the member who referred them. Left
+ * blank it means nobody referred them. One definition, used by every form that asks for it.
+ */
+export const optionalReferralIdSchema = z
+  .string()
+  .trim()
+  .optional()
+  .transform((value) => (value ? value : undefined))
+  .refine(
+    (value) => value === undefined || MEMBER_ID_PATTERN.test(value),
+    "Enter the 10-digit Referral ID, or leave it empty.",
+  );
+
 export const registerSchema = z
   .object({
     fullName: z.string().trim().min(2, "Enter your full name.").max(200),
@@ -22,13 +37,7 @@ export const registerSchema = z
     password: passwordRules,
     confirmPassword: z.string(),
     channel: otpChannelSchema,
-    referralCode: z
-      .string()
-      .trim()
-      .toUpperCase()
-      .max(20)
-      .optional()
-      .transform((v) => (v ? v : undefined)),
+    referralCode: optionalReferralIdSchema,
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords do not match.",
@@ -42,13 +51,7 @@ export const verifyRegistrationSchema = z.object({
     .string()
     .trim()
     .regex(/^\d{6}$/, "Enter the 6-digit code."),
-  referralCode: z
-    .string()
-    .trim()
-    .toUpperCase()
-    .max(20)
-    .optional()
-    .transform((v) => (v ? v : undefined)),
+  referralCode: optionalReferralIdSchema,
 });
 export type VerifyRegistrationInput = z.infer<typeof verifyRegistrationSchema>;
 
@@ -138,13 +141,7 @@ export const adminCreateMemberSchema = z.object({
   fullName: z.string().trim().min(2, "Enter the member's full name.").max(200),
   email: z.string().trim().toLowerCase().email("Enter a valid email address."),
   phone: optionalMobileSchema,
-  referralCode: z
-    .string()
-    .trim()
-    .toUpperCase()
-    .max(20)
-    .optional()
-    .transform((v) => (v ? v : undefined)),
+  referralCode: optionalReferralIdSchema,
 });
 export type AdminCreateMemberInput = z.infer<typeof adminCreateMemberSchema>;
 

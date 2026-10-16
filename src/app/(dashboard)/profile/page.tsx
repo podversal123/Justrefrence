@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  getMemberIdentity,
   getMemberProfileByUserId,
   getUserPhone,
 } from "@/server/repositories/identity/member-repository";
@@ -44,6 +45,7 @@ export default async function ProfilePage({
   // Member-specific parts (details, addresses, bank) only apply to accounts that actually have a
   // member profile; a staff-only account has none.
   const memberProfile = await getMemberProfileByUserId(session.userId);
+  const memberIdentity = memberProfile ? await getMemberIdentity(session.userId) : null;
 
   const [addresses, bankAccount, contact] = await Promise.all([
     memberProfile ? listAddresses(session.userId) : Promise.resolve([]),
@@ -119,8 +121,8 @@ export default async function ProfilePage({
                   </div>
                   <CardDescription>
                     {t("Member ID")} <span className="font-mono">{memberProfile.memberId}</span> ·{" "}
-                    {t("Referral code")}{" "}
-                    <span className="font-mono">{memberProfile.referralCode}</span>
+                    {t("Referral ID")}{" "}
+                    <span className="font-mono">{memberIdentity?.referralId ?? t("NA")}</span>
                   </CardDescription>
                 </CardHeader>
                 <CardContent>

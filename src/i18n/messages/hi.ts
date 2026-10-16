@@ -959,7 +959,6 @@ export const HI_MESSAGES: Messages = {
   "It will show on the home page after the team approves it.":
     "टीम के मंज़ूर करने के बाद यह होम पेज पर दिखेगा।",
   Items: "आइटम",
-  "JR-000001": "JR-000001",
   Joined: "जुड़े",
   "Joined from": "कब से जुड़े",
   "Joined to": "कब तक जुड़े",
@@ -1500,7 +1499,6 @@ export const HI_MESSAGES: Messages = {
   Reference: "संदर्भ",
   "Referral activity": "रेफरल गतिविधि",
   "Referral code": "रेफरल कोड",
-  "Referral code (optional)": "रेफरल कोड (वैकल्पिक)",
   "Referral history": "रेफरल इतिहास",
   "Referral level": "रेफरल का स्तर",
   "Referral program": "रेफरल प्रोग्राम",
@@ -2682,4 +2680,8 @@ export const HI_MESSAGES: Messages = {
   "Admins can't open these. You decide who gets access.": "एडमिन इन्हें नहीं खोल सकते। किसे पहुँच मिले, यह आप तय करते हैं।",
   "Platform overview": "प्लेटफ़ॉर्म एक नज़र में",
   "Members, listings, orders and money across the platform.": "पूरे प्लेटफ़ॉर्म के सदस्य, लिस्टिंग, ऑर्डर और पैसा।",
+  "Referral ID (optional)": "रेफरल आईडी (वैकल्पिक)",
+  "Referral ID": "रेफरल आईडी",
+  "NA": "लागू नहीं",
+  "Enter the 10-digit Referral ID, or leave it empty.": "10 अंकों की रेफरल आईडी लिखें, या खाली छोड़ दें।",
 };

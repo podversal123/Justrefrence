@@ -108,12 +108,14 @@ export function RegisterForm({ initialReferralCode }: { initialReferralCode?: st
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="referralCode">{t("Referral code (optional)")}</Label>
+        <Label htmlFor="referralCode">{t("Referral ID (optional)")}</Label>
         <Input
           id="referralCode"
           name="referralCode"
           defaultValue={initialReferralCode}
-          placeholder="JR-000042"
+          inputMode="numeric"
+          maxLength={10}
+          placeholder="1234567890"
         />
       </div>
 

@@ -4,12 +4,30 @@
  * docs/adr/0003-referral-tree-model.md. No I/O, unit-tested directly.
  */
 
-const MEMBER_ID_PREFIX = "JR-";
-const MEMBER_ID_PAD = 6;
+/**
+ * A member's ID is a 10-digit number, and it is also the Referral ID they share (one number, not two).
+ * It is worked out from the database sequence with a fixed one-to-one mapping, so two members can
+ * never get the same ID, no lookup or retry is needed, and the numbers do not run 1, 2, 3 in the open.
+ *
+ * The mapping is `(seq * MULTIPLIER + OFFSET) mod SPAN`, moved up so the result always has ten digits
+ * and never starts with 0. MULTIPLIER is odd and divisible by neither 3 nor 5, so it has no common factor
+ * with SPAN (9 x 10^9 = 2^9 x 3^2 x 5^9), which is what makes the mapping one-to-one.
+ */
+const MEMBER_ID_MIN = 1_000_000_000n;
+const MEMBER_ID_SPAN = 9_000_000_000n;
+const MEMBER_ID_MULTIPLIER = 2_654_435_761n;
+const MEMBER_ID_OFFSET = 1_234_567_891n;
 
-/** `42n` -> `"JR-000042"`. Mirrors the `JR-000482` example in the spec. */
+/** The ID format everywhere a member or referral ID is typed or checked. */
+export const MEMBER_ID_PATTERN = /^\d{10}$/;
+
+/** `42n` -> a 10-digit number such as `"3571025603"`. The same sequence always gives the same ID. */
 export function formatMemberId(memberSeq: bigint): string {
-  return `${MEMBER_ID_PREFIX}${memberSeq.toString().padStart(MEMBER_ID_PAD, "0")}`;
+  if (memberSeq < 0n || memberSeq >= MEMBER_ID_SPAN) {
+    throw new RangeError("Member sequence is outside the range that fits a 10-digit ID.");
+  }
+  const mapped = (memberSeq * MEMBER_ID_MULTIPLIER + MEMBER_ID_OFFSET) % MEMBER_ID_SPAN;
+  return (MEMBER_ID_MIN + mapped).toString();
 }
 
 /**

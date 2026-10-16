@@ -9,6 +9,22 @@ export async function getMemberProfileByUserId(userId: string) {
   return prisma.memberProfile.findUnique({ where: { userId } });
 }
 
+/**
+ * The two IDs shown to a member: their own Member ID, and the Referral ID, which is the Member ID of
+ * the person who referred them. `referralId` is null when nobody referred them.
+ */
+export async function getMemberIdentity(userId: string) {
+  const row = await prisma.memberProfile.findUnique({
+    where: { userId },
+    select: {
+      memberId: true,
+      asMember: { select: { referrer: { select: { memberId: true } } } },
+    },
+  });
+  if (!row?.memberId) return null;
+  return { memberId: row.memberId, referralId: row.asMember?.referrer.memberId ?? null };
+}
+
 export async function getMemberProfileByReferralCode(referralCode: string) {
   return prisma.memberProfile.findUnique({ where: { referralCode } });
 }
