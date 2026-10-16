@@ -28,7 +28,8 @@ export default async function CartPage() {
 
   if (view.isEmpty) {
     return (
-      <div className="mx-auto w-full max-w-3xl px-4 py-8">
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8">
+        <h1>{t("Cart")}</h1>
         <EmptyState
           icon={ShoppingCart}
           title={t("Your cart is empty")}
