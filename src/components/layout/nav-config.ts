@@ -3,6 +3,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   Banknote,
   Briefcase,
+  CircleDollarSign,
   ClipboardCheck,
   ClipboardList,
   Gavel,
@@ -431,6 +432,12 @@ export const NAV_GROUPS: NavGroup[] = [
         href: "/admin/commission-rules",
         icon: Percent,
         visible: (s) => s.permissions.has("commission_rule:read"),
+      },
+      {
+        title: msg("Referral income"),
+        href: "/admin/commissions" as Route,
+        icon: CircleDollarSign,
+        visible: (s) => s.permissions.has("commission:read:any"),
       },
       {
         title: msg("Payouts"),

@@ -184,3 +184,73 @@ export async function getEarningsTotals(
   }
   return { ...totals, total: totals.direct + totals.indirect };
 }
+
+// --- Staff view: every member's commissions in one place (the "View referral income" item of the admin panel).
+
+export interface StaffCommissionFilter {
+  search?: string | undefined;
+  status?: CommissionStatus | undefined;
+  from?: string | undefined;
+  to?: string | undefined;
+}
+
+function staffCommissionWhere(filter: StaffCommissionFilter): Prisma.CommissionWhereInput {
+  const search = filter.search?.trim();
+  const createdAt = dayRangeBounds(filter.from, filter.to);
+  return {
+    ...(filter.status ? { status: filter.status } : {}),
+    ...(createdAt.gte || createdAt.lt ? { createdAt } : {}),
+    ...(search
+      ? {
+          OR: [
+            { order: { orderNumber: { contains: search, mode: "insensitive" } } },
+            { beneficiary: { memberId: { contains: search, mode: "insensitive" } } },
+            { beneficiary: { user: { email: { contains: search, mode: "insensitive" } } } },
+            { beneficiary: { user: { fullName: { contains: search, mode: "insensitive" } } } },
+          ],
+        }
+      : {}),
+  };
+}
+
+export async function listCommissionsForStaff(
+  filter: StaffCommissionFilter & { cursor?: string | undefined },
+) {
+  const rows = await prisma.commission.findMany({
+    where: staffCommissionWhere(filter),
+    orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+    take: EARNINGS_PAGE_SIZE + 1,
+    ...(filter.cursor ? { cursor: { id: filter.cursor }, skip: 1 } : {}),
+    select: {
+      id: true,
+      level: true,
+      amount: true,
+      status: true,
+      createdAt: true,
+      order: { select: { orderNumber: true } },
+      beneficiary: {
+        select: { memberId: true, user: { select: { id: true, fullName: true, email: true } } },
+      },
+    },
+  });
+  const hasMore = rows.length > EARNINGS_PAGE_SIZE;
+  const items = hasMore ? rows.slice(0, EARNINGS_PAGE_SIZE) : rows;
+  return { items, nextCursor: hasMore ? (items.at(-1)?.id ?? null) : null };
+}
+
+/** Totals for the filter chosen. Reversed and cancelled commissions are shown apart, never counted as earned. */
+export async function getStaffCommissionTotals(filter: StaffCommissionFilter) {
+  const grouped = await prisma.commission.groupBy({
+    by: ["status"],
+    where: staffCommissionWhere(filter),
+    _sum: { amount: true },
+  });
+  const totals = { paidToWallets: 0n, waiting: 0n, cancelled: 0n };
+  for (const row of grouped) {
+    const amount = row._sum.amount ?? 0n;
+    if (row.status === "AVAILABLE") totals.paidToWallets += amount;
+    else if (row.status === "REVERSED" || row.status === "CANCELLED") totals.cancelled += amount;
+    else totals.waiting += amount;
+  }
+  return { ...totals, earned: totals.paidToWallets + totals.waiting };
+}

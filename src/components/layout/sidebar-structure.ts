@@ -170,6 +170,7 @@ export const SIDEBAR_STRUCTURE: Record<Panel, readonly StructureEntry[]> = {
       "/admin/rewards",
     ]),
     section("money", msg("Money"), "wallet", [
+      "/admin/commissions",
       "/admin/payouts",
       "/admin/wallets",
       "/admin/tds",

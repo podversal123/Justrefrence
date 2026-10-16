@@ -2808,4 +2808,17 @@ export const HI_MESSAGES: Messages = {
   "That draft no longer exists.": "वह ड्राफ़्ट अब मौजूद नहीं है।",
   "Could not save your draft.": "आपका ड्राफ़्ट सहेजा नहीं जा सका।",
   "Could not delete that draft.": "वह ड्राफ़्ट हटाया नहीं जा सका।",
+  "Referral income": "रेफ़रल आय",
+  "What members have earned from their referrals, and where each amount stands.":
+    "सदस्यों ने रेफ़रल से कितना कमाया, और हर रक़म किस स्थिति में है।",
+  "Earned by members": "सदस्यों की कमाई",
+  "Paid to wallets": "वॉलेट में भुगतान हुआ",
+  "Reversed or cancelled": "वापस या रद्द",
+  "Member name, email, member ID or order": "सदस्य का नाम, ईमेल, सदस्य आईडी या ऑर्डर",
+  "No referral income found": "कोई रेफ़रल आय नहीं मिली",
+  "Income appears here when a referred member completes an order.":
+    "जब कोई रेफ़र किया गया सदस्य ऑर्डर पूरा करेगा, आय यहाँ दिखेगी।",
+  "Waiting for the order to settle": "ऑर्डर पूरा होने का इंतज़ार",
+  "Ready to release": "जारी करने के लिए तैयार",
+  "Paid to wallet": "वॉलेट में भुगतान हुआ",
 };
