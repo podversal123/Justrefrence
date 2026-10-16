@@ -4,6 +4,7 @@
  *   catalog-public    PUBLIC   product/service/project images (image-upload.ts)
  *   invoices-private  PRIVATE  invoice PDFs, served only via short-lived signed URLs (invoice-storage.ts)
  *   kyc-private       PRIVATE  PAN card / GST certificate uploads, opened only via signed URLs (kyc-storage.ts)
+ *   message-docs      PRIVATE  documents a member sends to the team with a message (message-doc-storage.ts)
  *
  * A fresh Supabase project has neither, and the failures are quiet: image
  * uploads error with "Bucket not found" and invoice PDFs silently never get
@@ -35,6 +36,14 @@ const BUCKETS = [
   },
   {
     name: "kyc-private",
+    options: {
+      public: false,
+      fileSizeLimit: 4 * 1024 * 1024,
+      allowedMimeTypes: ["application/pdf", "image/jpeg", "image/png", "image/webp"],
+    },
+  },
+  {
+    name: "message-docs",
     options: {
       public: false,
       fileSizeLimit: 4 * 1024 * 1024,

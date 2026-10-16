@@ -93,6 +93,7 @@ model User {
   smsSent                    SmsMessage[]              @relation("SmsSender")
   smsReceived                SmsMessage[]              @relation("SmsRecipient")
   smsDrafts                  SmsDraft[]                @relation("SmsDraftAuthor")
+  messageDrafts              MessageDraft[]            @relation("MessageDraftAuthor")
 
   @@index([status])
   @@map("users")
@@ -1581,13 +1582,46 @@ model Message {
   readAt     DateTime? @map("read_at")
   createdAt  DateTime  @default(now()) @map("created_at")
 
-  from User  @relation("MessageSender", fields: [fromUserId], references: [id])
-  to   User? @relation("MessageRecipient", fields: [toUserId], references: [id])
+  from        User                @relation("MessageSender", fields: [fromUserId], references: [id])
+  to          User?               @relation("MessageRecipient", fields: [toUserId], references: [id])
+  attachments MessageAttachment[]
 
   @@index([toUserId, readAt])
   @@index([toStaff, createdAt])
   @@index([fromUserId, createdAt])
   @@map("messages")
+}
+
+/// A document a member sends to the team with a message. The file sits in a private bucket and is
+/// opened only through a signed link after a check (src/app/api/messages/[id]/attachment).
+model MessageAttachment {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  messageId   String   @map("message_id") @db.Uuid
+  storagePath String   @map("storage_path")
+  fileName    String   @map("file_name")
+  contentType String   @map("content_type")
+  sizeBytes   Int      @map("size_bytes")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+  @@map("message_attachments")
+}
+
+/// A message to the team that was started and saved, not sent yet. Only its author can see it.
+model MessageDraft {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  subject   String
+  body      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation("MessageDraftAuthor", fields: [userId], references: [id])
+
+  @@index([userId, updatedAt])
+  @@map("message_drafts")
 }
 
 enum BlogStatus {

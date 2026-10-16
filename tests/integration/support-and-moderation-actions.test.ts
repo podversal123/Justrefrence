@@ -51,8 +51,14 @@ const messageRepo = {
   createMessage: vi.fn(),
   getMessage: vi.fn(),
   markMessageRead: vi.fn(),
+  saveDraft: vi.fn(),
+  deleteDraft: vi.fn(),
 };
 vi.mock("@/server/repositories/support/message-repository", () => messageRepo);
+vi.mock("@/server/lib/message-doc-storage", () => ({
+  uploadMessageDoc: vi.fn(),
+  removeMessageDoc: vi.fn(),
+}));
 
 const memberAdminRepo = { isStaffAccount: vi.fn(), setUserStatus: vi.fn() };
 vi.mock("@/server/repositories/identity/member-admin-repository", () => memberAdminRepo);
@@ -260,6 +266,7 @@ describe("sendMessageAction", () => {
     expect(result.success).toBe(true);
     expect(messageRepo.createMessage).toHaveBeenCalledWith(
       expect.objectContaining({ toUserId: null, toStaff: true, fromUserId: OWNER }),
+      undefined,
     );
     expect(mockCreateNotification).not.toHaveBeenCalled();
   });
@@ -295,6 +302,7 @@ describe("sendMessageAction", () => {
     expect(result.success).toBe(true);
     expect(messageRepo.createMessage).toHaveBeenCalledWith(
       expect.objectContaining({ toUserId: TARGET, toStaff: false }),
+      undefined,
     );
     expect(mockCreateNotification).toHaveBeenCalledWith(
       expect.objectContaining({ userId: TARGET }),

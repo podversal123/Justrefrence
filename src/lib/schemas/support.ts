@@ -40,6 +40,18 @@ export const sendMessageSchema = z.object({
   body: z.string().trim().min(1, "Write a message first.").max(4000),
 });
 
+/** A draft may be half written, so only the length limits apply, and it needs something in it. */
+export const messageDraftSchema = z
+  .object({
+    draftId: z.string().uuid().optional(),
+    subject: z.string().trim().max(140).default(""),
+    body: z.string().trim().max(4000).default(""),
+  })
+  .refine((d) => d.subject.length > 0 || d.body.length > 0, {
+    message: "Write something before saving a draft.",
+    path: ["body"],
+  });
+
 /** Browsers submit textarea newlines as CRLF; store plain LF so paragraph logic is simple everywhere. */
 const normalizeNewlines = (value: string) => value.replace(/\r\n?/g, "\n");
 

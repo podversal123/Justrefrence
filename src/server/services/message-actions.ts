@@ -1,16 +1,22 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { authorize } from "@/server/auth/authorize";
 import { getAuthSession } from "@/server/auth/session";
 import {
   createMessage,
+  deleteDraft,
   getMessage,
   markMessageRead,
+  saveDraft,
 } from "@/server/repositories/support/message-repository";
+import { removeMessageDoc, uploadMessageDoc } from "@/server/lib/message-doc-storage";
+import { KYC_FILE_KINDS, checkUpload } from "@/server/domain/kyc/rules";
+import { logger } from "@/server/lib/logger";
 import { createNotification } from "@/server/repositories/identity/notification-repository";
 import { prisma } from "@/server/lib/prisma";
-import { sendMessageSchema } from "@/lib/schemas/support";
+import { messageDraftSchema, sendMessageSchema } from "@/lib/schemas/support";
 import { recordAudit } from "@/server/domain/audit/record";
 import {
   AuthenticationError,
@@ -49,6 +55,13 @@ export async function sendMessageAction(
   });
   if (!parsed.success) return validationFailure("Check the message fields below.", parsed.error);
 
+  const draftIdRaw = formData.get("draftId");
+  const draftId =
+    typeof draftIdRaw === "string" && /^[0-9a-f-]{36}$/i.test(draftIdRaw) ? draftIdRaw : null;
+  const documentRaw = formData.get("document");
+  const document = documentRaw instanceof File && documentRaw.size > 0 ? documentRaw : null;
+
+  let storedPath: string | null = null;
   try {
     const limit = await contentRateLimiter.consume(`message:${session.userId}`);
     if (!limit.allowed)
@@ -69,13 +82,36 @@ export async function sendMessageAction(
     }
     // Non-staff: any supplied toUserId is ignored — they can only reach the team.
 
-    const message = await createMessage({
-      fromUserId: session.userId,
-      toUserId,
-      toStaff: !isStaff,
-      subject: parsed.data.subject,
-      body: parsed.data.body,
-    });
+    // A document goes to the team only, and is checked from its real bytes, never its claimed type.
+    let attachment;
+    if (document) {
+      if (isStaff) throw new ValidationError("Documents can only be sent to the team.");
+      const bytes = new Uint8Array(await document.arrayBuffer());
+      const check = checkUpload({ size: document.size, declaredType: document.type, bytes });
+      if (!check.ok) throw new ValidationError(check.message);
+      const { contentType, extension } = KYC_FILE_KINDS[check.kind];
+      storedPath = `${session.userId}/${randomUUID()}.${extension}`;
+      await uploadMessageDoc(storedPath, Buffer.from(bytes), contentType);
+      attachment = {
+        storagePath: storedPath,
+        fileName: document.name.slice(0, 200),
+        contentType,
+        sizeBytes: document.size,
+      };
+    }
+
+    const message = await createMessage(
+      {
+        fromUserId: session.userId,
+        toUserId,
+        toStaff: !isStaff,
+        subject: parsed.data.subject,
+        body: parsed.data.body,
+      },
+      attachment,
+    );
+    // A sent draft is no longer a draft.
+    if (draftId) await deleteDraft(session.userId, draftId).catch(() => false);
     if (toUserId) {
       await createNotification({
         userId: toUserId,
@@ -88,12 +124,74 @@ export async function sendMessageAction(
       action: "MESSAGE_SENT",
       entityType: "messages",
       entityId: message.id,
-      after: { toStaff: !isStaff, toUserId },
+      after: { toStaff: !isStaff, toUserId, hasDocument: Boolean(attachment) },
     });
     revalidatePath("/messages");
     return { success: true, data: { messageId: message.id }, meta: { requestId: requestId() } };
   } catch (error) {
+    if (storedPath) {
+      await removeMessageDoc(storedPath).catch((e) =>
+        logger.warn("message_doc_not_removed", { message: String(e) }),
+      );
+    }
     return failureFrom(TAG, error, "Could not send your message.");
+  }
+}
+
+/** Saves a message to the team without sending it, so it can be finished later. */
+export async function saveMessageDraftAction(
+  _prev: unknown,
+  formData: FormData,
+): Promise<ApiResult<{ draftId: string }>> {
+  let session;
+  try {
+    session = await authorize("message:send");
+  } catch (error) {
+    return failureFrom(TAG, error, "You don't have permission to save drafts.");
+  }
+  // Staff pick a recipient for every message, so drafts are for members and vendors writing to the team.
+  if (session.permissions.has("member:read:any")) {
+    return failureFrom(TAG, new ValidationError("Drafts are for messages to the team."));
+  }
+
+  const parsed = messageDraftSchema.safeParse({
+    draftId: formData.get("draftId") || undefined,
+    subject: formData.get("subject") ?? "",
+    body: formData.get("body") ?? "",
+  });
+  if (!parsed.success)
+    return validationFailure("Write something before saving a draft.", parsed.error);
+
+  try {
+    const draftId = await saveDraft({
+      userId: session.userId,
+      subject: parsed.data.subject,
+      body: parsed.data.body,
+      ...(parsed.data.draftId ? { draftId: parsed.data.draftId } : {}),
+    });
+    if (!draftId) throw new NotFoundError("That draft no longer exists.");
+    revalidatePath("/messages");
+    return { success: true, data: { draftId }, meta: { requestId: requestId() } };
+  } catch (error) {
+    return failureFrom(TAG, error, "Could not save your draft.");
+  }
+}
+
+export async function deleteMessageDraftAction(
+  _prev: unknown,
+  formData: FormData,
+): Promise<ApiResult<null>> {
+  const session = await getAuthSession();
+  if (!session) return failureFrom(TAG, new AuthenticationError("Please sign in again."));
+  const draftId = String(formData.get("draftId") ?? "");
+  try {
+    const removed =
+      /^[0-9a-f-]{36}$/i.test(draftId) && (await deleteDraft(session.userId, draftId));
+    if (!removed) throw new NotFoundError("That draft no longer exists.");
+    revalidatePath("/messages");
+    return { success: true, data: null, meta: { requestId: requestId() } };
+  } catch (error) {
+    return failureFrom(TAG, error, "Could not delete that draft.");
   }
 }
 
