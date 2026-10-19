@@ -1,8 +1,7 @@
 import { getT } from "@/i18n/server";
 import type { Metadata } from "next";
-import { Mail } from "lucide-react";
-import { buttonVariants } from "@/components/ui/button";
 import { BRAND } from "@/lib/brand";
+import { ResumeForm } from "./resume-form";
 import {
   CAREERS_APPLY,
   CAREERS_EMAIL,
@@ -82,15 +81,19 @@ export default async function CareersPage() {
               {paragraph}
             </p>
           ))}
-          <a
-            href={`mailto:${CAREERS_EMAIL}?subject=${subject}`}
-            className={buttonVariants({ size: "touch" })}
-          >
-            <Mail />
+          <h3 id="send-resume" className="pt-2 text-xl font-semibold">
             {CAREERS_APPLY.button}
-          </a>
+          </h3>
+          <ResumeForm />
           <p className="text-muted-foreground text-sm">
-            {t("Send your résumé to {email}.", { email: CAREERS_EMAIL })}
+            {t("You can also email your résumé to")}{" "}
+            <a
+              href={`mailto:${CAREERS_EMAIL}?subject=${subject}`}
+              className="text-primary underline underline-offset-4"
+            >
+              {CAREERS_EMAIL}
+            </a>
+            .
           </p>
         </section>
       </div>

@@ -978,3 +978,25 @@ Purpose: generic attachment registry for anything not covered by a dedicated `*_
 | Catalog & content (`products`, `services`, `projects`, `blog_posts`, `coupons`, `banners`) | Yes | Yes for catalog approval flows; No for pure content |
 | Pure media/junction rows (`*_images`, `cart_items`, `role_permissions` excluded — see below) | No, hard-deleted | No |
 | Security-relevant configuration (`role_permissions`, `commission_rules`, `tds_rules`, `system_settings`) | No — versioned/never deleted | Always |
+
+### `resume_submissions`
+Purpose: résumés sent through the public Careers form.
+
+| Field | Type | Null | Notes |
+|---|---|---|---|
+| id | uuid | NO | PK |
+| full_name | text | NO | |
+| email | text | NO | |
+| phone | text | YES | with country code |
+| position | text | NO | one of the listed openings, or "Other / general application" |
+| message | text | YES | short note, up to 1000 characters |
+| file_name | text | NO | the sender's own name, display only |
+| storage_path | text | NO | `resumes/<uuid>.<ext>` in the private `resumes-private` bucket, chosen by the server |
+| file_size | int | NO | bytes |
+| content_type | text | NO | detected from the file's bytes |
+| status | enum | NO | `NEW` or `REVIEWED`, default `NEW` |
+| reviewed_by | uuid | YES | staff user who last marked it reviewed |
+| reviewed_at | timestamptz | YES | |
+| created_at | timestamptz | NO | |
+
+**Indexes:** `(status, created_at)` · **Soft delete:** No, staff delete a résumé for good · **Audit:** Yes, opening, status change and deletion.

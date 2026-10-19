@@ -141,6 +141,7 @@ export const PERMISSIONS = [
   "announcement:manage",
   "feedback:submit",
   "feedback:read",
+  "career:manage",
 
   // Members & moderation
   "member:read",

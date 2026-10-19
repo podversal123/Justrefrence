@@ -10,6 +10,7 @@ import {
   Gift,
   CreditCard,
   FileText,
+  FileUser,
   ImageIcon,
   Megaphone,
   LayoutDashboard,
@@ -428,6 +429,12 @@ export const NAV_GROUPS: NavGroup[] = [
         href: "/admin/feedback" as Route,
         icon: MessageSquareText,
         visible: (s) => s.permissions.has("feedback:read"),
+      },
+      {
+        title: msg("Résumés"),
+        href: "/admin/resumes" as Route,
+        icon: FileUser,
+        visible: (s) => s.permissions.has("career:manage"),
       },
       {
         title: msg("Roles & permissions"),

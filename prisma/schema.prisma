@@ -2164,3 +2164,31 @@ enum AnnouncementStatus {
   PUBLISHED
   ARCHIVED
 }
+
+enum ResumeStatus {
+  NEW
+  REVIEWED
+}
+
+/// A résumé sent through the public Careers form. The file lives in the private `resumes-private` bucket and is
+/// opened only by staff, through a short-lived signed link. `fileName` is the sender's own name for display only;
+/// the stored path is always chosen by the server.
+model ResumeSubmission {
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  fullName    String       @map("full_name")
+  email       String
+  phone       String?
+  position    String
+  message     String?
+  fileName    String       @map("file_name")
+  storagePath String       @map("storage_path")
+  fileSize    Int          @map("file_size")
+  contentType String       @map("content_type")
+  status      ResumeStatus @default(NEW)
+  reviewedBy  String?      @map("reviewed_by") @db.Uuid
+  reviewedAt  DateTime?    @map("reviewed_at")
+  createdAt   DateTime     @default(now()) @map("created_at")
+
+  @@index([status, createdAt])
+  @@map("resume_submissions")
+}

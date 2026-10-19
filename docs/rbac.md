@@ -32,7 +32,7 @@ Frontend route/section hiding is a UX convenience only — it is **not** a secur
 Namespaced `resource:action`. This list is seed data (`permissions` table) and the canonical reference for every `requirePermission()` call — new permissions are added here first, then wired into code, never the reverse.
 
 ### Identity & access
-`user:create` · `user:read` · `user:update` · `user:block` · `user:unblock` · `role:read` · `role:assign` · `two_step:reset` (Super Admin: clear another account's two-step login) · `permission:read` · `permission:update` · `vendor:apply` · `vendor:approve` · `vendor:reject` · `vendor:suspend`
+`user:create` · `user:read` · `user:update` · `user:block` · `user:unblock` · `role:read` · `role:assign` · `two_step:reset` (Super Admin: clear another account's two-step login) · `career:manage` (open, review and delete résumés sent through the Careers page) · `permission:read` · `permission:update` · `vendor:apply` · `vendor:approve` · `vendor:reject` · `vendor:suspend`
 
 ### Catalog
 `product:create` · `product:read` · `product:update` · `product:delete` · `product:approve` · `service:create` · `service:read` · `service:update` · `service:delete` · `service:approve` · `project:create` · `project:read` · `project:update` · `project:delete` · `project:approve` · `category:manage`
@@ -79,6 +79,7 @@ Legend: ✅ granted by default · — not granted (can still be overridden per-u
 | user:create / block / unblock | ✅ | ✅ | — | — | — | — |
 | role:assign / permission:update | ✅ | — | — | — | — | — |
 | two_step:reset | ✅ | — | — | — | — | — |
+| career:manage | ✅ | ✅ | — | — | — | — |
 | vendor:approve / reject | ✅ | — | — | — | — | — |
 | vendor:suspend | ✅ | ✅ | — | — | — | — |
 | vendor:apply | ✅ | ✅ | — | — | — | ✅ |

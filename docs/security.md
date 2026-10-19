@@ -103,3 +103,13 @@ Per the client's own Live Testing & Production Plan §15, these carry real legal
 - "Investment income" / returns on deposits (Q-14) — potential deposit-taking legal exposure; requires the client's lawyer's written view before any code is written.
 - Automated KYC verification beyond manual admin review (Q-38).
 - A full legal review of the referral/commission/e-pin/wallet model against direct-selling and money-circulation-scheme regulation (Q-39) is a **precondition**, not a nice-to-have, for enabling real payouts in production.
+
+## Public résumé uploads (Careers page)
+
+The Careers form is the only place an anonymous visitor can send a file. It is treated as hostile input:
+
+- **Real type, not claimed type.** The file's type is read from its first bytes (PDF, old Word, or a ZIP that holds a `word/` folder). Its name must agree with its contents. Anything else is refused. Maximum 4MB.
+- **Server-chosen path.** The file is stored as `resumes/<random uuid>.<ext>` in the private `resumes-private` bucket. The sender's file name is kept only for display, cleaned of folders and control characters.
+- **Never public.** Only staff with `career:manage` can open a file, through a signed link that expires in 5 minutes and downloads (never displays) the file. Every opening is audited (`RESUME_VIEWED`). Anyone else gets the same 404 as for a missing résumé.
+- **Abuse limits.** A hidden form field that bots fill (answered "ok", nothing stored) and 5 résumés per hour per visitor address.
+- **Retention.** Staff can delete a résumé for good (file first, then the row). A résumé holds personal data and should not be kept longer than needed.

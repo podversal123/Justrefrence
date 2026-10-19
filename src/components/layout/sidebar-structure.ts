@@ -189,6 +189,7 @@ export const SIDEBAR_STRUCTURE: Record<Panel, readonly StructureEntry[]> = {
       "/admin/support",
       "/admin/sms",
       "/admin/feedback",
+      "/admin/resumes",
       "/admin/announcements",
       "/admin/banners",
       "/admin/ads",

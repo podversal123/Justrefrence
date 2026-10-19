@@ -168,3 +168,6 @@ export const smsRateLimiter: RateLimiter = createRateLimiter("sms", 30, 60 * 60 
 
 /** Wrong two-step codes: 5 per 10 minutes per account. */
 export const twoStepRateLimiter: RateLimiter = createRateLimiter("two-step", 5, 10 * 60 * 1000);
+
+/** Résumés sent through the public Careers form: 5 per hour per visitor address. */
+export const resumeRateLimiter: RateLimiter = createRateLimiter("resume", 5, 60 * 60 * 1000);

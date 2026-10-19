@@ -20,9 +20,22 @@ test.describe("careers page", () => {
     ]) {
       await expect(page.getByRole("heading", { name: heading })).toBeVisible();
     }
-    await expect(page.getByText("Business Development Manager")).toBeVisible();
-    const apply = page.getByRole("link", { name: "Submit Your Résumé" });
-    await expect(apply).toHaveAttribute("href", /^mailto:info@justreference\.in/);
+    await expect(page.locator("ol").getByText("Business Development Manager")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Submit Your Résumé" })).toBeVisible();
+    await expect(page.locator('a[href^="mailto:info@justreference.in"]')).toBeVisible();
+  });
+
+  test("has a résumé form with the listed positions and a file field", async ({ page }) => {
+    await page.goto("/careers");
+    await expect(page.getByLabel("Full name")).toBeVisible();
+    await expect(page.getByLabel("Your résumé")).toBeVisible();
+    // The choose option plus the four openings plus the general application.
+    await expect(page.locator("#rs-position option")).toHaveCount(6);
+    await expect(page.getByRole("button", { name: "Send my résumé" })).toBeVisible();
+    // The bot trap is there, but far off screen and hidden from assistive technology.
+    const box = await page.locator("#rs-website").boundingBox();
+    expect(box?.x ?? 0).toBeLessThan(-1000);
+    await expect(page.locator('[aria-hidden="true"] #rs-website')).toHaveCount(1);
   });
 
   test("is linked from the footer", async ({ page }) => {
