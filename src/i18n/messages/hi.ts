@@ -429,7 +429,6 @@ export const HI_MESSAGES: Messages = {
   "Choose a role.": "एक भूमिका चुनें।",
   "Choose a subcategory": "उप-श्रेणी चुनें",
   "Choose a vendor": "विक्रेता चुनें",
-  "Choose email or mobile number to continue.": "जारी रखने के लिए ईमेल या मोबाइल नंबर चुनें।",
   "Choose one of your listings.": "अपनी एक लिस्टिंग चुनें।",
   "Choose when bidding closes.": "चुनें कि बोली कब बंद होगी।",
   "Choose which document you are uploading.": "चुनें कि आप कौन सा दस्तावेज़ अपलोड कर रहे हैं।",
@@ -754,7 +753,13 @@ export const HI_MESSAGES: Messages = {
   "Enter a valid date.": "सही तारीख डालें।",
   "Enter a valid e-pin code.": "सही ई-पिन कोड डालें।",
   "Enter a valid email address.": "सही ईमेल पता डालें।",
-  "Enter a valid email and password.": "सही ईमेल और पासवर्ड डालें।",
+  "Enter your email or 10-digit Member ID, and your password.":
+    "अपना ईमेल या 10 अंकों की मेंबर आईडी और पासवर्ड डालें।",
+  "Email or Member ID": "ईमेल या मेंबर आईडी",
+  "you@example.com or 10-digit Member ID": "you@example.com या 10 अंकों की मेंबर आईडी",
+  "Sign in with your email or Member ID, or with your mobile number.":
+    "अपने ईमेल या मेंबर आईडी से, या मोबाइल नंबर से साइन इन करें।",
+  "Enter your email or 10-digit Member ID.": "अपना ईमेल या 10 अंकों की मेंबर आईडी डालें।",
   "Enter a valid mobile number.": "सही मोबाइल नंबर डालें।",
   "Enter a valid name.": "सही नाम डालें।",
   "Enter a valid telephone number, e.g. 011-23456789.":
@@ -908,7 +913,7 @@ export const HI_MESSAGES: Messages = {
   Inactive: "निष्क्रिय",
   Inbox: "इनबॉक्स",
   "Incorrect code. Please try again.": "कोड गलत है। कृपया फिर कोशिश करें।",
-  "Incorrect email or password.": "ईमेल या पासवर्ड गलत है।",
+  "Incorrect email, Member ID or password.": "ईमेल, मेंबर आईडी या पासवर्ड गलत है।",
   "Incorrect wallet PIN.": "वॉलेट पिन गलत है।",
   "Indirect referrals": "अप्रत्यक्ष रेफरल",
   "Insufficient wallet balance for this payout amount.":

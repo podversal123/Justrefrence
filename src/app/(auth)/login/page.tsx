@@ -16,8 +16,8 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t("Sign in") };
 }
 
-// Email (password) and Mobile (OTP) only — Member ID is a display
-// identifier, never a login credential, per docs/business-rules.md Q-32.
+// Email or 10-digit Member ID (the same number as the Referral ID) with a password, or Mobile (OTP).
+// The workflow document asks for login "using Member ID or Referral ID".
 export default async function LoginPage({
   searchParams,
 }: {
@@ -65,7 +65,9 @@ export default async function LoginPage({
     <Card>
       <CardHeader>
         <CardTitle>{t("Sign in")}</CardTitle>
-        <CardDescription>{t("Choose email or mobile number to continue.")}</CardDescription>
+        <CardDescription>
+          {t("Sign in with your email or Member ID, or with your mobile number.")}
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="email">

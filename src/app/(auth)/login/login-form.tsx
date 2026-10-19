@@ -44,14 +44,15 @@ export function LoginForm({ next }: { next?: string }) {
       {next ? <input type="hidden" name="next" value={next} /> : null}
 
       <div className="space-y-2">
-        <Label htmlFor="email">{t("Email")}</Label>
+        <Label htmlFor="identifier">{t("Email or Member ID")}</Label>
         <Input
-          id="email"
-          name="email"
-          type="email"
-          autoComplete="email"
+          id="identifier"
+          name="identifier"
+          type="text"
+          inputMode="email"
+          autoComplete="username"
           required
-          placeholder={t("you@example.com")}
+          placeholder={t("you@example.com or 10-digit Member ID")}
         />
       </div>
 

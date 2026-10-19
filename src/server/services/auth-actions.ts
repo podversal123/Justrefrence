@@ -6,6 +6,7 @@ import { cookies, headers } from "next/headers";
 import { PANEL_COOKIE } from "@/server/auth/panel";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/server/lib/prisma";
+import { MEMBER_ID_PATTERN } from "@/server/domain/identity/member-id";
 import { forgotPasswordSchema, loginSchema, resetPasswordSchema } from "@/lib/schemas/auth";
 import { loginRateLimiter, passwordResetRateLimiter } from "@/server/lib/rate-limit";
 import {
@@ -41,7 +42,7 @@ export async function loginAction(
   formData: FormData,
 ): Promise<ApiResult<null>> {
   const parsed = loginSchema.safeParse({
-    email: formData.get("email"),
+    identifier: formData.get("identifier"),
     password: formData.get("password"),
   });
 
@@ -50,7 +51,7 @@ export async function loginAction(
       success: false,
       error: {
         code: "VALIDATION_ERROR",
-        message: "Enter a valid email and password.",
+        message: "Enter your email or 10-digit Member ID, and your password.",
         details: parsed.error.flatten(),
       },
       meta: { requestId: crypto.randomUUID() },
@@ -58,7 +59,7 @@ export async function loginAction(
   }
 
   const ip = await clientIp();
-  const rateLimitKey = `login:${parsed.data.email}:${ip ?? "unknown"}`;
+  const rateLimitKey = `login:${parsed.data.identifier}:${ip ?? "unknown"}`;
   const { allowed } = await loginRateLimiter.consume(rateLimitKey);
 
   if (!allowed) {
@@ -67,7 +68,7 @@ export async function loginAction(
       action: "LOGIN_RATE_LIMITED",
       entityType: "users",
       entityId: NIL_UUID,
-      after: { attemptedEmail: parsed.data.email },
+      after: { attemptedIdentifier: parsed.data.identifier },
       ip,
     });
     return {
@@ -80,7 +81,18 @@ export async function loginAction(
     };
   }
 
-  const localUser = await prisma.user.findUnique({ where: { email: parsed.data.email } });
+  // A 10-digit Member ID is looked up to its owner's email; the password check below is the same
+  // for both. An unknown ID falls through to the same "incorrect" failure as a wrong password.
+  const isMemberId = MEMBER_ID_PATTERN.test(parsed.data.identifier);
+  const localUser = isMemberId
+    ? ((
+        await prisma.memberProfile.findUnique({
+          where: { memberId: parsed.data.identifier },
+          select: { user: true },
+        })
+      )?.user ?? null)
+    : await prisma.user.findUnique({ where: { email: parsed.data.identifier } });
+  const loginEmail = localUser?.email ?? (isMemberId ? null : parsed.data.identifier);
 
   if (
     localUser &&
@@ -107,10 +119,9 @@ export async function loginAction(
   }
 
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email: parsed.data.email,
-    password: parsed.data.password,
-  });
+  const { data, error } = loginEmail
+    ? await supabase.auth.signInWithPassword({ email: loginEmail, password: parsed.data.password })
+    : { data: { user: null }, error: new Error("Unknown Member ID") };
 
   if (error || !data.user) {
     // Account-lock protection (Phase 4) — tracked on the local `users` row
@@ -134,12 +145,12 @@ export async function loginAction(
       // entity_id is a uuid column: use the account's id when the email matches one, otherwise
       // the nil uuid (the attempted email goes in the snapshot, not the id column).
       entityId: localUser?.id ?? NIL_UUID,
-      after: { attemptedEmail: parsed.data.email },
+      after: { attemptedIdentifier: parsed.data.identifier },
       ip,
     });
     return {
       success: false,
-      error: { code: "UNAUTHENTICATED", message: "Incorrect email or password." },
+      error: { code: "UNAUTHENTICATED", message: "Incorrect email, Member ID or password." },
       meta: { requestId: crypto.randomUUID() },
     };
   }

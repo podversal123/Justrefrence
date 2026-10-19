@@ -1,3 +1,4 @@
+import { MEMBER_ID_PATTERN } from "@/server/domain/identity/member-id";
 import { z } from "zod";
 
 /**
@@ -7,8 +8,16 @@ import { z } from "zod";
  * from here.
  */
 
+/** Sign in with an email address, or with the 10-digit Member ID (which is also the Referral ID). */
 export const loginSchema = z.object({
-  email: z.string().trim().toLowerCase().email("Enter a valid email address."),
+  identifier: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .refine(
+      (value) => MEMBER_ID_PATTERN.test(value) || z.string().email().safeParse(value).success,
+      "Enter your email or 10-digit Member ID.",
+    ),
   password: z.string().min(1, "Enter your password."),
 });
 export type LoginInput = z.infer<typeof loginSchema>;
