@@ -12,7 +12,6 @@ README.md
 *.jpeg
 *.jpg
 
-# Auto-installed by `prisma init` — vendor tool config, not our source.
-.agents/skills
-.windsurf/skills
-skills-lock.json
+# Hidden folders and lock files are not our source.
+/.*/
+/*-lock.json

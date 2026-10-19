@@ -12,9 +12,7 @@
 # Dev tooling, tests, internal docs and one-off scripts are not needed to build or run the site
 .next
 node_modules
-.agents
-.windsurf
-.playwright-mcp
+/.*/
 playwright-report
 docs
 scripts

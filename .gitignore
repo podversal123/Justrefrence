@@ -28,7 +28,6 @@ vercel-token*.txt
 /playwright-report
 /blob-report
 /playwright/.cache
-.playwright-mcp/
 
 # build info and logs
 *.tsbuildinfo
@@ -41,15 +40,9 @@ Thumbs.db
 # vercel
 .vercel
 
-# editor and AI-assistant tooling (local only)
+# editor files
 .vscode/
 .idea/
-.claude/
-.agents/
-.windsurf/
-CLAUDE.md
-AGENTS.md
-skills-lock.json
 
 # client documents, reference screenshots and design assets (kept locally, not part of the codebase)
 /*.pdf
