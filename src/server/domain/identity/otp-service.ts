@@ -21,7 +21,7 @@ import {
 } from "@/server/repositories/identity/otp-repository";
 import { otpRequestRateLimiter } from "@/server/lib/rate-limit";
 import { sendEmail, sendSms, sendWhatsApp } from "@/server/lib/notification-providers";
-import { RateLimitedError, ValidationError } from "@/server/lib/errors";
+import { InternalError, RateLimitedError, ValidationError } from "@/server/lib/errors";
 import type { OtpChannel, OtpPurpose } from "@/generated/prisma/enums";
 
 export interface RequestOtpInput {
@@ -58,12 +58,12 @@ export async function requestOtp(input: RequestOtpInput): Promise<RequestOtpResu
   });
 
   const vars = { code, purpose: input.purpose };
-  if (input.channel === "EMAIL") {
-    await sendEmail({ to: input.destination, template: "otp_code", vars });
-  } else if (input.channel === "WHATSAPP") {
-    await sendWhatsApp({ to: input.destination, template: "otp_code", vars });
-  } else {
-    await sendSms({ to: input.destination, template: "otp_code", vars });
+  const send =
+    input.channel === "EMAIL" ? sendEmail : input.channel === "WHATSAPP" ? sendWhatsApp : sendSms;
+  const result = await send({ to: input.destination, template: "otp_code", vars });
+  // A provider that refused the message must not look like "code sent" to the member.
+  if (!result.delivered) {
+    throw new InternalError("We couldn't send the code just now. Please try again in a moment.");
   }
 
   return { maskedDestination: destinationMasked };

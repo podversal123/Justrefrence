@@ -14,7 +14,9 @@ Full variable catalog for `.env.example` (see repo root). No real values are eve
 | `RAZORPAY_WEBHOOK_SECRET` | server only | Webhook signature verification |
 | `MSG91_AUTH_KEY` | server only | SMS/OTP sending |
 | `MSG91_SENDER_ID` | server only | DLT-registered sender ID |
-| `MSG91_WHATSAPP_API_KEY` | server only | WhatsApp OTP/verification |
+| `MSG91_WHATSAPP_API_KEY` | server only | WhatsApp OTP/verification (not sent yet: recorded only) |
+| `MSG91_TEMPLATE_OTP_CODE` | server only | MSG91 Flow template ID for the sign-in / sign-up code SMS (variables `code`, `purpose`). Placeholder = recorded, not sent |
+| `MSG91_TEMPLATE_ADMIN_MESSAGE` | server only | MSG91 Flow template ID for admin-composed SMS (variable `message`). Placeholder = recorded, not sent |
 | `RESEND_API_KEY` | server only | Transactional email |
 | `EMAIL_FROM_ADDRESS` | server only | Verified sending domain address |
 | `APP_BASE_URL` | server (build-time) | Used to construct absolute links in emails/SMS (referral links, invoice links) |
