@@ -1,6 +1,8 @@
 import { getT } from "@/i18n/server";
-import type { Metadata } from "next";
+import type { Metadata, Route } from "next";
 import { redirect } from "next/navigation";
+import Link from "next/link";
+import { buttonVariants } from "@/components/ui/button";
 import { getAuthSession } from "@/server/auth/session";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -109,6 +111,24 @@ export default async function ProfilePage({
                   mobile={contact.phone}
                   mobileVerified={Boolean(contact.phoneVerifiedAt)}
                 />
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>{t("Two-step login")}</CardTitle>
+                <CardDescription>
+                  {t(
+                    "Adds a code from your phone to your password, so a stolen password is not enough.",
+                  )}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Link
+                  href={"/two-step" as Route}
+                  className={buttonVariants({ variant: "outline" })}
+                >
+                  {t("Manage two-step login")}
+                </Link>
               </CardContent>
             </Card>
 

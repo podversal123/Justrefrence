@@ -47,6 +47,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
     redirect("/unauthorized");
   }
 
+  // Staff must enter their authenticator code first (when the Super Admin requires it).
+  if (session.twoStepPending) {
+    redirect("/two-step");
+  }
+
   // Maintenance mode: everyone except staff sees the notice instead of the app.
   const siteSettings = await getSiteSettings();
   if (siteSettings.maintenanceEnabled && !canBypassMaintenance(session)) {

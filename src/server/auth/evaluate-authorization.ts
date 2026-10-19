@@ -43,6 +43,10 @@ export function evaluateAuthorization(
     throw new AccountBlockedError();
   }
 
+  if (session.twoStepPending) {
+    throw new AuthorizationError("Two-step verification is required. Complete it to continue.");
+  }
+
   const hasDirectPermission = session.permissions.has(permission);
   const hasOverridePermission = options.overridePermission
     ? session.permissions.has(options.overridePermission)

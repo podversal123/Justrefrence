@@ -37,6 +37,11 @@ export const siteSettingsSchema = z.object({
       (value) => value === "" || /^[0-9+()\-\s]{6,30}$/.test(value),
       "Use digits, spaces, + ( ) or - only.",
     ),
+  /** HTML checkboxes submit "on" when ticked and nothing when not. */
+  staffTwoStepRequired: z
+    .string()
+    .optional()
+    .transform((value) => value === "on"),
   contactAddress: optionalText(300),
   contactHours: optionalText(120),
   /** Empty means "use the default"; 0 turns auto logout off. */

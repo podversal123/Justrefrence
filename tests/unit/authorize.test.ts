@@ -29,6 +29,11 @@ describe("evaluateAuthorization", () => {
     expect(() => evaluateAuthorization(session, "order:read")).toThrow(AccountBlockedError);
   });
 
+  it("denies a staff account that still has to enter its two-step code, even with the permission", () => {
+    const session = makeSession({ twoStepPending: true });
+    expect(() => evaluateAuthorization(session, "order:read")).toThrow(/two-step/i);
+  });
+
   it("denies a caller who lacks the permission", () => {
     const session = makeSession();
     expect(() => evaluateAuthorization(session, "payout:approve")).toThrow(AuthorizationError);

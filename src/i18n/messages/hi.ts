@@ -1513,6 +1513,53 @@ export const HI_MESSAGES: Messages = {
   "New means still in progress. Old means completed, cancelled or refunded.":
     "नई का मतलब अभी चालू है। पुरानी का मतलब पूरी हो चुकी, रद्द या रिफंड हो चुकी।",
   "My cart": "मेरी कार्ट",
+  "Manage two-step login": "टू-स्टेप लॉगिन सँभालें",
+  "Open the Two-step login page": "टू-स्टेप लॉगिन पेज खोलें",
+  "Checking…": "जाँच हो रही है…",
+  "You will need an authenticator app on your phone, such as Google Authenticator, Microsoft Authenticator or Authy.":
+    "आपके फ़ोन में एक ऑथेंटिकेटर ऐप चाहिए, जैसे Google Authenticator, Microsoft Authenticator या Authy।",
+  "Set up two-step login": "टू-स्टेप लॉगिन सेट करें",
+  "Open your authenticator app and add a new account.":
+    "अपना ऑथेंटिकेटर ऐप खोलें और नया खाता जोड़ें।",
+  "Scan this picture, or type the key below instead.":
+    "यह तस्वीर स्कैन करें, या नीचे की कुंजी हाथ से डालें।",
+  "Type the 6-digit code your app shows.": "आपके ऐप में दिख रहा 6 अंकों का कोड डालें।",
+  "QR code for your authenticator app": "आपके ऑथेंटिकेटर ऐप के लिए QR कोड",
+  Key: "कुंजी",
+  "Turn on two-step login": "टू-स्टेप लॉगिन चालू करें",
+  "Two-step login": "टू-स्टेप लॉगिन",
+  "Open your authenticator app and type the 6-digit code it shows.":
+    "अपना ऑथेंटिकेटर ऐप खोलें और उसमें दिख रहा 6 अंकों का कोड डालें।",
+  "Two-step login is on": "टू-स्टेप लॉगिन चालू है",
+  "Your account asks for a code from your authenticator app each time you sign in.":
+    "हर बार साइन इन करने पर आपका खाता ऑथेंटिकेटर ऐप से कोड माँगता है।",
+  "Adds a code from your phone to your password, so a stolen password is not enough.":
+    "पासवर्ड के साथ आपके फ़ोन का कोड भी लगता है, इसलिए चोरी हुआ पासवर्ड अकेला काफ़ी नहीं।",
+  "Turn off two-step login": "टू-स्टेप लॉगिन बंद करें",
+  "Two-step login for staff": "स्टाफ़ के लिए टू-स्टेप लॉगिन",
+  "When on, every Admin, Finance, Support and Super Admin account must enter a code from an authenticator app after signing in. Staff who have not set it up are taken to set it up first.":
+    "चालू होने पर हर एडमिन, फ़ाइनेंस, सपोर्ट और सुपर एडमिन खाते को साइन इन के बाद ऑथेंटिकेटर ऐप का कोड डालना होगा। जिसने इसे सेट नहीं किया, उसे पहले सेट करने भेजा जाता है।",
+  "Require two-step login for staff": "स्टाफ़ के लिए टू-स्टेप लॉगिन ज़रूरी करें",
+  "To switch this on you must first turn on your own two-step login and enter a code in this session.":
+    "इसे चालू करने के लिए पहले अपना टू-स्टेप लॉगिन चालू करें और इसी सत्र में कोड डालें।",
+  "Two-step verification is required. Complete it to continue.":
+    "टू-स्टेप सत्यापन ज़रूरी है। आगे बढ़ने के लिए इसे पूरा करें।",
+  "Turn on and enter your own two-step code first (Two-step login page), then switch this on.":
+    "पहले अपना टू-स्टेप लॉगिन चालू करें और कोड डालें (टू-स्टेप लॉगिन पेज), फिर इसे चालू करें।",
+  "Too many wrong codes. Please wait a few minutes and try again.":
+    "बहुत ज़्यादा ग़लत कोड। कुछ मिनट रुककर दोबारा कोशिश करें।",
+  "Two-step login is already on for this account.": "इस खाते पर टू-स्टेप लॉगिन पहले से चालू है।",
+  "Could not start the set-up. Try again.": "सेट-अप शुरू नहीं हो सका। दोबारा कोशिश करें।",
+  "Enter the 6-digit code from your app.": "अपने ऐप का 6 अंकों का कोड डालें।",
+  "Could not turn on two-step login.": "टू-स्टेप लॉगिन चालू नहीं हो सका।",
+  "Two-step login is not set up for this account yet.":
+    "इस खाते पर टू-स्टेप लॉगिन अभी सेट नहीं है।",
+  "Could not check the code.": "कोड जाँचा नहीं जा सका।",
+  "Enter your code again first, then turn two-step login off.":
+    "पहले अपना कोड दोबारा डालें, फिर टू-स्टेप लॉगिन बंद करें।",
+  "Could not turn off two-step login.": "टू-स्टेप लॉगिन बंद नहीं हो सका।",
+  "That code is not correct. Check the time on your phone and try again.":
+    "यह कोड सही नहीं है। अपने फ़ोन का समय जाँचें और दोबारा कोशिश करें।",
   "Join {name} with my referral link: {link}": "मेरे रेफ़रल लिंक से {name} से जुड़ें: {link}",
   "Join {name}": "{name} से जुड़ें",
   "Share on {channel}": "{channel} पर भेजें",

@@ -34,6 +34,7 @@ const PROTECTED_PREFIXES = [
   "/my-auctions",
   "/rewards",
   "/sms",
+  "/two-step",
 ];
 // /login is not listed: a signed-in visitor sees an "already signed in" card there (with a way to switch
 // account) instead of being sent silently to whichever dashboard they are in.

@@ -21,6 +21,7 @@ const KEYS = {
   contactAddress: { key: "site.contact_address", type: "STRING" },
   contactHours: { key: "site.contact_hours", type: "STRING" },
   idleLogoutMinutes: { key: "site.idle_logout_minutes", type: "NUMBER" },
+  staffTwoStepRequired: { key: "security.staff_two_step_required", type: "BOOLEAN" },
 } as const;
 
 export interface SiteSettings {
@@ -32,6 +33,8 @@ export interface SiteSettings {
   contactHours: string;
   /** Minutes of no activity before a signed-in user is logged out. 0 turns auto logout off. */
   idleLogoutMinutes: number;
+  /** When on, every staff account must enter an authenticator-app code after signing in. */
+  staffTwoStepRequired: boolean;
 }
 
 export const DEFAULT_MAINTENANCE_MESSAGE =
@@ -48,6 +51,7 @@ const DEFAULTS: SiteSettings = {
   contactAddress: "",
   contactHours: "",
   idleLogoutMinutes: DEFAULT_IDLE_LOGOUT_MINUTES,
+  staffTwoStepRequired: false,
 };
 
 function idleMinutes(value: unknown): number {
@@ -72,6 +76,7 @@ async function readSettings(): Promise<SiteSettings> {
     contactAddress: text(KEYS.contactAddress.key),
     contactHours: text(KEYS.contactHours.key),
     idleLogoutMinutes: idleMinutes(byKey.get(KEYS.idleLogoutMinutes.key)),
+    staffTwoStepRequired: byKey.get(KEYS.staffTwoStepRequired.key) === true,
   };
 }
 
@@ -107,6 +112,7 @@ export async function saveSiteSettings(input: SiteSettingsInput, actorId: string
     contactAddress: input.contactAddress,
     contactHours: input.contactHours,
     idleLogoutMinutes: input.idleLogoutMinutes,
+    staffTwoStepRequired: input.staffTwoStepRequired,
   };
   await prisma.$transaction(
     (Object.keys(KEYS) as (keyof typeof KEYS)[]).map((name) =>

@@ -1,6 +1,8 @@
 "use client";
 
 import { useT } from "@/i18n/provider";
+import Link from "next/link";
+import type { Route } from "next";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { FormField } from "@/components/ui/form-field";
@@ -57,6 +59,36 @@ export function SettingsForm({ settings, canEdit }: { settings: SiteSettings; ca
                 defaultValue={settings.maintenanceMessage}
               />
             </FormField>
+          </section>
+
+          <section className="space-y-4">
+            <div>
+              <h2 className="text-base font-semibold">{t("Two-step login for staff")}</h2>
+              <p className="text-muted-foreground text-sm">
+                {t(
+                  "When on, every Admin, Finance, Support and Super Admin account must enter a code from an authenticator app after signing in. Staff who have not set it up are taken to set it up first.",
+                )}
+              </p>
+            </div>
+            <label className="flex items-start gap-3 text-sm">
+              <input
+                type="checkbox"
+                name="staffTwoStepRequired"
+                defaultChecked={settings.staffTwoStepRequired}
+                className="mt-0.5 size-4"
+              />
+              <span>
+                <span className="font-medium">{t("Require two-step login for staff")}</span>
+                <span className="text-muted-foreground block text-xs">
+                  {t(
+                    "To switch this on you must first turn on your own two-step login and enter a code in this session.",
+                  )}{" "}
+                  <Link href={"/two-step" as Route} className="underline underline-offset-4">
+                    {t("Open the Two-step login page")}
+                  </Link>
+                </span>
+              </span>
+            </label>
           </section>
 
           <section className="space-y-4">

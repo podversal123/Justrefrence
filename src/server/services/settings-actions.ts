@@ -9,6 +9,8 @@ import {
 } from "@/server/lib/site-settings";
 import { siteSettingsSchema } from "@/lib/schemas/settings";
 import { recordAudit } from "@/server/domain/audit/record";
+import { createClient } from "@/lib/supabase/server";
+import { ValidationError } from "@/server/lib/errors";
 import { failureFrom, requestId, validationFailure } from "@/server/lib/action-helpers";
 import type { ApiResult } from "@/lib/api-response";
 
@@ -33,11 +35,23 @@ export async function updateSiteSettingsAction(
     contactAddress: formData.get("contactAddress") ?? undefined,
     contactHours: formData.get("contactHours") ?? undefined,
     idleLogoutMinutes: formData.get("idleLogoutMinutes") ?? undefined,
+    staffTwoStepRequired: formData.get("staffTwoStepRequired") ?? undefined,
   });
   if (!parsed.success) return validationFailure("Check the highlighted settings.", parsed.error);
 
   try {
     const before = await getSiteSettingsFresh();
+    // Requiring two-step for staff is only switched on by someone who has just proved theirs works,
+    // so a broken set-up can never lock the whole team out.
+    if (parsed.data.staffTwoStepRequired && !before.staffTwoStepRequired) {
+      const supabase = await createClient();
+      const { data: level } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (level?.currentLevel !== "aal2") {
+        throw new ValidationError(
+          "Turn on and enter your own two-step code first (Two-step login page), then switch this on.",
+        );
+      }
+    }
     await saveSiteSettings(parsed.data, session.userId);
     await recordAudit({
       actorId: session.userId,

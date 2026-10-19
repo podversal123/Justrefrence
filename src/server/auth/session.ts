@@ -1,7 +1,9 @@
 import "server-only";
 import { cache } from "react";
 import { cookies } from "next/headers";
-import { PANEL_COOKIE, type SwitchablePanel } from "@/server/auth/panel";
+import { isStaff, PANEL_COOKIE, type SwitchablePanel } from "@/server/auth/panel";
+import { getSiteSettings } from "@/server/lib/site-settings";
+import { isTwoStepPending } from "@/server/domain/identity/two-step";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/server/lib/prisma";
 import type { Permission, RoleCode } from "@/server/auth/permissions";
@@ -21,6 +23,11 @@ export interface AuthSession {
   vendorProfileId: string | null;
   /** The panel a member who is also a seller last chose. Only used by getPanel() for such a person. */
   preferredPanel?: SwitchablePanel | null;
+  /**
+   * A staff account that still has to enter its two-step code. Such a session has NO permissions until it
+   * does, so any page or action that forgot to ask is refused anyway.
+   */
+  twoStepPending?: boolean;
 }
 
 /**
@@ -72,13 +79,27 @@ export const getAuthSession = cache(async (): Promise<AuthSession | null> => {
     ),
   );
 
+  let twoStepPending = false;
+  if (isStaff({ roles })) {
+    const { staffTwoStepRequired } = await getSiteSettings();
+    if (staffTwoStepRequired) {
+      const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      twoStepPending = isTwoStepPending({
+        required: true,
+        isStaff: true,
+        level: data?.currentLevel,
+      });
+    }
+  }
+
   return {
     userId: dbUser.id,
     email: dbUser.email,
     fullName: dbUser.fullName,
     status: dbUser.status,
     roles,
-    permissions,
+    permissions: twoStepPending ? new Set<Permission>() : permissions,
+    twoStepPending,
     hasVendorProfile: dbUser.vendorProfile !== null,
     hasMemberProfile: dbUser.memberProfile !== null,
     vendorProfileId: dbUser.vendorProfile?.id ?? null,
