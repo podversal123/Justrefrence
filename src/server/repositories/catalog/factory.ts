@@ -4,7 +4,7 @@ import {
   buildListingWhere,
   type BuildListingWhereOptions,
 } from "@/server/repositories/catalog/query";
-import type { CatalogListItem, CatalogListQuery } from "@/server/domain/catalog/types";
+import type { CatalogKind, CatalogListItem, CatalogListQuery } from "@/server/domain/catalog/types";
 
 /**
  * The generic catalog repository — one implementation, instantiated three
@@ -31,6 +31,8 @@ export interface CatalogRepositoryConfig {
   imageDelegate: AnyDelegate;
   /** The FK column name on the image model, e.g. "productId". */
   imageForeignKey: string;
+  /** Which kind this repository serves; lets a typed listing ID be matched in search. */
+  kind: CatalogKind;
   /** Maps a raw Prisma row (with vendor/category/subcategory/images included) to the shared shape. */
   toListItem: (row: AnyDelegate) => CatalogListItem;
 }
@@ -50,13 +52,14 @@ export function createCatalogRepository(config: CatalogRepositoryConfig) {
     imageDelegate,
     imageForeignKey,
     toListItem,
+    kind,
   } = config;
 
   async function list(
     query: CatalogListQuery,
     options: BuildListingWhereOptions = {},
   ): Promise<{ items: CatalogListItem[]; nextCursor: string | null }> {
-    const where = buildListingWhere(query, options);
+    const where = buildListingWhere(query, { ...options, kind });
     const orderBy = buildListingOrderBy(query);
 
     const rows = await delegate.findMany({
@@ -83,7 +86,7 @@ export function createCatalogRepository(config: CatalogRepositoryConfig) {
     >,
     options: BuildListingWhereOptions = {},
   ): Promise<number> {
-    return delegate.count({ where: buildListingWhere(query, options) });
+    return delegate.count({ where: buildListingWhere(query, { ...options, kind }) });
   }
 
   async function getById(id: string) {

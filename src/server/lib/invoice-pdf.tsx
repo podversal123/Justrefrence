@@ -24,6 +24,7 @@ const styles = StyleSheet.create({
   },
   tableHeader: { fontFamily: "Helvetica-Bold", backgroundColor: "#f5f5f5" },
   cellTitle: { flex: 3 },
+  itemId: { fontSize: 8, color: "#555", marginTop: 1 },
   cellQty: { flex: 1, textAlign: "right" },
   cellPrice: { flex: 1.5, textAlign: "right" },
   totals: { marginTop: 16, alignItems: "flex-end" },
@@ -38,7 +39,14 @@ export interface InvoicePdfData {
   issuedAt: Date;
   buyer: { name: string; email: string };
   vendor: { name: string; gstin: string | null };
-  items: { title: string; qty: number; unitPrice: string; lineTotal: string }[];
+  items: {
+    title: string;
+    /** Public listing ID such as PRD-000123, when known. */
+    listingId?: string | null;
+    qty: number;
+    unitPrice: string;
+    lineTotal: string;
+  }[];
   subtotal: string;
   discountTotal: string;
   gstTotal: string;
@@ -81,7 +89,10 @@ function InvoiceDocument({ data }: { data: InvoicePdfData }) {
           </View>
           {data.items.map((item, i) => (
             <View key={i} style={styles.tableRow}>
-              <Text style={styles.cellTitle}>{item.title}</Text>
+              <View style={styles.cellTitle}>
+                <Text>{item.title}</Text>
+                {item.listingId ? <Text style={styles.itemId}>ID: {item.listingId}</Text> : null}
+              </View>
               <Text style={styles.cellQty}>{item.qty}</Text>
               <Text style={styles.cellPrice}>{formatPaise(item.unitPrice, data.currency)}</Text>
               <Text style={styles.cellPrice}>{formatPaise(item.lineTotal, data.currency)}</Text>

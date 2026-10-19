@@ -3,6 +3,7 @@ import { prisma } from "@/server/lib/prisma";
 import type { Prisma } from "@/generated/prisma/client";
 import type { CatalogItemKind, OrderStatus } from "@/generated/prisma/enums";
 import type { ResolvedDateRange } from "@/server/domain/dashboard/date-range";
+import { resolveListingIds } from "@/server/repositories/catalog/listing-ids";
 
 type Tx = Prisma.TransactionClient;
 
@@ -105,7 +106,7 @@ export async function updateOrderStatus(tx: Tx, orderId: string, status: OrderSt
 }
 
 export async function getOrderDetail(orderId: string) {
-  return prisma.order.findUnique({
+  const order = await prisma.order.findUnique({
     where: { id: orderId },
     include: {
       items: true,
@@ -115,6 +116,13 @@ export async function getOrderDetail(orderId: string) {
       invoice: { select: { id: true, invoiceNumber: true, pdfStoragePath: true } },
     },
   });
+  if (!order) return null;
+  // Each item also carries the public ID (PRD-000123 ...) of the listing that was bought.
+  const listingIds = await resolveListingIds(order.items);
+  return {
+    ...order,
+    items: order.items.map((item) => ({ ...item, listingId: listingIds.get(item.itemId) ?? null })),
+  };
 }
 
 export interface OrderListQuery {

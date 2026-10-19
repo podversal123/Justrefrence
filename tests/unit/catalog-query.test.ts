@@ -64,3 +64,24 @@ describe("buildListingOrderBy", () => {
     });
   });
 });
+
+describe("buildListingWhere with a typed listing ID", () => {
+  it("matches exactly that listing in a list of the same kind, and skips the word search", () => {
+    const where = buildListingWhere({ search: "PRD-000123" }, { kind: "PRODUCT" });
+    expect(where.listingSeq).toBe(123n);
+    expect(where.OR).toBeUndefined();
+  });
+
+  it("ignores case and spaces", () => {
+    expect(buildListingWhere({ search: " prd-000007 " }, { kind: "PRODUCT" }).listingSeq).toBe(7n);
+  });
+
+  it("finds nothing in a list of another kind", () => {
+    expect(buildListingWhere({ search: "PRD-000123" }, { kind: "SERVICE" }).listingSeq).toBe(-1n);
+  });
+
+  it("treats ordinary words as before, and does nothing special without a kind", () => {
+    expect(buildListingWhere({ search: "widget" }, { kind: "PRODUCT" }).OR).toHaveLength(2);
+    expect(buildListingWhere({ search: "PRD-000123" }).listingSeq).toBeUndefined();
+  });
+});

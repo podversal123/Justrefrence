@@ -73,6 +73,11 @@ export default async function OrderDetailPage({ params }: PageProps) {
             <div key={item.id} className="flex justify-between text-sm">
               <span>
                 {item.titleSnapshot} × {item.qty}
+                {item.listingId ? (
+                  <span className="text-muted-foreground ml-2 font-mono text-xs">
+                    {item.listingId}
+                  </span>
+                ) : null}
               </span>
               <span>{formatPaise(item.lineTotal.toString())}</span>
             </div>

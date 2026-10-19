@@ -1,4 +1,5 @@
-import type { CatalogListQuery } from "@/server/domain/catalog/types";
+import type { CatalogKind, CatalogListQuery } from "@/server/domain/catalog/types";
+import { parseListingId } from "@/server/domain/catalog/listing-id";
 
 /**
  * Pure query-building logic shared by all three catalog kinds — no I/O, no
@@ -19,6 +20,8 @@ export interface BuildListingWhereOptions {
   scopeToVendorId?: string;
   /** Public catalog browsing forces APPROVED + isActive regardless of any status filter passed in. */
   publicOnly?: boolean;
+  /** Which kind this list is, so a typed listing ID (PRD-000123) can be matched to the right list. */
+  kind?: CatalogKind;
 }
 
 export function buildListingWhere(
@@ -44,7 +47,11 @@ export function buildListingWhere(
     if (query.isActive !== undefined) where.isActive = query.isActive;
   }
 
-  if (query.search && query.search.length > 0) {
+  const listingId = query.search ? parseListingId(query.search) : null;
+  if (listingId && options.kind) {
+    // A typed listing ID finds exactly that listing. In a list of another kind it finds nothing.
+    where.listingSeq = listingId.kind === options.kind ? listingId.seq : -1n;
+  } else if (query.search && query.search.length > 0) {
     where.OR = [
       { title: { contains: query.search, mode: "insensitive" } },
       { description: { contains: query.search, mode: "insensitive" } },

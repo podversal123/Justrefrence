@@ -39,6 +39,7 @@ const productRepository = createCatalogRepository({
   subcategoryDelegate: prisma.productSubcategory,
   imageDelegate: prisma.productImage,
   imageForeignKey: "productId",
+  kind: "PRODUCT",
   toListItem: toListItem("PRODUCT"),
 });
 
@@ -48,6 +49,7 @@ const serviceRepository = createCatalogRepository({
   subcategoryDelegate: prisma.serviceSubcategory,
   imageDelegate: prisma.serviceImage,
   imageForeignKey: "serviceId",
+  kind: "SERVICE",
   toListItem: toListItem("SERVICE"),
 });
 
@@ -57,6 +59,7 @@ const projectRepository = createCatalogRepository({
   subcategoryDelegate: prisma.projectSubcategory,
   imageDelegate: prisma.projectImage,
   imageForeignKey: "projectId",
+  kind: "PROJECT",
   toListItem: toListItem("PROJECT"),
 });
 

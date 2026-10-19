@@ -30,6 +30,7 @@ async function renderAndStoreInvoicePdf(
     vendor: { name: order.vendor.businessName, gstin: order.vendor.gstin },
     items: order.items.map((item) => ({
       title: item.titleSnapshot,
+      listingId: item.listingId,
       qty: item.qty,
       unitPrice: item.unitPriceSnapshot.toString(),
       lineTotal: item.lineTotal.toString(),
