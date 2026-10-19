@@ -502,6 +502,9 @@ model ProductSubcategory {
 
 model Product {
   id             String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  /// Backs the public listing ID `PRD-000123`, worked out by src/server/domain/catalog/listing-id.ts.
+  /// The database fills it in, so two listings can never share one; each kind has its own counter.
+  listingSeq     BigInt                @unique @default(autoincrement()) @map("listing_seq")
   vendorId       String                @map("vendor_id") @db.Uuid
   categoryId     String                @map("category_id") @db.Uuid
   subcategoryId  String?               @map("subcategory_id") @db.Uuid
@@ -583,6 +586,9 @@ model ServiceSubcategory {
 
 model Service {
   id             String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  /// Backs the public listing ID `SRV-000123`, worked out by src/server/domain/catalog/listing-id.ts.
+  /// The database fills it in, so two listings can never share one; each kind has its own counter.
+  listingSeq     BigInt                @unique @default(autoincrement()) @map("listing_seq")
   vendorId       String                @map("vendor_id") @db.Uuid
   categoryId     String                @map("category_id") @db.Uuid
   subcategoryId  String?               @map("subcategory_id") @db.Uuid
@@ -663,6 +669,9 @@ model ProjectSubcategory {
 
 model Project {
   id             String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  /// Backs the public listing ID `PRJ-000123`, worked out by src/server/domain/catalog/listing-id.ts.
+  /// The database fills it in, so two listings can never share one; each kind has its own counter.
+  listingSeq     BigInt                @unique @default(autoincrement()) @map("listing_seq")
   vendorId       String                @map("vendor_id") @db.Uuid
   categoryId     String                @map("category_id") @db.Uuid
   subcategoryId  String?               @map("subcategory_id") @db.Uuid

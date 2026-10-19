@@ -2,6 +2,7 @@ import "server-only";
 import { prisma } from "@/server/lib/prisma";
 import { createCatalogRepository } from "@/server/repositories/catalog/factory";
 import type { CatalogKind, CatalogListItem } from "@/server/domain/catalog/types";
+import { formatListingId } from "@/server/domain/catalog/listing-id";
 
 /**
  * The three per-kind instantiations of the generic repository — this file
@@ -11,9 +12,10 @@ import type { CatalogKind, CatalogListItem } from "@/server/domain/catalog/types
  * docs/adr/0011-catalog-architecture.md.
  */
 
-function toListItem(row: any): CatalogListItem {
-  return {
+function toListItem(kind: CatalogKind) {
+  return (row: any): CatalogListItem => ({
     id: row.id,
+    listingId: formatListingId(kind, row.listingSeq),
     vendorId: row.vendorId,
     vendorBusinessName: row.vendor?.businessName ?? "—",
     categoryId: row.categoryId,
@@ -28,7 +30,7 @@ function toListItem(row: any): CatalogListItem {
     isActive: row.isActive,
     primaryImagePath: row.images?.[0]?.storagePath ?? null,
     createdAt: row.createdAt,
-  };
+  });
 }
 
 const productRepository = createCatalogRepository({
@@ -37,7 +39,7 @@ const productRepository = createCatalogRepository({
   subcategoryDelegate: prisma.productSubcategory,
   imageDelegate: prisma.productImage,
   imageForeignKey: "productId",
-  toListItem,
+  toListItem: toListItem("PRODUCT"),
 });
 
 const serviceRepository = createCatalogRepository({
@@ -46,7 +48,7 @@ const serviceRepository = createCatalogRepository({
   subcategoryDelegate: prisma.serviceSubcategory,
   imageDelegate: prisma.serviceImage,
   imageForeignKey: "serviceId",
-  toListItem,
+  toListItem: toListItem("SERVICE"),
 });
 
 const projectRepository = createCatalogRepository({
@@ -55,7 +57,7 @@ const projectRepository = createCatalogRepository({
   subcategoryDelegate: prisma.projectSubcategory,
   imageDelegate: prisma.projectImage,
   imageForeignKey: "projectId",
-  toListItem,
+  toListItem: toListItem("PROJECT"),
 });
 
 export const CATALOG_REPOSITORIES: Record<CatalogKind, typeof productRepository> = {

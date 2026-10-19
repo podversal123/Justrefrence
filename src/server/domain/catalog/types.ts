@@ -78,6 +78,8 @@ export type ApprovalStatus = "PENDING" | "APPROVED" | "REJECTED";
 /** The shape every catalog list row is normalized to, regardless of kind. */
 export interface CatalogListItem {
   id: string;
+  /** Public ID such as PRD-000123 — see listing-id.ts. */
+  listingId: string;
   vendorId: string;
   vendorBusinessName: string;
   categoryId: string;

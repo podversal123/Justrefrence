@@ -1,3 +1,4 @@
+import { formatListingId } from "@/server/domain/catalog/listing-id";
 import { getT } from "@/i18n/server";
 import Image from "next/image";
 import Link from "next/link";
@@ -71,7 +72,10 @@ export async function PublicCatalogDetail({ kind, slug }: { kind: CatalogKind; s
 
       <div className="space-y-4">
         <div>
-          <p className="text-muted-foreground text-sm">{t(labels.singular)}</p>
+          <p className="text-muted-foreground text-sm">
+            {t(labels.singular)} · {t("ID")}:{" "}
+            <span className="font-mono">{formatListingId(kind, listing.listingSeq)}</span>
+          </p>
           <h1>{listing.title}</h1>
           <p className="text-muted-foreground text-sm">
             {t("Sold by {vendor}", { vendor: listing.vendor.businessName })}

@@ -1,3 +1,4 @@
+import { formatListingId } from "@/server/domain/catalog/listing-id";
 import { getT } from "@/i18n/server";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
@@ -62,7 +63,10 @@ export default async function VendorListingDetailPage({ params }: PageProps) {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1>{listing.title}</h1>
-          <p className="text-muted-foreground">{labels.singular}</p>
+          <p className="text-muted-foreground">
+            {labels.singular} ·{" "}
+            <span className="font-mono">{formatListingId(kind, listing.listingSeq)}</span>
+          </p>
         </div>
         <div className="flex flex-wrap gap-1">
           <StatusBadge status={listing.approvalStatus} />

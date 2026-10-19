@@ -73,6 +73,11 @@ export default async function AdminCatalogListPage({ params, searchParams }: Pag
 
   const columns: DataTableColumn<CatalogListItem>[] = [
     {
+      key: "listingId",
+      header: msg("ID"),
+      cell: (r) => <span className="font-mono text-xs">{r.listingId}</span>,
+    },
+    {
       key: "title",
       header: msg("Title"),
       cell: (r) => <span className="font-medium">{r.title}</span>,

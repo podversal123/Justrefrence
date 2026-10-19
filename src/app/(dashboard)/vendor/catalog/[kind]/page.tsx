@@ -65,6 +65,11 @@ export default async function VendorCatalogListPage({ params, searchParams }: Pa
 
   const columns: DataTableColumn<CatalogListItem>[] = [
     {
+      key: "listingId",
+      header: t("ID"),
+      cell: (r) => <span className="font-mono text-xs">{r.listingId}</span>,
+    },
+    {
       key: "title",
       header: t("Title"),
       cell: (r) => <span className="font-medium">{r.title}</span>,

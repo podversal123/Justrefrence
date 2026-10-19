@@ -1,3 +1,4 @@
+import { formatListingId } from "@/server/domain/catalog/listing-id";
 import { getT } from "@/i18n/server";
 import { PendingChangeBanner } from "@/components/approvals/pending-change-banner";
 import type { Metadata } from "next";
@@ -65,7 +66,8 @@ export default async function AdminListingDetailPage({ params }: PageProps) {
         <div>
           <h1>{listing.title}</h1>
           <p className="text-muted-foreground">
-            {listing.vendor.businessName} · {labels.singular}
+            {listing.vendor.businessName} · {labels.singular} ·{" "}
+            <span className="font-mono">{formatListingId(kind, listing.listingSeq)}</span>
           </p>
         </div>
         <div className="flex flex-wrap gap-1">
