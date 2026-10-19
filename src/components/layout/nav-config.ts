@@ -94,6 +94,26 @@ export const NAV_GROUPS: NavGroup[] = [
         visible: (s) => s.permissions.has("order:create"),
       },
       {
+        title: msg("Sale & Purchase"),
+        memberOnly: true,
+        href: "/sale-purchase" as Route,
+        panels: ["CUSTOMER", "VENDOR"],
+        icon: Store,
+        visible: (s) =>
+          s.permissions.has("order:create") ||
+          (s.hasVendorProfile && s.permissions.has("order:update_status")),
+      },
+      {
+        title: msg("Projects"),
+        memberOnly: true,
+        href: "/my-projects" as Route,
+        panels: ["CUSTOMER", "VENDOR"],
+        icon: Briefcase,
+        visible: (s) =>
+          s.permissions.has("order:create") ||
+          (s.hasVendorProfile && s.permissions.has("order:update_status")),
+      },
+      {
         title: msg("Invoices"),
         memberOnly: true,
         href: "/invoices" as Route,

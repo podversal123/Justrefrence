@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { PROJECT_STAGES, SALE_STAGES } from "@/server/domain/commerce/order-stage";
 
 /**
  * Cart/checkout/order validation — see docs/database-tables.md §3 and the
@@ -72,3 +73,17 @@ export const orderListQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(20),
 });
 export type OrderListQuery = z.infer<typeof orderListQuerySchema>;
+
+/** Member panel > Projects: which side (ordered by me / sold by me) and which stage tab. */
+export const projectsViewQuerySchema = z.object({
+  side: z.enum(["ordered", "sold"]).catch("ordered"),
+  stage: z.enum(PROJECT_STAGES).catch("running"),
+  cursor: z.string().uuid().optional().catch(undefined),
+});
+
+/** Member panel > Sale & Purchase: purchase or sale, new (in progress) or old (ended). */
+export const saleViewQuerySchema = z.object({
+  side: z.enum(["purchase", "sale"]).catch("purchase"),
+  stage: z.enum(SALE_STAGES).catch("new"),
+  cursor: z.string().uuid().optional().catch(undefined),
+});

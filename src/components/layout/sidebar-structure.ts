@@ -59,6 +59,8 @@ const link = (href: string): StructureEntry => ({ kind: "link", href });
 const MEMBER_PAGES = [
   "/cart",
   "/orders",
+  "/sale-purchase",
+  "/my-projects",
   "/invoices",
   "/requirements",
   "/my-auctions",
@@ -92,6 +94,8 @@ export const SIDEBAR_STRUCTURE: Record<Panel, readonly StructureEntry[]> = {
     section("shopping", msg("Shopping and orders"), "bag", [
       "/cart",
       "/orders",
+      "/sale-purchase",
+      "/my-projects",
       "/invoices",
       "/requirements",
       "/my-auctions",
@@ -118,6 +122,8 @@ export const SIDEBAR_STRUCTURE: Record<Panel, readonly StructureEntry[]> = {
     link("/vendor/profile"),
     section("selling", msg("Selling"), "store", [
       "/vendor/orders",
+      "/sale-purchase",
+      "/my-projects",
       "/vendor/catalog/products",
       "/vendor/catalog/services",
       "/vendor/catalog/projects",

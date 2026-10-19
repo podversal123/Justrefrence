@@ -121,11 +121,26 @@ export interface OrderListQuery {
   cursor?: string;
   limit: number;
   status?: OrderStatus;
+  /** Any of these statuses (used by the Projects and Sale & Purchase pages); wins over `status`. */
+  statuses?: readonly OrderStatus[];
+  /** Only orders that contain at least one item of this kind. */
+  itemType?: CatalogItemKind;
+}
+
+function orderFilter(query: OrderListQuery) {
+  return {
+    ...(query.statuses
+      ? { status: { in: [...query.statuses] } }
+      : query.status
+        ? { status: query.status }
+        : {}),
+    ...(query.itemType ? { items: { some: { itemType: query.itemType } } } : {}),
+  };
 }
 
 export async function listOrdersForBuyer(buyerId: string, query: OrderListQuery) {
   const rows = await prisma.order.findMany({
-    where: { buyerId, ...(query.status ? { status: query.status } : {}) },
+    where: { buyerId, ...orderFilter(query) },
     orderBy: [{ createdAt: "desc" }, { id: "asc" }],
     take: query.limit + 1,
     ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
@@ -138,7 +153,7 @@ export async function listOrdersForBuyer(buyerId: string, query: OrderListQuery)
 
 export async function listOrdersForVendor(vendorId: string, query: OrderListQuery) {
   const rows = await prisma.order.findMany({
-    where: { vendorId, ...(query.status ? { status: query.status } : {}) },
+    where: { vendorId, ...orderFilter(query) },
     orderBy: [{ createdAt: "desc" }, { id: "asc" }],
     take: query.limit + 1,
     ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
