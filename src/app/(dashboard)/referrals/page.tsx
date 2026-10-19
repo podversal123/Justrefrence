@@ -11,6 +11,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Users } from "lucide-react";
 import { CopyLinkButton } from "./copy-link-button";
+import { ShareLinks } from "./share-links";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
@@ -52,8 +53,9 @@ export default async function ReferralsPage() {
             {t("Share this link. Anyone who registers through it becomes your direct referral.")}
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
           <CopyLinkButton link={dashboard.referralLink} />
+          <ShareLinks link={dashboard.referralLink} />
         </CardContent>
       </Card>
 

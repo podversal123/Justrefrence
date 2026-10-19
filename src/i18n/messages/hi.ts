@@ -1513,6 +1513,9 @@ export const HI_MESSAGES: Messages = {
   "New means still in progress. Old means completed, cancelled or refunded.":
     "नई का मतलब अभी चालू है। पुरानी का मतलब पूरी हो चुकी, रद्द या रिफंड हो चुकी।",
   "My cart": "मेरी कार्ट",
+  "Join {name} with my referral link: {link}": "मेरे रेफ़रल लिंक से {name} से जुड़ें: {link}",
+  "Join {name}": "{name} से जुड़ें",
+  "Share on {channel}": "{channel} पर भेजें",
   "Terms and Conditions": "नियम और शर्तें",
   "Privacy Policy": "गोपनीयता नीति",
   "Refund Policy": "रिफंड नीति",
