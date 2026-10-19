@@ -206,6 +206,7 @@ Purpose: vendor product listings.
 | title | text | NO | |
 | slug | text | NO | |
 | description | text | YES | |
+| listing_seq | bigint | NO | DB-assigned autoincrement, unique. Backs the public listing ID `PRD-000123` (`services` and `projects` have the same column and the prefixes `SRV-` and `PRJ-`; each table has its own counter). Worked out in `src/server/domain/catalog/listing-id.ts`, never stored as text |
 | sku | text | NO | |
 | price | bigint | NO | paise, `CHECK >= 0` |
 | currency | char(3) | NO | default `'INR'` |

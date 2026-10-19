@@ -263,7 +263,7 @@ Status legend: 🔴 **blocking** (money/legal — cannot go live without it) · 
 | Payment for an accepted bid (Q-25) | Undefined in original notes | How bid orders are paid |
 | Full SMS inbox/compose/drafts (Q-34) | Needs a real SMS provider connected first, and scope confirmation | Confirmation this feature (vs. a read-only log) is wanted |
 | Payment-gateway-initiated refunds | Refunds are recorded in the ledger; gateway call-out is a Phase 4-equivalent (production-build) task, not a Phase 0/1 gap | No client input needed — scheduled, not blocked |
-| Member two-step login (Q-33 follow-on) | Kept admin-only for now | Confirm if members need it too |
+| Member two-step login (Q-33 follow-on) | Built for staff (authenticator app, switched on by the Super Admin, off by default). Members may enrol voluntarily but are never forced | Confirm if members must be forced to use it |
 | Server-generated invoice PDFs vs. printable HTML | Live demo uses browser-print; this build's ADR ([0007](adr/0007-pdf-generation.md)) proposes server-side generation by default | Confirm if server PDF generation is required for Phase 1 or can follow later |
 
 ## Architectural (non-business) decisions requiring confirmation

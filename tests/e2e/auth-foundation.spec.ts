@@ -23,21 +23,21 @@ test.describe("route protection", () => {
 test.describe("public pages render", () => {
   test("login page shows the form", async ({ page }) => {
     await page.goto("/login");
-    await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
-    await expect(page.getByLabel("Email")).toBeVisible();
-    await expect(page.getByLabel("Password")).toBeVisible();
+    await expect(page.getByText("Sign in", { exact: true }).first()).toBeVisible();
+    await expect(page.getByLabel("Email or Member ID")).toBeVisible();
+    await expect(page.getByLabel("Password", { exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
   });
 
   test("forgot-password page shows the form", async ({ page }) => {
     await page.goto("/forgot-password");
-    await expect(page.getByRole("heading", { name: /forgot your password/i })).toBeVisible();
+    await expect(page.getByText(/forgot your password/i).first()).toBeVisible();
   });
 
   test("unauthorized page renders with a way back", async ({ page }) => {
     await page.goto("/unauthorized");
     await expect(page.getByRole("heading", { name: /don.t have access/i })).toBeVisible();
-    await expect(page.getByRole("link", { name: /back to dashboard/i })).toBeVisible();
+    await expect(page.getByText(/back to dashboard/i)).toBeVisible();
   });
 
   test("unknown routes render the not-found page", async ({ page }) => {

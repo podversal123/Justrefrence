@@ -32,7 +32,7 @@ Frontend route/section hiding is a UX convenience only — it is **not** a secur
 Namespaced `resource:action`. This list is seed data (`permissions` table) and the canonical reference for every `requirePermission()` call — new permissions are added here first, then wired into code, never the reverse.
 
 ### Identity & access
-`user:create` · `user:read` · `user:update` · `user:block` · `user:unblock` · `role:read` · `role:assign` · `permission:read` · `permission:update` · `vendor:apply` · `vendor:approve` · `vendor:reject` · `vendor:suspend`
+`user:create` · `user:read` · `user:update` · `user:block` · `user:unblock` · `role:read` · `role:assign` · `two_step:reset` (Super Admin: clear another account's two-step login) · `permission:read` · `permission:update` · `vendor:apply` · `vendor:approve` · `vendor:reject` · `vendor:suspend`
 
 ### Catalog
 `product:create` · `product:read` · `product:update` · `product:delete` · `product:approve` · `service:create` · `service:read` · `service:update` · `service:delete` · `service:approve` · `project:create` · `project:read` · `project:update` · `project:delete` · `project:approve` · `category:manage`
@@ -47,7 +47,7 @@ Namespaced `resource:action`. This list is seed data (`permissions` table) and t
 `referral:read` · `referral:read:any` · `referral:create` · `referral:repoint` (`SUPER_ADMIN` only, per Q-05) · `commission:read` · `commission:read:any` · `commission:approve` · `commission_rule:read` · `commission_rule:update`
 
 ### Wallet & payout
-`wallet:read` · `wallet:read:any` · `wallet:topup` · `wallet:transfer` (dormant until Q-10 resolved) · `wallet:withdraw` (= submit a payout request) · `payout:request` · `payout:approve` · `payout:reject` · `payout:record_transfer` · `wallet_pin:set`
+`wallet:read` · `wallet:read:any` · `wallet:topup` · `wallet:transfer` (dormant until Q-10 resolved) · `wallet:withdraw` (= submit a payout request) · `payout:request` · `payout:approve` · `payout:reject` · `payout:record_transfer` · `wallet_pin:set` · `wallet_pin:reset` (clear a member's forgotten wallet PIN)
 
 ### E-pin & subscription
 `epin:generate` · `epin:read` · `epin:read:any` · `epin:redeem` · `epin:revoke` · `subscription_plan:manage` · `subscription:read`
@@ -78,6 +78,7 @@ Legend: ✅ granted by default · — not granted (can still be overridden per-u
 |---|:---:|:---:|:---:|:---:|:---:|:---:|
 | user:create / block / unblock | ✅ | ✅ | — | — | — | — |
 | role:assign / permission:update | ✅ | — | — | — | — | — |
+| two_step:reset | ✅ | — | — | — | — | — |
 | vendor:approve / reject | ✅ | — | — | — | — | — |
 | vendor:suspend | ✅ | ✅ | — | — | — | — |
 | vendor:apply | ✅ | ✅ | — | — | — | ✅ |
@@ -101,6 +102,7 @@ Legend: ✅ granted by default · — not granted (can still be overridden per-u
 | wallet:withdraw / payout:request | ✅ | — | — | — | ✅ | ✅ |
 | payout:approve / reject / record_transfer | ✅ | — | ✅ | — | — | — |
 | wallet_pin:set | ✅ | — | — | — | ✅ | ✅ |
+| wallet_pin:reset | ✅ | ✅ | — | — | — | — |
 | epin:generate | ✅ | ✅ | — | — | — | — (unless "member special subscription" self-generation is confirmed, Q-15) |
 | epin:redeem / read (own) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | epin:read:any / revoke | ✅ | ✅ | — | — | — | — |
@@ -145,4 +147,4 @@ Notes:
 
 - Q-29 — full Super Admin feature confirmation (page 2 of the client's notes is missing; this matrix uses the live demo's Super Admin scope as the working baseline).
 - Q-30 — exact admin sub-role boundaries and the precise contents of a "vendor rights" bundle.
-- Q-33 — whether members eventually get two-step login (currently admin-only, per the Live Testing doc §15).
+- Q-33 — whether members must use two-step login (built for staff and switched on by the Super Admin; members may enrol voluntarily but are never forced).

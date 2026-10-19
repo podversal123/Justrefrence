@@ -28,7 +28,7 @@ This is the **only** function that writes to `audit_logs`. It lives in the `audi
 
 | Category | Actions |
 |---|---|
-| Auth | Login, failed login, password change, password reset, OTP verification failure (rate-limit-triggered ones specifically), 2FA enrollment/disable |
+| Auth | Login, failed login, password change, password reset, OTP verification failure (rate-limit-triggered ones specifically), two-step: `TWO_STEP_ENABLED`, `TWO_STEP_VERIFIED`, `TWO_STEP_FAILED`, `TWO_STEP_DISABLED`, `TWO_STEP_RESET_BY_ADMIN` (with reason), `TWO_STEP_RESET_BY_SERVER` (script); wallet PIN: `WALLET_PIN_SET`, `WALLET_PIN_CHANGED`, `WALLET_PIN_RESET_BY_STAFF` (with reason); `LEGAL_PAGES_UPDATED`, `DEMO_DATA_RESET` |
 | RBAC | Role assigned/revoked, permission bundle changed, referral repointed |
 | Member lifecycle | Member blocked/unblocked, vendor approved/rejected/suspended, KYC field changed |
 | Catalog | Listing approved/rejected (not routine create/update — see §5) |

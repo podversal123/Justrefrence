@@ -7,9 +7,9 @@ Covers the "bell icon," SMS/WhatsApp/email dispatch, and the welcome-letter/birt
 | Channel | Provider | Used for |
 |---|---|---|
 | In-app (bell icon) | `notifications` table + Supabase Realtime push | Order status changes, payout decisions, commission released, ticket responses, admin broadcasts |
-| SMS | MSG91 | OTP, critical account alerts (payout paid, security-relevant changes) |
-| WhatsApp | MSG91 WhatsApp Business API | Sign-up verification code (Q-33); optionally mirrors selected SMS alerts if the client wants it |
-| Email | Resend (fallback: Supabase SMTP) | Welcome letter, invoices, password reset, birthday greeting (Q-37 default channel) |
+| SMS | MSG91 Flow API (`sendSms`) | OTP, critical account alerts (payout paid, security-relevant changes). **Sent for real only when** `MSG91_AUTH_KEY`, `MSG91_SENDER_ID` and that message's `MSG91_TEMPLATE_<NAME>` (a DLT-approved template ID) are all set; otherwise recorded only. Not yet tried against a live MSG91 account (MSG91's published docs disagree on field names) |
+| WhatsApp | MSG91 WhatsApp Business API | Sign-up verification code (Q-33). **Not sent yet, recorded only**: needs Meta verification and an approved template first (Q-43) |
+| Email | Resend (`sendEmail`; fallback: Supabase SMTP not built) | Welcome letter, birthday greeting and email codes are sent for real once `RESEND_API_KEY` is set (wording in `src/server/lib/email-templates.ts`); invoices and password-reset mail still go through Supabase |
 
 ## 2. Delivery architecture
 
