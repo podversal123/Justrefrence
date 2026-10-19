@@ -18,10 +18,12 @@ export interface CreatePaymentInput {
   amount: bigint;
   currency: string;
   idempotencyKey: string;
+  /** "RAZORPAY" (the default) or "WALLET" for a payment taken from the member's wallet balance. */
+  provider?: string;
 }
 
-export async function createPayment(input: CreatePaymentInput) {
-  return prisma.payment.create({ data: input });
+export async function createPayment(input: CreatePaymentInput, tx?: Tx) {
+  return (tx ?? prisma).payment.create({ data: input });
 }
 
 export async function getPaymentById(id: string) {

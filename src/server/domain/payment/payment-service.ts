@@ -2,7 +2,9 @@
 // already carries its own "server-only" guard (payment-repository.ts is
 // the one exception, for the same reason wallet-repository.ts is — see
 // its own doc comment). Same precedent as checkout-service.ts (Phase 5).
+import { randomUUID } from "node:crypto";
 import { prisma } from "@/server/lib/prisma";
+import { debitWallet, creditWallet, getOrCreateWallet } from "@/server/repositories/wallet/wallet-repository";
 import {
   createPayment,
   getPaymentByIdempotencyKey,
@@ -170,7 +172,7 @@ export async function createPaymentOrderForCheckout(
   };
 }
 
-async function markCheckoutOrdersPaid(checkoutId: string | null): Promise<void> {
+export async function markCheckoutOrdersPaid(checkoutId: string | null): Promise<void> {
   if (!checkoutId) return;
   const orders = await prisma.order.findMany({
     where: { checkoutId },
@@ -395,21 +397,45 @@ export async function initiateRefund(paymentId: string, actorId: string): Promis
     throw new ValidationError("This payment has no provider payment id to refund.");
   }
 
-  const refund = await createRazorpayRefund({
-    providerPaymentId: payment.providerPaymentId,
-    amountPaise: payment.amount,
-  });
-
-  await prisma.$transaction(async (tx) => {
-    const applied = await tryMarkPaymentRefunded(tx, paymentId);
-    if (!applied) throw new ConflictError("This payment is no longer refundable.");
-    await createPaymentTransaction(tx, {
-      paymentId,
-      type: "REFUND",
-      amount: payment.amount,
-      providerReference: refund.id,
+  // A payment made from the wallet is refunded to the wallet: a ledger credit, no gateway involved.
+  let refund: { id: string };
+  if (payment.provider === "WALLET") {
+    const wallet = await getOrCreateWallet(payment.payerId);
+    refund = { id: `wallet_refund_${payment.id}` };
+    await prisma.$transaction(async (tx) => {
+      const applied = await tryMarkPaymentRefunded(tx, paymentId);
+      if (!applied) throw new ConflictError("This payment is no longer refundable.");
+      await creditWallet(tx, {
+        walletId: wallet.id,
+        amount: payment.amount,
+        type: "REFUND",
+        referenceType: "payment",
+        referenceId: payment.id,
+        idempotencyKey: `wallet-refund:${payment.id}`,
+      });
+      await createPaymentTransaction(tx, {
+        paymentId,
+        type: "REFUND",
+        amount: payment.amount,
+        providerReference: refund.id,
+      });
     });
-  });
+  } else {
+    refund = await createRazorpayRefund({
+      providerPaymentId: payment.providerPaymentId,
+      amountPaise: payment.amount,
+    });
+    await prisma.$transaction(async (tx) => {
+      const applied = await tryMarkPaymentRefunded(tx, paymentId);
+      if (!applied) throw new ConflictError("This payment is no longer refundable.");
+      await createPaymentTransaction(tx, {
+        paymentId,
+        type: "REFUND",
+        amount: payment.amount,
+        providerReference: refund.id,
+      });
+    });
+  }
 
   await recordAudit({
     actorId,
@@ -435,4 +461,99 @@ export async function initiateRefund(paymentId: string, actorId: string): Promis
       }
     }
   }
+}
+
+/**
+ * Pays a checkout from the buyer's wallet balance. One database transaction does all of it: the payment
+ * row, the wallet debit (a ledger entry that refuses to take the balance below zero), the capture and the
+ * capture record. If the balance is not enough, nothing at all is written. The orders are marked paid
+ * afterwards, exactly as after an online payment. Safe to repeat: the same request id returns the same
+ * payment, and a checkout that is already paid is refused.
+ */
+export async function payCheckoutWithWallet(input: {
+  checkoutId: string;
+  payerId: string;
+  idempotencyKey: string;
+}): Promise<{ paymentId: string; amount: bigint; replay: boolean }> {
+  const checkout = await prisma.checkout.findUnique({
+    where: { id: input.checkoutId },
+    select: { buyerId: true },
+  });
+  // Same answer for "no such checkout" and "not yours", so ids cannot be probed.
+  if (!checkout || checkout.buyerId !== input.payerId) {
+    throw new NotFoundError("Checkout not found.");
+  }
+
+  const scopedKey = scopedIdempotencyKey("payment-order", input.payerId, `wallet:${input.idempotencyKey}`);
+  const existing = await getPaymentByIdempotencyKey(scopedKey);
+  if (existing) {
+    if (existing.checkoutId !== input.checkoutId) {
+      throw new ConflictError("This request id was already used for a different checkout.");
+    }
+    return { paymentId: existing.id, amount: existing.amount, replay: true };
+  }
+
+  const prior = await listPaymentsForCheckout(input.checkoutId);
+  if (prior.some((p) => p.status === "CAPTURED")) {
+    throw new ConflictError("This checkout has already been paid for.");
+  }
+  const { amount, currency } = await getCheckoutPayableAmount(input.checkoutId);
+  if (amount <= 0n) throw new ValidationError("Nothing to pay for this checkout.");
+
+  const wallet = await getOrCreateWallet(input.payerId);
+
+  let payment: { id: string };
+  try {
+    payment = await prisma.$transaction(async (tx) => {
+      const created = await createPayment({
+        checkoutId: input.checkoutId,
+        payerId: input.payerId,
+        purpose: "ORDER",
+        providerOrderId: `wallet_${randomUUID()}`,
+        amount,
+        currency,
+        idempotencyKey: scopedKey,
+        provider: "WALLET",
+      }, tx);
+      const debit = await debitWallet(tx, {
+        walletId: wallet.id,
+        amount,
+        type: "ORDER_PAYMENT",
+        referenceType: "payment",
+        referenceId: created.id,
+        idempotencyKey: `wallet-pay:${created.id}`,
+      });
+      if (!debit.applied) throw new ConflictError("Your wallet balance is not enough for this order.");
+      const providerReference = `wallet_${created.id}`;
+      if (!(await tryCapturePayment(tx, created.id, providerReference))) {
+        throw new ConflictError("This payment can no longer be completed.");
+      }
+      await createPaymentTransaction(tx, {
+        paymentId: created.id,
+        type: "CAPTURE",
+        amount,
+        providerReference,
+      });
+      return created;
+    });
+  } catch (error) {
+    // A concurrent identical request won the unique index: answer with its payment.
+    if (isUniqueConstraintViolation(error)) {
+      const winner = await getPaymentByIdempotencyKey(scopedKey);
+      if (winner && winner.checkoutId === input.checkoutId) {
+        return { paymentId: winner.id, amount: winner.amount, replay: true };
+      }
+    }
+    throw error;
+  }
+
+  await recordAudit({
+    actorId: input.payerId,
+    action: "PAYMENT_CAPTURED",
+    entityType: "payments",
+    entityId: payment.id,
+    after: { method: "WALLET", amount: amount.toString(), checkoutId: input.checkoutId },
+  });
+  await markCheckoutOrdersPaid(input.checkoutId);
+  return { paymentId: payment.id, amount, replay: false };
 }

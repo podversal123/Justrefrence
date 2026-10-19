@@ -21,6 +21,8 @@ import {
   placeBid,
   withdrawBid,
 } from "@/server/domain/bidding/bidding-service";
+import { initiateRefund, payCheckoutWithWallet } from "@/server/domain/payment/payment-service";
+import { creditWallet, getOrCreateWallet } from "@/server/repositories/wallet/wallet-repository";
 
 const DOMAIN = "@bidtest.justreference.test";
 let passed = 0;
@@ -90,6 +92,13 @@ async function cleanup() {
     select: { id: true },
   });
   const userIds = users.map((u) => u.id);
+  const pays = await prisma.payment.findMany({ where: { payerId: { in: userIds } }, select: { id: true } });
+  await prisma.paymentTransaction.deleteMany({ where: { paymentId: { in: pays.map((x) => x.id) } } });
+  await prisma.paymentEvent.deleteMany({ where: { paymentId: { in: pays.map((x) => x.id) } } });
+  await prisma.payment.deleteMany({ where: { id: { in: pays.map((x) => x.id) } } });
+  const wallets = await prisma.wallet.findMany({ where: { ownerUserId: { in: userIds } }, select: { id: true } });
+  await prisma.walletTransaction.deleteMany({ where: { walletId: { in: wallets.map((x) => x.id) } } });
+  await prisma.wallet.deleteMany({ where: { id: { in: wallets.map((x) => x.id) } } });
   const reqs = await prisma.requirement.findMany({
     where: { buyerId: { in: userIds } },
     select: { id: true },
@@ -406,6 +415,76 @@ async function main() {
   check(
     "still exactly one order after the replay",
     (await prisma.order.count({ where: { buyerId: buyer.id } })) === 1,
+  );
+
+  // ---------------------------------------------------------------- paying that order from the wallet
+  const payKey = randomUUID();
+  const orderTotal = bidOrder.grandTotal;
+  await expectReject(
+    "an empty wallet cannot pay (nothing is written)",
+    () => payCheckoutWithWallet({ checkoutId: claimA.checkoutId, payerId: buyer.id, idempotencyKey: payKey }),
+    "not enough",
+  );
+  check(
+    "the refused payment left no payment row and the order stays PLACED",
+    (await prisma.payment.count({ where: { checkoutId: claimA.checkoutId } })) === 0 &&
+      (await prisma.order.findUniqueOrThrow({ where: { id: bidOrder.id } })).status === "PLACED",
+  );
+  const buyerWallet = await getOrCreateWallet(buyer.id);
+  await prisma.$transaction((tx) =>
+    creditWallet(tx, {
+      walletId: buyerWallet.id,
+      amount: orderTotal + 500n,
+      type: "TOPUP",
+      referenceType: "TEST",
+      referenceId: buyer.id,
+      idempotencyKey: `verify-fund:${buyer.id}`,
+    }),
+  );
+  await expectReject(
+    "another member cannot pay my checkout from their wallet",
+    () => payCheckoutWithWallet({ checkoutId: claimA.checkoutId, payerId: v2.user.id, idempotencyKey: randomUUID() }),
+    "not found",
+  );
+  const walletPay = await payCheckoutWithWallet({ checkoutId: claimA.checkoutId, payerId: buyer.id, idempotencyKey: payKey });
+  check("the wallet payment is accepted for the full order total", walletPay.amount === orderTotal && !walletPay.replay);
+  check(
+    "the order is now PAID",
+    (await prisma.order.findUniqueOrThrow({ where: { id: bidOrder.id } })).status === "PAID",
+  );
+  check(
+    "the wallet was debited exactly the order total (500 paise left)",
+    (await prisma.wallet.findUniqueOrThrow({ where: { id: buyerWallet.id } })).balance === 500n,
+  );
+  const payRow = await prisma.payment.findUniqueOrThrow({ where: { id: walletPay.paymentId } });
+  check("the payment is CAPTURED and recorded as a wallet payment", payRow.status === "CAPTURED" && payRow.provider === "WALLET");
+  const replayPay = await payCheckoutWithWallet({ checkoutId: claimA.checkoutId, payerId: buyer.id, idempotencyKey: payKey });
+  check("the same request id returns the same payment and charges nothing more", replayPay.paymentId === walletPay.paymentId && replayPay.replay);
+  await expectReject(
+    "a paid checkout cannot be paid again with a new request id",
+    () => payCheckoutWithWallet({ checkoutId: claimA.checkoutId, payerId: buyer.id, idempotencyKey: randomUUID() }),
+    "already been paid",
+  );
+  check(
+    "the balance is still 500 paise after the attempts",
+    (await prisma.wallet.findUniqueOrThrow({ where: { id: buyerWallet.id } })).balance === 500n,
+  );
+  await initiateRefund(walletPay.paymentId, buyer.id);
+  check(
+    "refunding a wallet payment puts the money back in the wallet",
+    (await prisma.wallet.findUniqueOrThrow({ where: { id: buyerWallet.id } })).balance === orderTotal + 500n,
+  );
+  check(
+    "the order is REFUNDED and the payment is REFUNDED",
+    (await prisma.order.findUniqueOrThrow({ where: { id: bidOrder.id } })).status === "REFUNDED" &&
+      (await prisma.payment.findUniqueOrThrow({ where: { id: walletPay.paymentId } })).status === "REFUNDED",
+  );
+  const ledger = await prisma.walletTransaction.findMany({ where: { walletId: buyerWallet.id } });
+  const net = ledger.reduce((sum, t) => sum + (t.direction === "CREDIT" ? t.amount : -t.amount), 0n);
+  check(
+    "the ledger adds up to the balance (top-up, order payment, refund)",
+    ledger.length === 3 && net === orderTotal + 500n,
+    ledger.map((t) => `${t.type}:${t.direction}`),
   );
 
   // ---------------------------------------------------------------- sealed tender

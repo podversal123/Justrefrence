@@ -93,6 +93,26 @@ export function SettingsForm({ settings, canEdit }: { settings: SiteSettings; ca
 
           <section className="space-y-4">
             <div>
+              <h2 className="text-base font-semibold">{t("Paying from the wallet")}</h2>
+              <p className="text-muted-foreground text-sm">
+                {t(
+                  "Lets a member pay for an order with the balance in their wallet (earnings, rewards and top-ups), instead of paying online.",
+                )}
+              </p>
+            </div>
+            <label className="flex items-start gap-3 text-sm">
+              <input
+                type="checkbox"
+                name="walletPaymentEnabled"
+                defaultChecked={settings.walletPaymentEnabled}
+                className="mt-0.5 size-4"
+              />
+              <span className="font-medium">{t("Allow paying for orders from the wallet")}</span>
+            </label>
+          </section>
+
+          <section className="space-y-4">
+            <div>
               <h2 className="text-base font-semibold">{t("Auto logout")}</h2>
               <p className="text-muted-foreground text-sm">
                 {t("Signed-in users are logged out after this many minutes without any activity.")}

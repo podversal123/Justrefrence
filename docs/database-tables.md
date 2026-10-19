@@ -558,7 +558,7 @@ Insert-only; this is the single ledger table used for both "wallet_transactions"
 | wallet_id | uuid | NO | FK → `wallets.id` |
 | direction | text | NO | `CHECK IN ('CREDIT','DEBIT')` |
 | amount | bigint | NO | `CHECK > 0` (sign carried by `direction`, not the value) |
-| type | text | NO | `CHECK IN ('TOPUP','COMMISSION','PAYOUT','REFUND','REWARD','TRANSFER','ADJUSTMENT')` |
+| type | text | NO | `CHECK IN ('TOPUP','COMMISSION','PAYOUT','REFUND','REWARD','TRANSFER','ORDER_PAYMENT','ADJUSTMENT')` |
 | reference_type | text | NO | e.g. `'COMMISSION_LEDGER'` |
 | reference_id | uuid | NO | |
 | idempotency_key | text | NO | |

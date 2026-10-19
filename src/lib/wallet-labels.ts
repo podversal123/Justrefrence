@@ -8,6 +8,7 @@ const TRANSACTION_LABELS: Record<string, string> = {
   REFUND: msg("Refund"),
   REWARD: msg("Reward"),
   TRANSFER: msg("Transfer"),
+  ORDER_PAYMENT: msg("Order payment"),
   ADJUSTMENT: msg("Adjustment"),
 };
 
@@ -17,6 +18,7 @@ const DESCRIPTIONS: Record<string, string> = {
   REWARD: msg("Reward from Just Reference"),
   PAYOUT_REQUEST: msg("Withdrawal to your bank account"),
   MANUAL_TOPUP: msg("Money added by the Just Reference team"),
+  payment: msg("Payment for an order"),
 };
 
 export function transactionDescription(type: string, referenceType: string): string {

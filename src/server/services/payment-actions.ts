@@ -6,6 +6,7 @@ import { authorize } from "@/server/auth/authorize";
 import {
   createPaymentOrderForCheckout,
   initiateRefund,
+  payCheckoutWithWallet,
   verifyCheckoutCallback,
 } from "@/server/domain/payment/payment-service";
 import {
@@ -13,7 +14,8 @@ import {
   initiateRefundSchema,
   verifyCheckoutCallbackSchema,
 } from "@/lib/schemas/payment";
-import { AppError, RateLimitedError } from "@/server/lib/errors";
+import { AppError, RateLimitedError, ValidationError } from "@/server/lib/errors";
+import { getSiteSettings } from "@/server/lib/site-settings";
 import { logger } from "@/server/lib/logger";
 import { paymentOrderRateLimiter } from "@/server/lib/rate-limit";
 import type { ApiResult } from "@/lib/api-response";
@@ -102,6 +104,53 @@ export async function createPaymentOrderAction(
     };
   } catch (error) {
     return failureFrom(error, "Could not start payment for this checkout.");
+  }
+}
+
+/** Pays a checkout from the member's wallet balance. Refuses when the Super Admin has switched wallet payments off. */
+export async function payWithWalletAction(
+  _prevState: unknown,
+  formData: FormData,
+): Promise<ApiResult<{ paymentId: string }>> {
+  const session = await getAuthSession();
+  if (!session) {
+    return {
+      success: false,
+      error: { code: "UNAUTHENTICATED", message: "Please sign in again." },
+      meta: { requestId: requestId() },
+    };
+  }
+  const rateLimit = await paymentOrderRateLimiter.consume(`user:${session.userId}`);
+  if (!rateLimit.allowed) {
+    return failureFrom(
+      new RateLimitedError("Too many payment attempts. Please wait a few minutes and try again."),
+    );
+  }
+  const parsed = createPaymentOrderSchema.safeParse({
+    checkoutId: formData.get("checkoutId"),
+    idempotencyKey: formData.get("idempotencyKey"),
+  });
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: { code: "VALIDATION_ERROR", message: "Invalid payment request." },
+      meta: { requestId: requestId() },
+    };
+  }
+  try {
+    if (!(await getSiteSettings()).walletPaymentEnabled) {
+      throw new ValidationError("Paying from the wallet is switched off right now.");
+    }
+    const result = await payCheckoutWithWallet({
+      checkoutId: parsed.data.checkoutId,
+      payerId: session.userId,
+      idempotencyKey: parsed.data.idempotencyKey,
+    });
+    revalidatePath("/orders");
+    revalidatePath("/wallet");
+    return { success: true, data: { paymentId: result.paymentId }, meta: { requestId: requestId() } };
+  } catch (error) {
+    return failureFrom(error, "Could not pay from your wallet.");
   }
 }
 

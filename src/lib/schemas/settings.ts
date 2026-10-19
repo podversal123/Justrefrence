@@ -42,6 +42,11 @@ export const siteSettingsSchema = z.object({
     .string()
     .optional()
     .transform((value) => value === "on"),
+  /** A ticked box sends "on"; an unticked one sends nothing, which here means off. */
+  walletPaymentEnabled: z
+    .string()
+    .optional()
+    .transform((value) => value === "on"),
   contactAddress: optionalText(300),
   contactHours: optionalText(120),
   /** Empty means "use the default"; 0 turns auto logout off. */

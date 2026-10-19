@@ -56,6 +56,7 @@ Status legend: 🔴 **blocking** (money/legal — cannot go live without it) · 
 ### REQUIREMENT_DECISION_REQUIRED — Q-09: Wallet top-up limits & spend
 - **Unclear:** Min/max top-up amount; can balance pay for orders?
 - **Suggested default (adopted):** Top-up via Razorpay only; balance can pay for orders (checkout accepts wallet as a payment method alongside Razorpay).
+- **Built:** on the payment screen a member whose wallet covers the whole amount can choose "Pay from wallet" (one transaction: payment row, wallet debit that cannot go below zero, capture; orders become PAID). A refund of such a payment goes back to the wallet as a ledger credit. The Super Admin can switch it off in Admin > Settings (`payments.wallet_enabled`, on by default). Part-wallet, part-online payment is not built.
 - **Status:** 🟡 (amounts TBD).
 
 ### REQUIREMENT_DECISION_REQUIRED — Q-10: Member-to-member transfers ⚠️ legal

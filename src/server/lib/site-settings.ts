@@ -22,6 +22,7 @@ const KEYS = {
   contactHours: { key: "site.contact_hours", type: "STRING" },
   idleLogoutMinutes: { key: "site.idle_logout_minutes", type: "NUMBER" },
   staffTwoStepRequired: { key: "security.staff_two_step_required", type: "BOOLEAN" },
+  walletPaymentEnabled: { key: "payments.wallet_enabled", type: "BOOLEAN" },
 } as const;
 
 export interface SiteSettings {
@@ -35,6 +36,8 @@ export interface SiteSettings {
   idleLogoutMinutes: number;
   /** When on, every staff account must enter an authenticator-app code after signing in. */
   staffTwoStepRequired: boolean;
+  /** Whether a member may pay for an order from their wallet balance (Q-09: on by default). */
+  walletPaymentEnabled: boolean;
 }
 
 export const DEFAULT_MAINTENANCE_MESSAGE =
@@ -52,6 +55,7 @@ const DEFAULTS: SiteSettings = {
   contactHours: "",
   idleLogoutMinutes: DEFAULT_IDLE_LOGOUT_MINUTES,
   staffTwoStepRequired: false,
+  walletPaymentEnabled: true,
 };
 
 function idleMinutes(value: unknown): number {
@@ -77,6 +81,8 @@ async function readSettings(): Promise<SiteSettings> {
     contactHours: text(KEYS.contactHours.key),
     idleLogoutMinutes: idleMinutes(byKey.get(KEYS.idleLogoutMinutes.key)),
     staffTwoStepRequired: byKey.get(KEYS.staffTwoStepRequired.key) === true,
+    // Only an explicit "off" turns it off; a database with no row yet keeps the documented default.
+    walletPaymentEnabled: byKey.get(KEYS.walletPaymentEnabled.key) !== false,
   };
 }
 
@@ -113,6 +119,7 @@ export async function saveSiteSettings(input: SiteSettingsInput, actorId: string
     contactHours: input.contactHours,
     idleLogoutMinutes: input.idleLogoutMinutes,
     staffTwoStepRequired: input.staffTwoStepRequired,
+    walletPaymentEnabled: input.walletPaymentEnabled,
   };
   await prisma.$transaction(
     (Object.keys(KEYS) as (keyof typeof KEYS)[]).map((name) =>

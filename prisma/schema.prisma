@@ -1211,6 +1211,7 @@ enum WalletTransactionType {
   REFUND
   REWARD
   TRANSFER
+  ORDER_PAYMENT
   ADJUSTMENT
 }
 

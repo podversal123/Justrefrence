@@ -81,7 +81,7 @@ Category/subcategory/listing tables are shared between the Admin panel and Vendo
 | Table | Purpose |
 |---|---|
 | `wallets` | `owner_user_id` (unique), `balance` (paise, **derived** — see below), `pending_balance`, `wallet_pin_hash` (nullable, Q-13) |
-| `wallet_transactions` | Immutable, `wallet_id`, `direction` (`CREDIT/DEBIT`), `amount`, `type` (`TOPUP/COMMISSION/PAYOUT/REFUND/REWARD/TRANSFER/ADJUSTMENT`), `reference_type`, `reference_id`, `idempotency_key` (unique), `balance_after` |
+| `wallet_transactions` | Immutable, `wallet_id`, `direction` (`CREDIT/DEBIT`), `amount`, `type` (`TOPUP/COMMISSION/PAYOUT/REFUND/REWARD/TRANSFER/ORDER_PAYMENT/ADJUSTMENT`), `reference_type`, `reference_id`, `idempotency_key` (unique), `balance_after` |
 | `wallet_ledger` | Same event stream as `wallet_transactions`, kept as a distinct table matching the brief's explicit entity list, used for reconciliation/export; in Phase 1 implementation this may be collapsed into one table with a `ledger` view — **implementation detail deferred to Phase 1**, not a Phase 0 decision |
 
 `wallets.balance` is **never** updated by `wallet.balance += amount`. Every mutation is: `INSERT wallet_transactions (...)` inside a `SERIALIZABLE` (or `SELECT ... FOR UPDATE` row-locked) transaction that also updates `wallets.balance` to the new computed value in the same statement/transaction, so the stored balance is always reconcilable by summing `wallet_transactions` for that wallet. A scheduled reconciliation job re-sums the ledger and alerts on drift.

@@ -36,6 +36,7 @@ export async function updateSiteSettingsAction(
     contactHours: formData.get("contactHours") ?? undefined,
     idleLogoutMinutes: formData.get("idleLogoutMinutes") ?? undefined,
     staffTwoStepRequired: formData.get("staffTwoStepRequired") ?? undefined,
+    walletPaymentEnabled: formData.get("walletPaymentEnabled") ?? undefined,
   });
   if (!parsed.success) return validationFailure("Check the highlighted settings.", parsed.error);
 
