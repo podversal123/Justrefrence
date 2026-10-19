@@ -107,7 +107,7 @@ For each module: purpose, owned tables, permissions it exposes, events it emits/
 - **Does not own:** GST on the invoice line items directly — `invoicing` applies the active GST rule at invoice time by calling this module.
 
 ### 14. `bidding`
-- **Purpose:** Requirement posting and sealed-bid workflow; payment handoff intentionally left open (Q-25).
+- **Purpose:** Requirement posting and sealed-bid workflow. The poster pays for the awarded bid as a normal order at the winning price (Q-25, working default awaiting the client's confirmation).
 - **Owns:** `bidding_requirements`, `bids`.
 - **Permissions exposed:** `requirement:*`, `bid:*`.
 - **Emits:** `BidAccepted` — designed to be consumed by `cart-checkout`/`orders` once a payment rule is confirmed, not by a bidding-specific payment path.

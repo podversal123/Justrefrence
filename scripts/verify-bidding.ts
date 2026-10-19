@@ -12,9 +12,11 @@
  */
 import { randomUUID } from "node:crypto";
 import { prisma } from "@/server/lib/prisma";
+import { createAdminClient } from "@/lib/supabase/admin";
 import {
   awardBid,
   cancelRequirement,
+  claimAwardedBid,
   createRequirement,
   placeBid,
   withdrawBid,
@@ -61,6 +63,14 @@ async function makeUser(name: string) {
     },
   });
 }
+async function makeMember(userId: string) {
+  const member = await prisma.memberProfile.create({ data: { userId, referralPath: "root" } });
+  await prisma.memberProfile.update({
+    where: { id: member.id },
+    data: { memberId: `BT-${member.memberSeq}` },
+  });
+  return member.id; // the profile id (a uuid), which is what the order code takes as memberId
+}
 async function makeVendor(name: string) {
   const user = await makeUser(name);
   const profile = await prisma.vendorProfile.create({
@@ -85,6 +95,45 @@ async function cleanup() {
     select: { id: true },
   });
   const reqIds = reqs.map((r) => r.id);
+
+  const vendorIds = (
+    await prisma.vendorProfile.findMany({
+      where: { userId: { in: userIds } },
+      select: { id: true },
+    })
+  ).map((v) => v.id);
+  const orders = await prisma.order.findMany({
+    where: { OR: [{ buyerId: { in: userIds } }, { vendorId: { in: vendorIds } }] },
+    select: { id: true, checkoutId: true },
+  });
+  const orderIds = orders.map((o) => o.id);
+  const checkoutIds = [...new Set(orders.map((o) => o.checkoutId))];
+  const invoices = await prisma.invoice.findMany({
+    where: { orderId: { in: orderIds } },
+    select: { pdfStoragePath: true },
+  });
+  const paths = invoices.map((i) => i.pdfStoragePath).filter((x): x is string => Boolean(x));
+  if (paths.length) await createAdminClient().storage.from("invoices-private").remove(paths);
+  await prisma.commissionStatusHistory.deleteMany({
+    where: { commission: { orderId: { in: orderIds } } },
+  });
+  await prisma.commission.deleteMany({ where: { orderId: { in: orderIds } } });
+  await prisma.invoiceItem.deleteMany({ where: { invoice: { orderId: { in: orderIds } } } });
+  await prisma.invoice.deleteMany({ where: { orderId: { in: orderIds } } });
+  await prisma.orderStatusHistory.deleteMany({ where: { orderId: { in: orderIds } } });
+  await prisma.orderItem.deleteMany({ where: { orderId: { in: orderIds } } });
+  await prisma.order.deleteMany({ where: { id: { in: orderIds } } });
+  const checkouts = await prisma.checkout.findMany({
+    where: { id: { in: checkoutIds } },
+    select: { cartId: true },
+  });
+  await prisma.checkout.deleteMany({ where: { id: { in: checkoutIds } } });
+  await prisma.cart.deleteMany({
+    where: {
+      OR: [{ id: { in: checkouts.map((c) => c.cartId) } }, { ownerUserId: { in: userIds } }],
+    },
+  });
+
   await prisma.requirement.updateMany({
     where: { id: { in: reqIds } },
     data: { awardedBidId: null },
@@ -95,6 +144,12 @@ async function cleanup() {
   await prisma.notification.deleteMany({ where: { userId: { in: userIds } } });
   await prisma.auditLog.deleteMany({ where: { actorId: { in: userIds } } });
   await prisma.vendorProfile.deleteMany({ where: { userId: { in: userIds } } });
+  await prisma.referralRelationship.deleteMany({
+    where: {
+      OR: [{ member: { userId: { in: userIds } } }, { referrer: { userId: { in: userIds } } }],
+    },
+  });
+  await prisma.memberProfile.deleteMany({ where: { userId: { in: userIds } } });
   await prisma.user.deleteMany({ where: { id: { in: userIds } } });
 }
 
@@ -110,6 +165,13 @@ const base = {
 async function main() {
   await cleanup(); // leftovers from an interrupted earlier run
   const buyer = await makeUser("buyer");
+  const buyerMemberId = await makeMember(buyer.id);
+  // The buyer was referred by someone, so a commission can be made when the order is placed.
+  const referrer = await makeUser("referrer");
+  const referrerMemberId = await makeMember(referrer.id);
+  await prisma.referralRelationship.create({
+    data: { memberId: buyerMemberId, referrerId: referrerMemberId, level: 1 },
+  });
   const vendors = await Promise.all([1, 2, 3, 4, 5].map((n) => makeVendor(`vendor${n}`)));
   const [v1, v2, v3, v4, v5] = vendors as [
     (typeof vendors)[0],
@@ -286,6 +348,64 @@ async function main() {
     "requirement is AWARDED to the winning bid",
     dbReq.status === "AWARDED" && dbReq.awardedBidId === sniped.bidId,
     dbReq,
+  );
+
+  // ---------------------------------------------------------------- the buyer pays for the award
+  await expectReject(
+    "only the buyer who posted the requirement can pay for the award",
+    () =>
+      claimAwardedBid({ requirementId: ra.id, buyerUserId: v2.user.id, memberId: buyerMemberId }),
+    "not found",
+  );
+  const [claimA, claimB] = await Promise.all([
+    claimAwardedBid({ requirementId: ra.id, buyerUserId: buyer.id, memberId: buyerMemberId }),
+    claimAwardedBid({ requirementId: ra.id, buyerUserId: buyer.id, memberId: buyerMemberId }),
+  ]);
+  check("two simultaneous payments return the same order", claimA.orderId === claimB.orderId);
+  const bidOrders = await prisma.order.findMany({
+    where: { buyerId: buyer.id },
+    include: { items: true },
+  });
+  check("exactly one order exists", bidOrders.length === 1, bidOrders.length);
+  const bidOrder = bidOrders[0]!;
+  const winningBid = await prisma.bid.findUniqueOrThrow({ where: { id: sniped.bidId } });
+  const reqRow = await prisma.requirement.findUniqueOrThrow({ where: { id: ra.id } });
+  check("the order belongs to the winning vendor", bidOrder.vendorId === v1.profileId);
+  check(
+    "the order line is at the winning unit price and the requested quantity",
+    bidOrder.items.length === 1 &&
+      bidOrder.items[0]!.unitPriceSnapshot === winningBid.unitPrice &&
+      bidOrder.items[0]!.qty === reqRow.quantity &&
+      bidOrder.items[0]!.lineTotal === winningBid.unitPrice * BigInt(reqRow.quantity),
+    bidOrder.items[0],
+  );
+  check(
+    "the order starts as PLACED and its total is at least the line total",
+    bidOrder.status === "PLACED" && bidOrder.grandTotal >= bidOrder.subtotal,
+    bidOrder.status,
+  );
+  const level1Rules = await prisma.commissionRule.count({ where: { level: 1 } });
+  if (level1Rules > 0) {
+    check(
+      "the referrer earns a commission on the paid order (the member profile id works end to end)",
+      (await prisma.commission.count({ where: { orderId: bidOrder.id } })) >= 1,
+    );
+  } else {
+    console.log("SKIP  commission check: no level-1 commission rule exists in this database");
+  }
+  check(
+    "the requirement remembers the checkout, so it cannot be paid twice",
+    reqRow.checkoutId === claimA.checkoutId,
+  );
+  const replayClaim = await claimAwardedBid({
+    requirementId: ra.id,
+    buyerUserId: buyer.id,
+    memberId: buyerMemberId,
+  });
+  check("paying again replays the same order", replayClaim.orderId === claimA.orderId);
+  check(
+    "still exactly one order after the replay",
+    (await prisma.order.count({ where: { buyerId: buyer.id } })) === 1,
   );
 
   // ---------------------------------------------------------------- sealed tender

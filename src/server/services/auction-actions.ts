@@ -41,7 +41,8 @@ async function requireMember(userId: string) {
   if (!member?.memberId) {
     throw new AuthorizationError("You need a member account to bid in auctions.");
   }
-  return { memberId: member.memberId };
+  // The profile id (a uuid), not the public Member ID: the order and commission code looks members up by it.
+  return { memberProfileId: member.id };
 }
 
 export async function createAuctionAction(
@@ -240,7 +241,7 @@ export async function claimAuctionAction(
     const result = await claimAuction({
       auctionId: parsed.data.auctionId,
       winnerUserId: session.userId,
-      memberId: member.memberId,
+      memberId: member.memberProfileId,
     });
     await notifyAuction(result.vendorUserId, "AUCTION_PAID", {
       auctionId: parsed.data.auctionId,

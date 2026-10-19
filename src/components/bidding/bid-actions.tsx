@@ -7,7 +7,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { FormField } from "@/components/ui/form-field";
 import { ActionFormDialog } from "@/components/ui/action-form";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
-import { awardBidAction, cancelRequirementAction } from "@/server/services/bidding-actions";
+import { ActionForm } from "@/components/ui/action-form";
+import {
+  awardBidAction,
+  cancelRequirementAction,
+  payForAwardedBidAction,
+} from "@/server/services/bidding-actions";
 
 export function AwardButton({
   requirementId,
@@ -78,5 +83,20 @@ export function CancelRequirementButton({ requirementId }: { requirementId: stri
         </>
       )}
     </ActionFormDialog>
+  );
+}
+
+/** The buyer confirms the awarded offer; the order is created at the winning price and they go on to pay. */
+export function PayForBidForm({ requirementId, total }: { requirementId: string; total: string }) {
+  const t = useT();
+  return (
+    <ActionForm
+      action={payForAwardedBidAction}
+      submitLabel={`${t("Place order and pay")} ${total}`}
+      pendingLabel={t("Placing your order…")}
+      successMessage={t("Order placed")}
+    >
+      {() => <input type="hidden" name="requirementId" value={requirementId} />}
+    </ActionForm>
   );
 }

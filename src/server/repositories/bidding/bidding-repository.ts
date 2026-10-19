@@ -124,6 +124,7 @@ export async function getRequirementById(id: string) {
       minDecrement: true,
       autoExtendMinutes: true,
       awardedBidId: true,
+      checkoutId: true,
       cancelledReason: true,
     },
   });

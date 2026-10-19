@@ -14,6 +14,7 @@ const NOTIFICATION_LABELS: Record<string, string> = {
   BID_RECEIVED: msg("A vendor placed a bid on your requirement"),
   OUTBID: msg("You were outbid in a reverse auction"),
   BID_AWARDED: msg("Your bid was awarded"),
+  BID_ORDER_PLACED: msg("The buyer placed an order for your awarded bid"),
   BID_NOT_SELECTED: msg("Your bid was not selected"),
   REQUIREMENT_CANCELLED: msg("A requirement you bid on was cancelled"),
   AUCTION_BID_RECEIVED: msg("Someone placed a bid on your auction"),

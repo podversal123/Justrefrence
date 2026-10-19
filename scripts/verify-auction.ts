@@ -60,14 +60,17 @@ async function makeUser(name: string, withMember = false) {
     },
   });
   let memberId: string | null = null;
+  let profileId: string | null = null;
   if (withMember) {
     const member = await prisma.memberProfile.create({
       data: { userId: user.id, referralPath: "root" },
     });
     memberId = `AT-${member.memberSeq}`;
+    profileId = member.id;
     await prisma.memberProfile.update({ where: { id: member.id }, data: { memberId } });
   }
-  return { user, memberId };
+  // `profileId` (a uuid) is what the order and commission code takes; `memberId` is the public code.
+  return { user, memberId, profileId };
 }
 
 async function cleanup() {
@@ -310,12 +313,12 @@ async function main() {
 
   // ---------------------------------------------------------------- winner pays
   await expectReject("only the winner can pay", () =>
-    claimAuction({ auctionId: a3.id, winnerUserId: b1.user.id, memberId: b1.memberId! }),
+    claimAuction({ auctionId: a3.id, winnerUserId: b1.user.id, memberId: b1.profileId! }),
   );
   const stockBefore = (await prisma.product.findUniqueOrThrow({ where: { id: product.id } })).stock;
   const [claimA, claimB] = await Promise.all([
-    claimAuction({ auctionId: a3.id, winnerUserId: b2.user.id, memberId: b2.memberId! }),
-    claimAuction({ auctionId: a3.id, winnerUserId: b2.user.id, memberId: b2.memberId! }),
+    claimAuction({ auctionId: a3.id, winnerUserId: b2.user.id, memberId: b2.profileId! }),
+    claimAuction({ auctionId: a3.id, winnerUserId: b2.user.id, memberId: b2.profileId! }),
   ]);
   check("two simultaneous payments return the same order", claimA.orderId === claimB.orderId);
   const orders = await prisma.order.findMany({
@@ -349,7 +352,7 @@ async function main() {
   const replay = await claimAuction({
     auctionId: a3.id,
     winnerUserId: b2.user.id,
-    memberId: b2.memberId!,
+    memberId: b2.profileId!,
   });
   check(
     "paying again replays the same order instead of making a second",
@@ -375,7 +378,7 @@ async function main() {
     c2.bidderUserIds[0] === b3.user.id,
   );
   await expectReject("a cancelled sale can't be paid", () =>
-    claimAuction({ auctionId: a7.id, winnerUserId: b3.user.id, memberId: b3.memberId! }),
+    claimAuction({ auctionId: a7.id, winnerUserId: b3.user.id, memberId: b3.profileId! }),
   );
 }
 

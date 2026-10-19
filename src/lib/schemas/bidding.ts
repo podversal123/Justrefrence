@@ -126,6 +126,8 @@ export const awardBidSchema = z.object({
   bidId: z.string().uuid(),
 });
 
+export const claimBidSchema = z.object({ requirementId: z.string().uuid() });
+
 export const cancelRequirementSchema = z.object({
   requirementId: z.string().uuid(),
   reason: z.string().trim().min(3, "Give a short reason.").max(300),

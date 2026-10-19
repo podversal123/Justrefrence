@@ -19,7 +19,14 @@
  * payment-service.ts, wallet-actions.ts).
  */
 export type IdempotencyScope =
-  "checkout" | "payment-order" | "payout" | "admin-topup" | "auction" | "reward" | "sms";
+  | "checkout"
+  | "payment-order"
+  | "payout"
+  | "admin-topup"
+  | "auction"
+  | "requirement"
+  | "reward"
+  | "sms";
 
 export function scopedIdempotencyKey(
   scope: IdempotencyScope,

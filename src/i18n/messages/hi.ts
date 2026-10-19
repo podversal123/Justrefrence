@@ -1513,6 +1513,18 @@ export const HI_MESSAGES: Messages = {
   "New means still in progress. Old means completed, cancelled or refunded.":
     "नई का मतलब अभी चालू है। पुरानी का मतलब पूरी हो चुकी, रद्द या रिफंड हो चुकी।",
   "My cart": "मेरी कार्ट",
+  "Winning offer: {bidder} at {total}.": "जीतने वाला ऑफ़र: {bidder}, {total} पर।",
+  "The order has been placed.": "ऑर्डर दे दिया गया है।",
+  "See your orders": "अपने ऑर्डर देखें",
+  "Place order and pay": "ऑर्डर दें और भुगतान करें",
+  "The buyer placed an order for your awarded bid": "खरीदार ने आपकी जीती हुई बोली पर ऑर्डर दिया है",
+  "There is no awarded offer to pay for on this requirement.":
+    "इस आवश्यकता पर भुगतान के लिए कोई स्वीकृत ऑफ़र नहीं है।",
+  "This requirement has already been paid for.": "इस आवश्यकता का भुगतान पहले ही हो चुका है।",
+  "Sign in with the account that posted this requirement to pay.":
+    "भुगतान के लिए उसी खाते से साइन इन करें जिसने यह आवश्यकता डाली थी।",
+  "You need a member account to pay for an awarded offer.":
+    "स्वीकृत ऑफ़र का भुगतान करने के लिए आपके पास सदस्य खाता होना चाहिए।",
   "Your two-step login was reset by an administrator. Set it up again when you sign in":
     "आपका टू-स्टेप लॉगिन एडमिन ने रीसेट कर दिया है। साइन इन करने पर इसे दोबारा सेट करें",
   "Reset two-step login": "टू-स्टेप लॉगिन रीसेट करें",

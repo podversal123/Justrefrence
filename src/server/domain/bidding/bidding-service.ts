@@ -16,6 +16,16 @@ import {
   NotFoundError,
   ValidationError,
 } from "@/server/lib/errors";
+import {
+  createCheckout,
+  markCartCheckedOut,
+} from "@/server/repositories/commerce/order-repository";
+import { isUniqueConstraintViolation, scopedIdempotencyKey } from "@/server/lib/idempotency";
+import { getPricingConfig } from "@/server/lib/pricing-config";
+import { createVendorOrder } from "@/server/domain/commerce/order-creation";
+import { generateInvoiceForOrder } from "@/server/domain/commerce/invoice-service";
+import { formatRequirementNumber } from "@/server/domain/bidding/rules";
+import { logger } from "@/server/lib/logger";
 import type { Requirement } from "@/generated/prisma/client";
 
 /**
@@ -351,3 +361,149 @@ export async function cancelRequirement(input: {
 }
 
 export { effectiveStatus };
+
+export interface ClaimBidResult {
+  checkoutId: string;
+  orderId: string;
+  number: string;
+  title: string;
+  vendorUserId: string;
+}
+
+/**
+ * The buyer pays for the awarded bid: turns the award into a normal order (same pricing, commission and
+ * invoice as a cart checkout) at the WINNING unit price and the requested quantity, and the buyer then
+ * pays it through the usual payment screen. Exactly once per requirement: the unique checkout key and the
+ * conditional update both guard it, so a double click or a retry returns the order already made.
+ */
+export async function claimAwardedBid(input: {
+  requirementId: string;
+  buyerUserId: string;
+  memberId: string;
+}): Promise<ClaimBidResult> {
+  const idempotencyKey = scopedIdempotencyKey(
+    "requirement",
+    input.buyerUserId,
+    input.requirementId,
+  );
+
+  const requirement = await prisma.requirement.findUnique({
+    where: { id: input.requirementId },
+    include: {
+      awardedBid: {
+        select: { id: true, unitPrice: true, vendorId: true, vendor: { select: { userId: true } } },
+      },
+    },
+  });
+  // Same answer for "no such requirement" and "not yours", so ids cannot be probed.
+  if (!requirement || requirement.buyerId !== input.buyerUserId) {
+    throw new NotFoundError("Requirement not found.");
+  }
+  const number = formatRequirementNumber(requirement.reqSeq);
+  const bid = requirement.awardedBid;
+
+  // Idempotent replay: a double click or retry returns the order already made.
+  const existing = await prisma.checkout.findUnique({
+    where: { idempotencyKey },
+    include: { orders: { select: { id: true } } },
+  });
+  if (existing?.orders[0] && bid) {
+    return {
+      checkoutId: existing.id,
+      orderId: existing.orders[0].id,
+      number,
+      title: requirement.title,
+      vendorUserId: bid.vendor.userId,
+    };
+  }
+  if (requirement.status !== "AWARDED" || !bid) {
+    throw new ConflictError("There is no awarded offer to pay for on this requirement.");
+  }
+  if (requirement.checkoutId) {
+    throw new ConflictError("This requirement has already been paid for.");
+  }
+
+  const pricingConfig = await getPricingConfig();
+
+  let result: { checkoutId: string; orderId: string };
+  try {
+    result = await prisma.$transaction(async (tx) => {
+      const cart = await tx.cart.create({
+        data: { ownerUserId: input.buyerUserId, status: "CHECKED_OUT" },
+      });
+      const checkout = await createCheckout(tx, {
+        cartId: cart.id,
+        buyerId: input.buyerUserId,
+        couponId: null,
+        idempotencyKey,
+      });
+
+      // Once-only guard: only the call that moves checkoutId from null wins.
+      const claimed = await tx.requirement.updateMany({
+        where: {
+          id: requirement.id,
+          buyerId: input.buyerUserId,
+          status: "AWARDED",
+          checkoutId: null,
+        },
+        data: { checkoutId: checkout.id },
+      });
+      if (claimed.count === 0) {
+        throw new ConflictError("This requirement has already been paid for.");
+      }
+
+      const created = await createVendorOrder(tx, {
+        checkoutId: checkout.id,
+        vendorId: bid.vendorId,
+        buyerId: input.buyerUserId,
+        memberId: input.memberId,
+        lines: [
+          {
+            itemType: requirement.itemKind,
+            itemId: requirement.id,
+            title: requirement.title,
+            unitPrice: bid.unitPrice,
+            qty: requirement.quantity,
+            trackStock: false,
+          },
+        ],
+        discount: 0n,
+        couponId: null,
+        gstRateBps: pricingConfig.gstRateBps,
+        platformFeeRateBps: pricingConfig.platformFeeRateBps,
+      });
+      await markCartCheckedOut(tx, cart.id);
+      return { checkoutId: checkout.id, orderId: created.orderId };
+    });
+  } catch (error) {
+    // Concurrent same-key claim: the unique index rejected the loser; answer with the winner's order.
+    if (isUniqueConstraintViolation(error)) {
+      const winner = await prisma.checkout.findUnique({
+        where: { idempotencyKey },
+        include: { orders: { select: { id: true } } },
+      });
+      if (winner?.orders[0]) {
+        return {
+          checkoutId: winner.id,
+          orderId: winner.orders[0].id,
+          number,
+          title: requirement.title,
+          vendorUserId: bid.vendor.userId,
+        };
+      }
+    }
+    throw error;
+  }
+
+  try {
+    await generateInvoiceForOrder(result.orderId);
+  } catch (error) {
+    // Same boundary as cart checkout: a failed invoice never undoes the order.
+    logger.error("invoice_generation_failed", {
+      orderId: result.orderId,
+      message: error instanceof Error ? error.message : String(error),
+    });
+  }
+
+  return { ...result, number, title: requirement.title, vendorUserId: bid.vendor.userId };
+}

@@ -142,7 +142,8 @@ Status legend: 🔴 **blocking** (money/legal — cannot go live without it) · 
 
 ### REQUIREMENT_DECISION_REQUIRED — Q-25: Bidding payment settlement
 - **Unclear:** How an accepted bid becomes a paid, fulfilled order — not defined in the client's original notes.
-- **Recommended implementation:** Bidding is built (requirement post → sealed vendor bids → poster accepts one) per the already-live demo, but **payment for an accepted bid is intentionally unplugged** — architecture hands an accepted bid to the standard `orders`/`payments` pipeline once a rule is confirmed, rather than building a second, parallel payment path. See [architecture.md](architecture.md) §3 (`bidding` module).
+- **Built as a working default (to be confirmed or changed by the client):** requirement post → vendor bids → poster awards one → the poster presses *Place order and pay* on the requirement page. That creates a normal order at the **winning unit price and the requested quantity** (same GST, platform fee, commission and invoice as a cart checkout) and sends the poster to the usual payment screen. It happens once per requirement (`requirements.checkout_id` is the once-only guard; a double click returns the same order), and the winning vendor is notified. The order line is not a catalogue listing, so it never touches product stock (`trackStock: false`). See [architecture.md](architecture.md) §3 (`bidding` module) and `claimAwardedBid` in `src/server/domain/bidding/bidding-service.ts`.
+- **Still open for the client:** advance and balance payments, milestones, who marks delivery complete, and the cancellation and dispute rules for a bid order (same open points as Q-23 and Q-24).
 - **Status:** 🔴 blocking for a complete bidding→payment flow; the posting/bidding UI itself can ship without it.
 
 ### REQUIREMENT_DECISION_REQUIRED — Q-26: Order status set & transition ownership
@@ -260,7 +261,7 @@ Status legend: 🔴 **blocking** (money/legal — cannot go live without it) · 
 | Member-to-member wallet transfers (Q-10) | Possible RBI prepaid-instrument approval requirement | Legal-advised decision |
 | Member-generated e-pins (Q-15) | Moves money; rules undefined | Rules for who may create them and at what price |
 | Automatic (rule-triggered) rewards (Q-08) | Triggers/types undefined | Trigger, type, and expiry rules |
-| Payment for an accepted bid (Q-25) | Undefined in original notes | How bid orders are paid |
+| Payment for an accepted bid (Q-25) | Built with a working default: the poster pays the winning price as a normal order (see Q-25 above) | Confirm it, or tell us what to change (advance and balance, milestones, disputes) |
 | Full SMS inbox/compose/drafts (Q-34) | Needs a real SMS provider connected first, and scope confirmation | Confirmation this feature (vs. a read-only log) is wanted |
 | Payment-gateway-initiated refunds | Refunds are recorded in the ledger; gateway call-out is a Phase 4-equivalent (production-build) task, not a Phase 0/1 gap | No client input needed — scheduled, not blocked |
 | Member two-step login (Q-33 follow-on) | Built for staff (authenticator app, switched on by the Super Admin, off by default). Members may enrol voluntarily but are never forced | Confirm if members must be forced to use it |

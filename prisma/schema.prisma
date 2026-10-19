@@ -1735,6 +1735,8 @@ model Requirement {
   /// Reverse auction only: a bid in the last N minutes pushes the close out by N minutes (0 = off).
   autoExtendMinutes Int                 @default(0) @map("auto_extend_minutes")
   awardedBidId      String?             @unique @map("awarded_bid_id") @db.Uuid
+  /// Set once the buyer has paid for the awarded bid: points at the checkout that made the order. Once-only guard.
+  checkoutId        String?             @unique @map("checkout_id") @db.Uuid
   cancelledReason   String?             @map("cancelled_reason")
   createdAt         DateTime            @default(now()) @map("created_at")
   updatedAt         DateTime            @updatedAt @map("updated_at")

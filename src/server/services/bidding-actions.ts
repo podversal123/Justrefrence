@@ -1,10 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { authorize } from "@/server/auth/authorize";
 import {
   awardBid,
   cancelRequirement,
+  claimAwardedBid,
   createRequirement,
   placeBid,
   withdrawBid,
@@ -15,12 +17,14 @@ import { prisma } from "@/server/lib/prisma";
 import {
   awardBidSchema,
   bidActionSchema,
+  claimBidSchema,
   cancelRequirementSchema,
   createRequirementSchema,
   placeBidSchema,
 } from "@/lib/schemas/bidding";
 import { recordAudit } from "@/server/domain/audit/record";
 import { AuthorizationError, RateLimitedError } from "@/server/lib/errors";
+import { getMemberProfileByUserId } from "@/server/repositories/identity/member-repository";
 import { bidRateLimiter } from "@/server/lib/rate-limit";
 import { failureFrom, requestId, validationFailure } from "@/server/lib/action-helpers";
 import type { ApiResult } from "@/lib/api-response";
@@ -294,4 +298,55 @@ export async function cancelRequirementAction(
   } catch (error) {
     return failureFrom(TAG, error, "Could not cancel this requirement.");
   }
+}
+
+/**
+ * The buyer pays for the offer they awarded: the order is created at the winning price and the buyer goes
+ * on to the usual payment screen. Only the buyer who posted the requirement can do this, once.
+ */
+export async function payForAwardedBidAction(
+  _prev: unknown,
+  formData: FormData,
+): Promise<ApiResult<null>> {
+  let session;
+  try {
+    session = await authorize("bid:accept");
+  } catch (error) {
+    return failureFrom(TAG, error, "Sign in with the account that posted this requirement to pay.");
+  }
+  const parsed = claimBidSchema.safeParse({ requirementId: formData.get("requirementId") });
+  if (!parsed.success) return validationFailure("Invalid request.", parsed.error);
+
+  let checkoutId: string;
+  try {
+    const member = await getMemberProfileByUserId(session.userId);
+    if (!member?.memberId) {
+      throw new AuthorizationError("You need a member account to pay for an awarded offer.");
+    }
+    const result = await claimAwardedBid({
+      requirementId: parsed.data.requirementId,
+      buyerUserId: session.userId,
+      memberId: member.id,
+    });
+    await notify(result.vendorUserId, "BID_ORDER_PLACED", {
+      requirementId: parsed.data.requirementId,
+      number: result.number,
+    });
+    await recordAudit({
+      actorId: session.userId,
+      action: "BID_ORDER_PLACED",
+      entityType: "requirements",
+      entityId: parsed.data.requirementId,
+      after: { requirement: result.number, orderId: result.orderId, checkoutId: result.checkoutId },
+    });
+    revalidatePath("/orders");
+    revalidatePath("/vendor/orders");
+    checkoutId = result.checkoutId;
+  } catch (error) {
+    return failureFrom(TAG, error, "Could not place your order.");
+  }
+  // The server sends the browser on to the payment screen. This has to happen here, not in the form:
+  // the page behind the form refreshes as soon as the order exists and the pay form disappears with it,
+  // so a redirect left to the form would never run. (redirect() throws, so it sits outside the try.)
+  redirect(`/checkout/pay?checkoutId=${checkoutId}`);
 }

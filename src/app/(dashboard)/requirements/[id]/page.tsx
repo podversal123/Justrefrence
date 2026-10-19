@@ -5,7 +5,7 @@ import { notFound, redirect } from "next/navigation";
 import { z } from "zod";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import { BidsTable } from "@/components/bidding/bids-table";
-import { CancelRequirementButton } from "@/components/bidding/bid-actions";
+import { CancelRequirementButton, PayForBidForm } from "@/components/bidding/bid-actions";
 import { RequirementStatusBadge, TypeBadge } from "@/components/bidding/badges";
 import { LivePanel } from "@/components/bidding/live-panel";
 import { getAuthSession } from "@/server/auth/session";
@@ -42,6 +42,7 @@ export default async function ManageRequirementPage({
   const number = formatRequirementNumber(requirement.reqSeq);
   const canAward = view.isOwner && session.permissions.has("bid:accept");
   const canCancel = view.isOwner && (view.status === "OPEN" || view.status === "CLOSED");
+  const winningBid = view.visibleBids.find((bid) => bid.status === "ACCEPTED") ?? null;
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
@@ -103,7 +104,30 @@ export default async function ManageRequirementPage({
             </p>
           ) : null}
           {view.status === "AWARDED" ? (
-            <p className="text-sm font-medium">{t("This requirement has been awarded.")}</p>
+            <div className="surface-card space-y-3 p-4">
+              <p className="text-sm font-medium">{t("This requirement has been awarded.")}</p>
+              {winningBid ? (
+                <p className="text-muted-foreground text-sm">
+                  {t("Winning offer: {bidder} at {total}.", {
+                    bidder: winningBid.bidderLabel,
+                    total: formatPaise(winningBid.totalPrice.toString(), "INR"),
+                  })}
+                </p>
+              ) : null}
+              {requirement.checkoutId ? (
+                <p className="text-sm">
+                  {t("The order has been placed.")}{" "}
+                  <Link href={"/orders" as Route} className="text-primary underline">
+                    {t("See your orders")}
+                  </Link>
+                </p>
+              ) : view.isOwner && winningBid ? (
+                <PayForBidForm
+                  requirementId={requirement.id}
+                  total={formatPaise(winningBid.totalPrice.toString(), "INR")}
+                />
+              ) : null}
+            </div>
           ) : null}
         </section>
 

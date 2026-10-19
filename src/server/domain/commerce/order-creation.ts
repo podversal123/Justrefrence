@@ -21,6 +21,11 @@ export interface OrderLineInput {
   title: string;
   unitPrice: bigint;
   qty: number;
+  /**
+   * Set to false for a line that is not a catalogue listing (an awarded bid): there is no product row
+   * whose stock could be reduced. Left out, a PRODUCT line reduces stock as usual.
+   */
+  trackStock?: boolean;
 }
 
 /**
@@ -49,7 +54,7 @@ export async function createVendorOrder(
   // Stock defense happens INSIDE the transaction, per line, before any order row is
   // written — if a product is out of stock by now the whole transaction rolls back.
   for (const line of lines) {
-    if (line.itemType === "PRODUCT") {
+    if (line.itemType === "PRODUCT" && line.trackStock !== false) {
       const ok = await decrementProductStock(tx, line.itemId, line.qty);
       if (!ok) {
         throw new ConflictError(`"${line.title}" just sold out — please update your cart.`);
