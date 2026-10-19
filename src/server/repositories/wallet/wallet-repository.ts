@@ -238,7 +238,8 @@ export async function getWalletTransactionSummary(walletId: string) {
   }));
 }
 
-export async function setWalletPinHash(walletId: string, pinHash: string) {
+/** `null` clears the PIN (staff reset); the member is then asked to set a new one. */
+export async function setWalletPinHash(walletId: string, pinHash: string | null) {
   return prisma.wallet.update({ where: { id: walletId }, data: { walletPinHash: pinHash } });
 }
 
@@ -293,7 +294,10 @@ function ledgerWhere(walletId: string, filter: LedgerReportFilter) {
 const REPORT_PAGE_SIZE = 50;
 
 /** The member's account report: every ledger entry in the chosen dates, newest first. */
-export async function listLedgerReport(walletId: string, filter: LedgerReportFilter & { cursor?: string }) {
+export async function listLedgerReport(
+  walletId: string,
+  filter: LedgerReportFilter & { cursor?: string },
+) {
   const rows = await prisma.walletTransaction.findMany({
     where: ledgerWhere(walletId, filter),
     orderBy: [{ createdAt: "desc" }, { id: "asc" }],
@@ -345,4 +349,13 @@ export async function getDailyActivityForWallet(
     byDay.set(row.day, entry);
   }
   return [...byDay.values()];
+}
+
+/** Whether the member has a wallet PIN, without handing the hash to the caller. */
+export async function hasWalletPin(ownerUserId: string): Promise<boolean> {
+  const wallet = await prisma.wallet.findUnique({
+    where: { ownerUserId },
+    select: { walletPinHash: true },
+  });
+  return wallet?.walletPinHash != null;
 }

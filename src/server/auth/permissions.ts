@@ -81,6 +81,7 @@ export const PERMISSIONS = [
   "payout:reject",
   "payout:record_transfer",
   "wallet_pin:set",
+  "wallet_pin:reset",
   "bank_account:verify",
 
   // E-pin & subscription

@@ -1489,6 +1489,20 @@ export const HI_MESSAGES: Messages = {
   "Record the bank transfer you've already sent. This releases the held funds for good and can't be undone from here.":
     "जो बैंक ट्रांसफ़र आप भेज चुके हैं उसे दर्ज करें। इससे रोकी गई रकम हमेशा के लिए छूट जाती है और यहाँ से वापस नहीं हो सकती।",
   "Recorded in the audit log.": "ऑडिट लॉग में दर्ज हुआ।",
+  "Reset wallet PIN": "वॉलेट पिन रीसेट करें",
+  "Reset this member's wallet PIN?": "इस सदस्य का वॉलेट पिन रीसेट करें?",
+  "The PIN is cleared, not shown to anyone. The member is told and sets a new PIN in their Wallet. Until then payouts need no PIN, so only do this once you are sure it is the member.":
+    "पिन हटा दिया जाता है, किसी को दिखाया नहीं जाता। सदस्य को बताया जाता है और वह अपने वॉलेट में नया पिन बनाता है। तब तक पेआउट के लिए पिन नहीं लगेगा, इसलिए यह तभी करें जब आपको पक्का हो कि यह वही सदस्य है।",
+  "Wallet PIN reset": "वॉलेट पिन रीसेट हो गया",
+  Set: "सेट है",
+  "Not set": "सेट नहीं है",
+  "This member has no wallet.": "इस सदस्य का कोई वॉलेट नहीं है।",
+  "This member has no wallet PIN set, so there is nothing to reset.":
+    "इस सदस्य ने वॉलेट पिन सेट नहीं किया है, इसलिए रीसेट करने को कुछ नहीं है।",
+  "Give a short reason for this reset.": "इस रीसेट का छोटा सा कारण लिखें।",
+  "You can't reset your own wallet PIN here.": "आप यहाँ अपना खुद का वॉलेट पिन रीसेट नहीं कर सकते।",
+  "Your wallet PIN was reset by our team. Set a new PIN in Wallet":
+    "हमारी टीम ने आपका वॉलेट पिन रीसेट कर दिया है। वॉलेट में नया पिन बनाएँ",
   "Recorded only": "सिर्फ़ दर्ज हुआ",
   "Recorded only (SMS service not connected)": "सिर्फ़ दर्ज हुआ (SMS सेवा जुड़ी नहीं है)",
   "Redeem an e-pin": "ई-पिन रिडीम करें",

@@ -3,6 +3,7 @@ import { msg } from "@/i18n/locales";
 
 const NOTIFICATION_LABELS: Record<string, string> = {
   WELCOME: msg("Welcome to Justreference"),
+  WALLET_PIN_RESET: msg("Your wallet PIN was reset by our team. Set a new PIN in Wallet"),
   BIRTHDAY_GREETING: msg("Happy birthday from Justreference!"),
   TICKET_REPLY: msg("New reply on your support ticket"),
   TICKET_STATUS: msg("Your support ticket was updated"),

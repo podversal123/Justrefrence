@@ -11,7 +11,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatPaise } from "@/lib/money";
+import { hasWalletPin } from "@/server/repositories/wallet/wallet-repository";
 import { ModerationButton } from "./moderation-button";
+import { ResetWalletPinButton } from "./reset-wallet-pin-button";
 import { EditMemberDialog } from "./edit-member-dialog";
 import { PendingChangeBanner } from "@/components/approvals/pending-change-banner";
 
@@ -48,6 +50,8 @@ export default async function AdminMemberPage({ params }: { params: Promise<{ id
   const blocked = user.status === "BLOCKED";
   const bank = user.bankAccounts[0];
   const isSelf = user.id === session.userId;
+  const memberHasPin = await hasWalletPin(user.id);
+  const canResetPin = session.permissions.has("wallet_pin:reset") && !isSelf && memberHasPin;
   const canModerate =
     session.permissions.has(blocked ? "member:unblock" : "member:block") && !isSelf;
 
@@ -111,6 +115,7 @@ export default async function AdminMemberPage({ params }: { params: Promise<{ id
               }}
             />
           ) : null}
+          {canResetPin ? <ResetWalletPinButton userId={user.id} /> : null}
           {canModerate ? <ModerationButton userId={user.id} blocked={blocked} /> : null}
         </div>
       </div>
@@ -159,6 +164,7 @@ export default async function AdminMemberPage({ params }: { params: Promise<{ id
                 <Row label={t("On hold for payouts")}>
                   {formatPaise((user.wallet?.pendingBalance ?? 0n).toString(), "INR")}
                 </Row>
+                <Row label={t("Wallet PIN")}>{memberHasPin ? t("Set") : t("Not set")}</Row>
               </dl>
             </CardContent>
           </Card>

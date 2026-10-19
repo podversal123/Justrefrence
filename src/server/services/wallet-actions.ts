@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { authorize } from "@/server/auth/authorize";
 import {
   changeWalletPin,
+  resetWalletPinByStaff,
   setWalletPin,
   creditMemberWallet,
 } from "@/server/domain/wallet/wallet-service";
@@ -12,6 +13,7 @@ import { verifyBankAccount } from "@/server/repositories/identity/bank-repositor
 import {
   changeWalletPinSchema,
   walletPinSchema,
+  resetWalletPinSchema,
   requestPayoutSchema,
   updatePayoutStatusSchema,
   adminCreditWalletSchema,
@@ -20,7 +22,8 @@ import { recordAudit } from "@/server/domain/audit/record";
 import { prisma } from "@/server/lib/prisma";
 import { getWalletByOwner } from "@/server/repositories/wallet/wallet-repository";
 import { scopedIdempotencyKey } from "@/server/lib/idempotency";
-import { AppError, ConflictError } from "@/server/lib/errors";
+import { AppError, ConflictError, ValidationError } from "@/server/lib/errors";
+import { createNotification } from "@/server/repositories/identity/notification-repository";
 import { logger } from "@/server/lib/logger";
 import type { ApiResult } from "@/lib/api-response";
 
@@ -128,6 +131,55 @@ export async function changeWalletPinAction(
     return failureFrom(error, "Could not change your wallet PIN.");
   }
 
+  revalidatePath("/wallet");
+  return { success: true, data: null, meta: { requestId: requestId() } };
+}
+
+/** Admin clears a member's wallet PIN (forgotten PIN). The member is told, and sets a new PIN themselves. */
+export async function resetMemberWalletPinAction(
+  _prevState: unknown,
+  formData: FormData,
+): Promise<ApiResult<null>> {
+  let session;
+  try {
+    session = await authorize("wallet_pin:reset");
+  } catch (error) {
+    return failureFrom(error, "You don't have permission to reset a wallet PIN.");
+  }
+
+  const parsed = resetWalletPinSchema.safeParse({
+    userId: formData.get("userId"),
+    reason: formData.get("reason"),
+  });
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "Give a short reason for this reset.",
+        details: parsed.error.flatten(),
+      },
+      meta: { requestId: requestId() },
+    };
+  }
+
+  try {
+    if (parsed.data.userId === session.userId) {
+      throw new ValidationError("You can't reset your own wallet PIN here.");
+    }
+    await resetWalletPinByStaff(session.userId, parsed.data.userId, parsed.data.reason);
+  } catch (error) {
+    return failureFrom(error, "Could not reset the wallet PIN.");
+  }
+
+  // A courtesy: failing to notify never undoes the reset (it is already audited).
+  await createNotification({
+    userId: parsed.data.userId,
+    type: "WALLET_PIN_RESET",
+    payload: {},
+  }).catch(() => undefined);
+
+  revalidatePath(`/admin/members/${parsed.data.userId}`);
   revalidatePath("/wallet");
   return { success: true, data: null, meta: { requestId: requestId() } };
 }

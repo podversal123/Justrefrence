@@ -15,7 +15,12 @@ import {
   verifyWalletPin,
 } from "@/server/domain/wallet/wallet-pin";
 import { recordAudit } from "@/server/domain/audit/record";
-import { ConflictError, RateLimitedError, ValidationError } from "@/server/lib/errors";
+import {
+  ConflictError,
+  NotFoundError,
+  RateLimitedError,
+  ValidationError,
+} from "@/server/lib/errors";
 import { walletPinRateLimiter } from "@/server/lib/rate-limit";
 import type { WalletTransactionType } from "@/generated/prisma/enums";
 
@@ -90,6 +95,32 @@ export async function changeWalletPin(
     action: "WALLET_PIN_CHANGED",
     entityType: "wallets",
     entityId: wallet.id,
+  });
+}
+
+/**
+ * Staff reset for a member who forgot their wallet PIN ("Member Security Codes" in the workflow
+ * document). The PIN is cleared, never revealed or chosen by staff: the member sets a new one
+ * themselves. Until then payouts need no PIN, so the reset is audited with who did it and why.
+ */
+export async function resetWalletPinByStaff(
+  actorId: string,
+  targetUserId: string,
+  reason: string,
+): Promise<void> {
+  const wallet = await getWalletByOwner(targetUserId);
+  if (!wallet) throw new NotFoundError("This member has no wallet.");
+  if (!wallet.walletPinHash) {
+    throw new ConflictError("This member has no wallet PIN set, so there is nothing to reset.");
+  }
+  await setWalletPinHash(wallet.id, null);
+  await recordAudit({
+    actorId,
+    action: "WALLET_PIN_RESET_BY_STAFF",
+    entityType: "wallets",
+    entityId: wallet.id,
+    before: { hasPin: true },
+    after: { hasPin: false, reason, memberUserId: targetUserId },
   });
 }
 

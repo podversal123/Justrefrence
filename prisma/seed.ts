@@ -20,6 +20,7 @@ const prisma = new PrismaClient({ adapter });
 
 const PERMISSION_LABELS: Partial<Record<Permission, string>> = {
   "user:create": "Create admin/staff users",
+  "wallet_pin:reset": "Clear a member's wallet PIN so they can set a new one",
   "user:block": "Block a user account",
   "user:unblock": "Unblock a user account",
   "role:assign": "Assign or revoke a user's role",
@@ -129,6 +130,7 @@ const ROLE_PERMISSIONS: Record<SystemRoleCode, Permission[]> = {
     "change:request",
     "member:block",
     "member:unblock",
+    "wallet_pin:reset",
     "member:filter_list",
     "settings:read",
   ],

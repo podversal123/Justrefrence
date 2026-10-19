@@ -167,3 +167,9 @@ export const epinSearchQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(20),
 });
 export type EpinSearchQuery = z.infer<typeof epinSearchQuerySchema>;
+
+/** Staff clearing a member's wallet PIN: always with a recorded reason. */
+export const resetWalletPinSchema = z.object({
+  userId: z.string().uuid(),
+  reason: z.string().trim().min(3, "Give a short reason.").max(300),
+});
