@@ -8,6 +8,8 @@ import { listRoles } from "@/server/repositories/role-repository";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { RoleManager } from "@/components/admin/role-manager";
+import { countTwoStepFactors } from "@/server/lib/two-step-admin";
+import { ResetTwoStepButton } from "./reset-two-step-button";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
@@ -29,6 +31,11 @@ export default async function AdminDetailPage({ params }: PageProps) {
   if (!admin) notFound();
 
   const roles = await listRoles();
+  const canResetTwoStep = session.permissions.has("two_step:reset") && admin.id !== session.userId;
+  // Only a Super Admin sees this, and only that person's status is looked up.
+  const twoStepOn = canResetTwoStep
+    ? (await countTwoStepFactors(admin.id).catch(() => 0)) > 0
+    : false;
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
@@ -59,6 +66,24 @@ export default async function AdminDetailPage({ params }: PageProps) {
           )}
         </CardContent>
       </Card>
+
+      {canResetTwoStep ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("Two-step login")}</CardTitle>
+            <CardDescription>
+              {twoStepOn
+                ? t("This account uses an authenticator app. Reset it if they lost their phone.")
+                : t("This account has not set up two-step login.")}
+            </CardDescription>
+          </CardHeader>
+          {twoStepOn ? (
+            <CardContent>
+              <ResetTwoStepButton userId={admin.id} />
+            </CardContent>
+          ) : null}
+        </Card>
+      ) : null}
     </div>
   );
 }

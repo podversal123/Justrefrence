@@ -18,6 +18,7 @@ export const PERMISSIONS = [
   "user:unblock",
   "role:read",
   "role:assign",
+  "two_step:reset",
   "permission:read",
   "permission:update",
   "vendor:apply",

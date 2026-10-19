@@ -1513,6 +1513,25 @@ export const HI_MESSAGES: Messages = {
   "New means still in progress. Old means completed, cancelled or refunded.":
     "नई का मतलब अभी चालू है। पुरानी का मतलब पूरी हो चुकी, रद्द या रिफंड हो चुकी।",
   "My cart": "मेरी कार्ट",
+  "Your two-step login was reset by an administrator. Set it up again when you sign in":
+    "आपका टू-स्टेप लॉगिन एडमिन ने रीसेट कर दिया है। साइन इन करने पर इसे दोबारा सेट करें",
+  "Reset two-step login": "टू-स्टेप लॉगिन रीसेट करें",
+  "Reset this account's two-step login?": "इस खाते का टू-स्टेप लॉगिन रीसेट करें?",
+  "Their authenticator is removed. They can then sign in with their password and set up a new one. A session that is already signed in stays signed in, so if the account may be in the wrong hands, block it too. Only do this once you are sure it is them.":
+    "उनका ऑथेंटिकेटर हटा दिया जाता है। फिर वे पासवर्ड से साइन इन करके नया सेट कर सकते हैं। जो सत्र पहले से साइन इन है वह चालू रहता है, इसलिए खाता ग़लत हाथों में हो सकता है तो उसे ब्लॉक भी करें। यह तभी करें जब आपको पक्का हो कि यह वही व्यक्ति है।",
+  "Two-step login reset": "टू-स्टेप लॉगिन रीसेट हो गया",
+  "This account uses an authenticator app. Reset it if they lost their phone.":
+    "यह खाता ऑथेंटिकेटर ऐप इस्तेमाल करता है। फ़ोन खो जाने पर इसे रीसेट करें।",
+  "This account has not set up two-step login.": "इस खाते ने टू-स्टेप लॉगिन सेट नहीं किया है।",
+  "You don't have permission to reset two-step login.":
+    "आपको टू-स्टेप लॉगिन रीसेट करने की अनुमति नहीं है।",
+  "Give a short reason for this reset.": "इस रीसेट का छोटा सा कारण लिखें।",
+  "To change your own two-step login, use the Two-step login page.":
+    "अपना टू-स्टेप लॉगिन बदलने के लिए टू-स्टेप लॉगिन पेज इस्तेमाल करें।",
+  "Account not found.": "खाता नहीं मिला।",
+  "This account has no two-step login set up, so there is nothing to reset.":
+    "इस खाते पर टू-स्टेप लॉगिन सेट नहीं है, इसलिए रीसेट करने को कुछ नहीं है।",
+  "Could not reset two-step login.": "टू-स्टेप लॉगिन रीसेट नहीं हो सका।",
   "Manage two-step login": "टू-स्टेप लॉगिन सँभालें",
   "Open the Two-step login page": "टू-स्टेप लॉगिन पेज खोलें",
   "Checking…": "जाँच हो रही है…",
@@ -1595,7 +1614,6 @@ export const HI_MESSAGES: Messages = {
   "This member has no wallet.": "इस सदस्य का कोई वॉलेट नहीं है।",
   "This member has no wallet PIN set, so there is nothing to reset.":
     "इस सदस्य ने वॉलेट पिन सेट नहीं किया है, इसलिए रीसेट करने को कुछ नहीं है।",
-  "Give a short reason for this reset.": "इस रीसेट का छोटा सा कारण लिखें।",
   "You can't reset your own wallet PIN here.": "आप यहाँ अपना खुद का वॉलेट पिन रीसेट नहीं कर सकते।",
   "Your wallet PIN was reset by our team. Set a new PIN in Wallet":
     "हमारी टीम ने आपका वॉलेट पिन रीसेट कर दिया है। वॉलेट में नया पिन बनाएँ",

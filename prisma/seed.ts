@@ -24,6 +24,7 @@ const PERMISSION_LABELS: Partial<Record<Permission, string>> = {
   "user:block": "Block a user account",
   "user:unblock": "Unblock a user account",
   "role:assign": "Assign or revoke a user's role",
+  "two_step:reset": "Clear another account's two-step login (lost phone)",
   "permission:update": "Change a role's permission bundle",
   "vendor:approve": "Approve a vendor application",
   "vendor:reject": "Reject a vendor application",

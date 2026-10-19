@@ -1,7 +1,8 @@
 /**
  * Emergency recovery: removes every two-step (authenticator app) factor from one account, so its owner
  * can sign in with a password again and set up a new authenticator. Use it when a staff member loses
- * their phone and nobody else can sign in to help. It signs that account out of every session.
+ * their phone and nobody else can sign in to help. A session that is already signed in stays signed in;
+ * block the account too if it may be in the wrong hands.
  *
  *   npx tsx --conditions=react-server --env-file=.env --env-file=.env.local scripts/reset-two-step.ts someone@example.com
  *
