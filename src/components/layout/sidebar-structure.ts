@@ -194,7 +194,7 @@ export const SIDEBAR_STRUCTURE: Record<Panel, readonly StructureEntry[]> = {
       "/admin/ads",
       "/admin/blog",
     ]),
-    section("system", msg("System"), "settings", ["/admin/settings", "/audit-log"]),
+    section("system", msg("System"), "settings", ["/admin/settings", "/admin/legal", "/audit-log"]),
     section("mine", msg("My own account"), "user", MEMBER_PAGES),
   ],
 };

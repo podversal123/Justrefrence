@@ -442,6 +442,12 @@ export const NAV_GROUPS: NavGroup[] = [
         visible: (s) => s.permissions.has("settings:read"),
       },
       {
+        title: msg("Legal pages"),
+        href: "/admin/legal" as Route,
+        icon: FileText,
+        visible: (s) => s.permissions.has("settings:read"),
+      },
+      {
         title: msg("Audit log"),
         href: "/audit-log",
         icon: ScrollText,

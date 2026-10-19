@@ -15,6 +15,8 @@ import {
 import { Logo } from "@/components/brand/logo";
 import { BRAND } from "@/lib/brand";
 import { getSiteSettings } from "@/server/lib/site-settings";
+import { getLegalTexts } from "@/server/lib/legal-store";
+import { LEGAL_PAGES, splitParagraphs } from "@/lib/legal-pages";
 import { getT } from "@/i18n/server";
 
 /**
@@ -76,7 +78,7 @@ interface ContactRow {
 
 export async function PortalFooter() {
   const t = await getT();
-  const settings = await getSiteSettings();
+  const [settings, legalTexts] = await Promise.all([getSiteSettings(), getLegalTexts()]);
   const contact: ContactRow[] = [];
   if (settings.contactEmail) {
     contact.push({
@@ -174,12 +176,25 @@ export async function PortalFooter() {
         </div>
 
         <div className="text-ink-foreground/60 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-6 text-xs">
-          <p>
-            {t("© {year} {name}. All rights reserved.", {
-              year: new Date().getFullYear(),
-              name: BRAND.name,
-            })}
-          </p>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+            <p>
+              {t("© {year} {name}. All rights reserved.", {
+                year: new Date().getFullYear(),
+                name: BRAND.name,
+              })}
+            </p>
+            {LEGAL_PAGES.filter((page) => splitParagraphs(legalTexts[page.slug]).length > 0).map(
+              (page) => (
+                <Link
+                  key={page.slug}
+                  href={page.path as Route}
+                  className="hover:text-ink-foreground transition-colors"
+                >
+                  {t(page.title)}
+                </Link>
+              ),
+            )}
+          </div>
           <a
             href="#"
             className="hover:text-ink-foreground inline-flex items-center gap-1.5 transition-colors"

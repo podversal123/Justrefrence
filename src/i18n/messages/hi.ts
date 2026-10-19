@@ -1513,6 +1513,26 @@ export const HI_MESSAGES: Messages = {
   "New means still in progress. Old means completed, cancelled or refunded.":
     "नई का मतलब अभी चालू है। पुरानी का मतलब पूरी हो चुकी, रद्द या रिफंड हो चुकी।",
   "My cart": "मेरी कार्ट",
+  "Terms and Conditions": "नियम और शर्तें",
+  "Privacy Policy": "गोपनीयता नीति",
+  "Refund Policy": "रिफंड नीति",
+  "Legal pages": "कानूनी पेज",
+  "Save legal pages": "कानूनी पेज सहेजें",
+  "Legal pages saved": "कानूनी पेज सहेजे गए",
+  "This text is too long.": "यह पाठ बहुत लंबा है।",
+  "You don't have permission to change the legal pages.":
+    "आपको कानूनी पेज बदलने की अनुमति नहीं है।",
+  "Check the highlighted text.": "हाइलाइट किया गया पाठ जाँचें।",
+  "Could not save the legal pages.": "कानूनी पेज सहेजे नहीं जा सके।",
+  "Published at {path}": "{path} पर प्रकाशित",
+  "Not published yet": "अभी प्रकाशित नहीं",
+  Text: "पाठ",
+  "Paste the final wording. A blank line starts a new paragraph. Leave this empty to keep the page unpublished.":
+    "अंतिम पाठ यहाँ चिपकाएँ। खाली लाइन से नया अनुच्छेद शुरू होता है। पेज को अप्रकाशित रखने के लिए इसे खाली छोड़ें।",
+  "The Terms and Conditions, Privacy Policy and Refund Policy shown to the public. Use the wording your lawyer approved.":
+    "जनता को दिखने वाली नियम और शर्तें, गोपनीयता नीति और रिफंड नीति। वही पाठ इस्तेमाल करें जो आपके वकील ने मंज़ूर किया हो।",
+  "You can view these pages, but only a Super Admin can change them.":
+    "आप ये पेज देख सकते हैं, पर इन्हें केवल सुपर एडमिन बदल सकता है।",
   Careers: "करियर",
   "Send your résumé to {email}.": "अपना रिज़्यूमे {email} पर भेजें।",
   ID: "आईडी",
