@@ -39,6 +39,11 @@ async function main() {
     select: { id: true },
   });
   if (vendor) {
+    // An earlier run named this account "Demo Vendor Traders"; a plain business name looks better to a client.
+    await prisma.vendorProfile.update({
+      where: { id: vendor.id },
+      data: { businessName: "Metro Office Traders" },
+    });
     const [pc, sc, jc] = await Promise.all([
       prisma.productCategory.findFirst({
         where: { deletedAt: null },

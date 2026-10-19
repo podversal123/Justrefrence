@@ -39,13 +39,17 @@ const ACCOUNTS = {
 
 async function main() {
   if (!process.argv.includes("--remove") && (process.env["DEMO_PASSWORD"] ?? "").length < 12) {
-    throw new Error("Set DEMO_PASSWORD to a strong password of at least 12 characters (it is never kept in the code).");
+    throw new Error(
+      "Set DEMO_PASSWORD to a strong password of at least 12 characters (it is never kept in the code).",
+    );
   }
   const supabaseUrl = process.env["NEXT_PUBLIC_SUPABASE_URL"];
   const serviceRoleKey = process.env["SUPABASE_SERVICE_ROLE_KEY"];
   const databaseUrl = process.env["DATABASE_URL"];
   if (!supabaseUrl || !serviceRoleKey || !databaseUrl) {
-    throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY / DATABASE_URL in env.");
+    throw new Error(
+      "Missing NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY / DATABASE_URL in env.",
+    );
   }
   const supabase = createClient(supabaseUrl, serviceRoleKey, {
     auth: { autoRefreshToken: false, persistSession: false },
@@ -112,7 +116,7 @@ async function main() {
             await tx.vendorProfile.create({
               data: {
                 userId,
-                businessName: "Demo Vendor Traders",
+                businessName: "Metro Office Traders",
                 approvalStatus: "APPROVED",
                 approvedAt: new Date(),
               },
@@ -132,7 +136,12 @@ async function main() {
             });
             if (referrer) {
               await tx.referralRelationship.create({
-                data: { memberId: profile.id, referrerId: referrer.id, level: 1, changedAt: new Date() },
+                data: {
+                  memberId: profile.id,
+                  referrerId: referrer.id,
+                  level: 1,
+                  changedAt: new Date(),
+                },
               });
             }
           }

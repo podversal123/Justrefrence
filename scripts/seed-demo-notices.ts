@@ -2,19 +2,22 @@
  * Demo banners and announcements, so the home page carousel, the member and seller dashboards and the
  * Admin > Banners / Announcements pages have something to show.
  *
- *   - 3 banners (2 on the public home page, 1 on the dashboards). Each photo is a generated colour
- *     tile with no text, uploaded to the same public bucket and `banners/` folder the real uploader uses.
+ *   - 1 banner for the member and seller dashboards, using one of the client's own hero photographs
+ *     (public/images/hero). No banner is added for the public home page on purpose: with none, the home
+ *     page shows the client's own hero slides (their headlines and photographs).
  *   - 3 announcements, published straight away as the Super Admin (one for everyone, one for members,
  *     one for sellers).
  *
- * Safe to re-run: a banner is matched by its headline and an announcement by its title, and skipped if
- * it already exists. Nothing here touches money.
+ * Safe to re-run: this script's banners are replaced (and any earlier generated-tile banners it used to
+ * make are removed), and an announcement is matched by its title and skipped if it already exists.
+ * Nothing here touches money.
  *
  *   npx tsx --conditions=react-server --env-file=.env --env-file=.env.local scripts/seed-demo-notices.ts
  *   ... scripts/seed-demo-notices.ts --remove     # delete only what this script made
  */
 import sharp from "sharp";
 import { randomUUID } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { prisma } from "@/server/lib/prisma";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { recordAudit } from "@/server/domain/audit/record";
@@ -23,29 +26,19 @@ const BUCKET = "catalog-public";
 
 const BANNERS = [
   {
-    placement: "HOME" as const,
-    headline: "Buy, sell and earn on one platform",
-    subline: "Browse approved vendors, post a requirement for bids, or share your referral link.",
-    ctaLabel: "Browse products",
-    ctaHref: "/products",
-    colors: ["#0b3d5c", "#1f7a8c"],
-  },
-  {
-    placement: "HOME" as const,
-    headline: "Post a requirement and get quotes from vendors",
-    subline: "Open tenders and reverse auctions: vendors bid, you pick the best offer.",
-    ctaLabel: "See open bids",
-    ctaHref: "/bids",
-    colors: ["#5a1a2e", "#c2495f"],
-  },
-  {
     placement: "DASHBOARD" as const,
     headline: "Refer a friend, earn on every order",
     subline: "Share your referral link. You earn a commission when the people you refer buy.",
     ctaLabel: "See my referrals",
     ctaHref: "/referrals",
-    colors: ["#2d4a22", "#7a9e3b"],
+    photo: "public/images/hero/slide-2.jpg",
   },
+];
+
+/** Banners an earlier version of this script made from generated colour tiles; removed on every run. */
+const LEGACY_HEADLINES = [
+  "Buy, sell and earn on one platform",
+  "Post a requirement and get quotes from vendors",
 ];
 
 const ANNOUNCEMENTS = [
@@ -66,18 +59,6 @@ const ANNOUNCEMENTS = [
   },
 ];
 
-/** A 1920x640 colour tile: a diagonal gradient with a few soft circles. No text, so no fonts are needed. */
-async function tile([from, to]: string[]): Promise<Buffer> {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="640" viewBox="0 0 1920 640">
-    <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${from}"/><stop offset="1" stop-color="${to}"/></linearGradient></defs>
-    <rect width="1920" height="640" fill="url(#g)"/>
-    <circle cx="1560" cy="120" r="260" fill="#ffffff" fill-opacity="0.08"/>
-    <circle cx="1780" cy="520" r="180" fill="#ffffff" fill-opacity="0.07"/>
-    <circle cx="1280" cy="600" r="120" fill="#ffffff" fill-opacity="0.06"/>
-  </svg>`;
-  return sharp(Buffer.from(svg)).jpeg({ quality: 80, mozjpeg: true }).toBuffer();
-}
-
 async function main() {
   const admin = await prisma.user.findFirst({
     where: { userRoles: { some: { revokedAt: null, role: { code: "SUPER_ADMIN" } } } },
@@ -86,32 +67,38 @@ async function main() {
   if (!admin) throw new Error("No Super Admin found. Run bootstrap-admin.ts first.");
   const storage = createAdminClient().storage.from(BUCKET);
 
-  if (process.argv.includes("--remove")) {
+  const ownHeadlines = [...BANNERS.map((b) => b.headline), ...LEGACY_HEADLINES];
+  async function removeOwnBanners() {
     const banners = await prisma.banner.findMany({
-      where: { headline: { in: BANNERS.map((b) => b.headline) } },
+      where: { headline: { in: ownHeadlines } },
       select: { id: true, imagePath: true },
     });
     if (banners.length) await storage.remove(banners.map((b) => b.imagePath));
     await prisma.banner.deleteMany({ where: { id: { in: banners.map((b) => b.id) } } });
+    return banners.length;
+  }
+
+  if (process.argv.includes("--remove")) {
+    const bannerCount = await removeOwnBanners();
     const removed = await prisma.announcement.deleteMany({
       where: { title: { in: ANNOUNCEMENTS.map((a) => a.title) } },
     });
-    console.log(`Removed ${banners.length} banner(s) and ${removed.count} announcement(s).`);
+    console.log(`Removed ${bannerCount} banner(s) and ${removed.count} announcement(s).`);
     await prisma.$disconnect();
     return;
   }
 
+  const replaced = await removeOwnBanners();
+  if (replaced > 0) console.log(`Replaced ${replaced} earlier banner(s) made by this script.`);
   let sortOrder =
     (await prisma.banner.aggregate({ _max: { sortOrder: true } }))._max.sortOrder ?? 0;
   for (const banner of BANNERS) {
-    if (
-      await prisma.banner.findFirst({ where: { headline: banner.headline }, select: { id: true } })
-    ) {
-      console.log(`Banner "${banner.headline}" already exists, skipped.`);
-      continue;
-    }
+    const photo = await sharp(readFileSync(banner.photo))
+      .resize({ width: 1920, withoutEnlargement: true })
+      .jpeg({ quality: 80, mozjpeg: true })
+      .toBuffer();
     const path = `banners/${randomUUID()}.jpg`;
-    const { error } = await storage.upload(path, await tile(banner.colors), {
+    const { error } = await storage.upload(path, photo, {
       contentType: "image/jpeg",
       upsert: false,
     });
