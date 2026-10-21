@@ -1,7 +1,20 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/server/lib/prisma";
+import { findUserById } from "@/server/repositories/identity/user-repository";
+import {
+  countActiveSuperAdmins,
+  createRoleGrant,
+  createRoleWithPermissions,
+  findActiveRoleGrant,
+  findPermissionsByCodes,
+  findRoleById,
+  findRoleGrantWithRole,
+  findRoleRowByCode,
+  findRoleWithPermissions,
+  replaceRolePermissions,
+  revokeRoleGrant,
+} from "@/server/repositories/role-write-repository";
 import { authorize } from "@/server/auth/authorize";
 import { recordAudit } from "@/server/domain/audit/record";
 import {
@@ -57,7 +70,7 @@ export async function createRoleAction(
     };
   }
 
-  const existing = await prisma.role.findUnique({ where: { code: parsed.data.code } });
+  const existing = await findRoleRowByCode(parsed.data.code);
   if (existing) {
     return {
       success: false,
@@ -66,20 +79,12 @@ export async function createRoleAction(
     };
   }
 
-  const permissions = await prisma.permission.findMany({
-    where: { code: { in: parsed.data.permissionCodes } },
-  });
+  const permissions = await findPermissionsByCodes(parsed.data.permissionCodes);
 
-  const role = await prisma.$transaction(async (tx) => {
-    const created = await tx.role.create({
-      data: { code: parsed.data.code, label: parsed.data.label, isSystem: false },
-    });
-    if (permissions.length > 0) {
-      await tx.rolePermission.createMany({
-        data: permissions.map((p) => ({ roleId: created.id, permissionId: p.id })),
-      });
-    }
-    return created;
+  const role = await createRoleWithPermissions({
+    code: parsed.data.code,
+    label: parsed.data.label,
+    permissionIds: permissions.map((p) => p.id),
   });
 
   await recordAudit({
@@ -128,10 +133,7 @@ export async function updateRolePermissionsAction(
     };
   }
 
-  const role = await prisma.role.findUnique({
-    where: { id: parsed.data.roleId },
-    include: { rolePermissions: { include: { permission: true } } },
-  });
+  const role = await findRoleWithPermissions(parsed.data.roleId);
 
   if (!role) {
     return {
@@ -142,16 +144,12 @@ export async function updateRolePermissionsAction(
   }
 
   const beforeCodes = role.rolePermissions.map((rp) => rp.permission.code).sort();
-  const permissions = await prisma.permission.findMany({
-    where: { code: { in: parsed.data.permissionCodes } },
-  });
+  const permissions = await findPermissionsByCodes(parsed.data.permissionCodes);
 
-  await prisma.$transaction([
-    prisma.rolePermission.deleteMany({ where: { roleId: role.id } }),
-    prisma.rolePermission.createMany({
-      data: permissions.map((p) => ({ roleId: role.id, permissionId: p.id })),
-    }),
-  ]);
+  await replaceRolePermissions(
+    role.id,
+    permissions.map((p) => p.id),
+  );
 
   await recordAudit({
     actorId: session.userId,
@@ -197,8 +195,8 @@ export async function assignRoleAction(
   }
 
   const [targetUser, role] = await Promise.all([
-    prisma.user.findUnique({ where: { id: parsed.data.userId } }),
-    prisma.role.findUnique({ where: { id: parsed.data.roleId } }),
+    findUserById(parsed.data.userId),
+    findRoleById(parsed.data.roleId),
   ]);
 
   if (!targetUser || !role) {
@@ -209,9 +207,7 @@ export async function assignRoleAction(
     };
   }
 
-  const existingActiveGrant = await prisma.userRole.findFirst({
-    where: { userId: targetUser.id, roleId: role.id, revokedAt: null },
-  });
+  const existingActiveGrant = await findActiveRoleGrant(targetUser.id, role.id);
 
   if (existingActiveGrant) {
     return {
@@ -221,9 +217,7 @@ export async function assignRoleAction(
     };
   }
 
-  const grant = await prisma.userRole.create({
-    data: { userId: targetUser.id, roleId: role.id, grantedBy: session.userId },
-  });
+  const grant = await createRoleGrant(targetUser.id, role.id, session.userId);
 
   await recordAudit({
     actorId: session.userId,
@@ -264,10 +258,7 @@ export async function removeRoleAction(
     };
   }
 
-  const grant = await prisma.userRole.findUnique({
-    where: { id: parsed.data.userRoleId },
-    include: { role: true },
-  });
+  const grant = await findRoleGrantWithRole(parsed.data.userRoleId);
 
   if (!grant || grant.revokedAt) {
     return {
@@ -278,9 +269,7 @@ export async function removeRoleAction(
   }
 
   if (grant.role.code === "SUPER_ADMIN") {
-    const activeSuperAdmins = await prisma.userRole.count({
-      where: { role: { code: "SUPER_ADMIN" }, revokedAt: null },
-    });
+    const activeSuperAdmins = await countActiveSuperAdmins();
     if (activeSuperAdmins <= 1) {
       return {
         success: false,
@@ -290,10 +279,7 @@ export async function removeRoleAction(
     }
   }
 
-  await prisma.userRole.update({
-    where: { id: grant.id },
-    data: { revokedAt: new Date(), revokedBy: session.userId },
-  });
+  await revokeRoleGrant(grant.id, session.userId);
 
   await recordAudit({
     actorId: session.userId,

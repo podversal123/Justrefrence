@@ -3,7 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import { prisma } from "@/server/lib/prisma";
+import { findRoleById } from "@/server/repositories/role-write-repository";
+import {
+  createStaffUser,
+  findUserByEmail,
+  findUserFullName,
+  findUserIdByPhone,
+  setUserFullName,
+} from "@/server/repositories/identity/user-repository";
 import { authorize } from "@/server/auth/authorize";
 import { recordAudit } from "@/server/domain/audit/record";
 import { logger } from "@/server/lib/logger";
@@ -57,7 +64,7 @@ export async function createAdminAction(
     };
   }
 
-  const role = await prisma.role.findUnique({ where: { id: parsed.data.roleId } });
+  const role = await findRoleById(parsed.data.roleId);
   if (!role) {
     return {
       success: false,
@@ -66,7 +73,7 @@ export async function createAdminAction(
     };
   }
 
-  const existing = await prisma.user.findUnique({ where: { email: parsed.data.email } });
+  const existing = await findUserByEmail(parsed.data.email);
   if (existing) {
     return {
       success: false,
@@ -76,7 +83,7 @@ export async function createAdminAction(
   }
   if (
     parsed.data.phone &&
-    (await prisma.user.findUnique({ where: { phone: parsed.data.phone }, select: { id: true } }))
+    (await findUserIdByPhone(parsed.data.phone))
   ) {
     return {
       success: false,
@@ -105,20 +112,13 @@ export async function createAdminAction(
   const newUserId = invited.data.user.id;
 
   try {
-    await prisma.$transaction(async (tx) => {
-      await tx.user.create({
-        data: {
-          id: newUserId,
-          email: parsed.data.email,
-          fullName: parsed.data.fullName,
-          phone: parsed.data.phone ?? null,
-          status: "PENDING_VERIFICATION",
-          createdBy: session.userId,
-        },
-      });
-      await tx.userRole.create({
-        data: { userId: newUserId, roleId: role.id, grantedBy: session.userId },
-      });
+    await createStaffUser({
+      id: newUserId,
+      email: parsed.data.email,
+      fullName: parsed.data.fullName,
+      phone: parsed.data.phone ?? null,
+      createdBy: session.userId,
+      roleId: role.id,
     });
   } catch (error) {
     // Compensate: don't leave an orphaned Supabase Auth user with no local row.
@@ -176,15 +176,9 @@ export async function updateProfileAction(
     };
   }
 
-  const before = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { fullName: true },
-  });
+  const before = await findUserFullName(user.id);
 
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { fullName: parsed.data.fullName },
-  });
+  await setUserFullName(user.id, parsed.data.fullName);
 
   await recordAudit({
     actorId: user.id,

@@ -3,7 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import { prisma } from "@/server/lib/prisma";
+import { findRoleRowByCode } from "@/server/repositories/role-write-repository";
+import { findUserByEmail } from "@/server/repositories/identity/user-repository";
+import {
+  changeVendorApprovalStatus,
+  createVendorAccount,
+  findVendorProfileById,
+  updateVendorProfileDetails,
+} from "@/server/repositories/vendor-write-repository";
 import { authorize } from "@/server/auth/authorize";
 import { recordAudit } from "@/server/domain/audit/record";
 import { logger } from "@/server/lib/logger";
@@ -77,7 +84,7 @@ export async function createVendorAction(
     };
   }
 
-  const existing = await prisma.user.findUnique({ where: { email: parsed.data.email } });
+  const existing = await findUserByEmail(parsed.data.email);
   if (existing) {
     return {
       success: false,
@@ -86,7 +93,7 @@ export async function createVendorAction(
     };
   }
 
-  const vendorRole = await prisma.role.findUnique({ where: { code: "VENDOR" } });
+  const vendorRole = await findRoleRowByCode("VENDOR");
   if (!vendorRole) {
     return {
       success: false,
@@ -118,27 +125,14 @@ export async function createVendorAction(
   const newUserId = invited.data.user.id;
 
   try {
-    await prisma.$transaction(async (tx) => {
-      await tx.user.create({
-        data: {
-          id: newUserId,
-          email: parsed.data.email,
-          fullName: parsed.data.fullName,
-          status: "PENDING_VERIFICATION",
-          createdBy: session.userId,
-        },
-      });
-      await tx.userRole.create({
-        data: { userId: newUserId, roleId: vendorRole.id, grantedBy: session.userId },
-      });
-      await tx.vendorProfile.create({
-        data: {
-          userId: newUserId,
-          businessName: parsed.data.businessName,
-          phone: parsed.data.phone,
-          approvalStatus: VendorApprovalStatus.PENDING,
-        },
-      });
+    await createVendorAccount({
+      userId: newUserId,
+      email: parsed.data.email,
+      fullName: parsed.data.fullName,
+      createdBy: session.userId,
+      roleId: vendorRole.id,
+      businessName: parsed.data.businessName,
+      phone: parsed.data.phone,
     });
   } catch (error) {
     await supabaseAdmin.auth.admin.deleteUser(newUserId).catch(() => {});
@@ -201,7 +195,7 @@ export async function updateVendorStatusAction(
     };
   }
 
-  const vendor = await prisma.vendorProfile.findUnique({ where: { id: vendorProfileId } });
+  const vendor = await findVendorProfileById(vendorProfileId);
   if (!vendor) {
     return {
       success: false,
@@ -226,22 +220,13 @@ export async function updateVendorStatusAction(
   // concurrent change makes this match 0 rows instead of being clobbered.
   // Approving also gives the person the VENDOR role in the same transaction: a member who asked to
   // become a seller has no vendor permissions until this moment.
-  const changed = await prisma.$transaction(async (tx) => {
-    const { count } = await tx.vendorProfile.updateMany({
-      where: { id: vendorProfileId, approvalStatus: vendor.approvalStatus },
-      data: {
-        approvalStatus: parsed.data.status,
-        approvedBy: session.userId,
-        approvedAt: new Date(),
-        rejectedReason:
-          parsed.data.status === VendorApprovalStatus.REJECTED ? parsed.data.reason : null,
-      },
-    });
-    if (count === 0) return false;
-    if (parsed.data.status === VendorApprovalStatus.APPROVED) {
-      await grantVendorRole(tx, vendor.userId, session.userId);
-    }
-    return true;
+  const changed = await changeVendorApprovalStatus({
+    vendorProfileId,
+    expectedStatus: vendor.approvalStatus,
+    status: parsed.data.status,
+    reason: parsed.data.reason,
+    decidedBy: session.userId,
+    applicantUserId: vendor.userId,
   });
 
   if (!changed) {
@@ -271,21 +256,6 @@ export async function updateVendorStatusAction(
   revalidatePath("/become-seller");
 
   return { success: true, data: null, meta: { requestId: requestId() } };
-}
-
-/** Gives the VENDOR role if the person does not hold it already. Safe to run twice. */
-async function grantVendorRole(
-  tx: Pick<typeof prisma, "role" | "userRole">,
-  userId: string,
-  grantedBy: string,
-) {
-  const role = await tx.role.findUnique({ where: { code: "VENDOR" } });
-  if (!role) throw new Error("The VENDOR role is not seeded. Run the seed script.");
-  const existing = await tx.userRole.findFirst({
-    where: { userId, roleId: role.id, revokedAt: null },
-    select: { id: true },
-  });
-  if (!existing) await tx.userRole.create({ data: { userId, roleId: role.id, grantedBy } });
 }
 
 /** A courtesy message: failing to deliver it never undoes the decision. */
@@ -356,15 +326,12 @@ export async function updateVendorProfileAction(
   }
 
   const next = parsed.data;
-  await prisma.vendorProfile.update({
-    where: { id: vendorProfile.id },
-    data: {
-      businessName: next.businessName,
-      phone: next.phone,
-      telephone: next.telephone ?? null,
-      gstin: next.gstin ?? null,
-      pan: next.pan ?? null,
-    },
+  await updateVendorProfileDetails(vendorProfile.id, {
+    businessName: next.businessName,
+    phone: next.phone,
+    telephone: next.telephone ?? null,
+    gstin: next.gstin ?? null,
+    pan: next.pan ?? null,
   });
 
   // Log which fields changed, never the values (phone numbers and PAN are personal data).

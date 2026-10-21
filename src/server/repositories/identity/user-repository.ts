@@ -53,3 +53,37 @@ export function setLoginAttemptState(
     data: { failedLoginAttempts: state.failedLoginAttempts, lockedUntil: state.lockedUntil },
   });
 }
+
+/** An admin account: the sign-in user and its role, created together or not at all. */
+export function createStaffUser(input: {
+  id: string;
+  email: string;
+  fullName: string;
+  phone: string | null;
+  createdBy: string;
+  roleId: string;
+}) {
+  return prisma.$transaction(async (tx) => {
+    await tx.user.create({
+      data: {
+        id: input.id,
+        email: input.email,
+        fullName: input.fullName,
+        phone: input.phone,
+        status: "PENDING_VERIFICATION",
+        createdBy: input.createdBy,
+      },
+    });
+    await tx.userRole.create({
+      data: { userId: input.id, roleId: input.roleId, grantedBy: input.createdBy },
+    });
+  });
+}
+
+export function findUserFullName(id: string) {
+  return prisma.user.findUnique({ where: { id }, select: { fullName: true } });
+}
+
+export function setUserFullName(id: string, fullName: string) {
+  return prisma.user.update({ where: { id }, data: { fullName } });
+}
