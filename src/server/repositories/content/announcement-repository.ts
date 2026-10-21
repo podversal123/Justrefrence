@@ -1,5 +1,6 @@
 import "server-only";
 import { prisma } from "@/server/lib/prisma";
+import type { Prisma } from "@/generated/prisma/client";
 import type { Panel } from "@/server/auth/panel";
 
 const SELECT = {
@@ -38,4 +39,21 @@ export function listPublishedFor(panel: Panel, limit = 3) {
 
 export function getAnnouncement(id: string) {
   return prisma.announcement.findUnique({ where: { id }, select: SELECT });
+}
+
+export function createAnnouncement(data: Prisma.AnnouncementUncheckedCreateInput) {
+  return prisma.announcement.create({ data, select: { id: true } });
+}
+
+/** Moves a pending notice to published, only if it is still pending. Returns how many rows changed. */
+export async function publishPendingAnnouncement(id: string, publishedBy: string): Promise<number> {
+  const result = await prisma.announcement.updateMany({
+    where: { id, status: "PENDING" },
+    data: { status: "PUBLISHED", publishedBy, publishedAt: new Date() },
+  });
+  return result.count;
+}
+
+export function archiveAnnouncement(id: string) {
+  return prisma.announcement.update({ where: { id }, data: { status: "ARCHIVED" } });
 }

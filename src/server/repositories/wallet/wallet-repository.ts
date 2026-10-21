@@ -359,3 +359,23 @@ export async function hasWalletPin(ownerUserId: string): Promise<boolean> {
   });
   return wallet?.walletPinHash != null;
 }
+
+/** A manual top-up by this admin, of this amount, into this wallet since `since`: the double-click guard. */
+export function findRecentManualTopup(input: {
+  walletId: string;
+  adminUserId: string;
+  amount: bigint;
+  since: Date;
+}) {
+  return prisma.walletTransaction.findFirst({
+    where: {
+      walletId: input.walletId,
+      type: "TOPUP",
+      referenceType: "MANUAL_TOPUP",
+      referenceId: input.adminUserId,
+      amount: input.amount,
+      createdAt: { gte: input.since },
+    },
+    select: { id: true },
+  });
+}

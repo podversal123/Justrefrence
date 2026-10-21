@@ -2,9 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { authorize } from "@/server/auth/authorize";
-import { prisma } from "@/server/lib/prisma";
 import { announcementFieldsSchema, announcementIdSchema } from "@/lib/schemas/announcement";
-import { getAnnouncement } from "@/server/repositories/content/announcement-repository";
+import {
+  archiveAnnouncement,
+  createAnnouncement,
+  getAnnouncement,
+  publishPendingAnnouncement,
+} from "@/server/repositories/content/announcement-repository";
 import { recordAudit } from "@/server/domain/audit/record";
 import { NotFoundError, ValidationError } from "@/server/lib/errors";
 import { failureFrom, requestId, validationFailure } from "@/server/lib/action-helpers";
@@ -53,14 +57,11 @@ export async function createAnnouncementAction(
 
   try {
     const direct = session.permissions.has("change:apply_direct");
-    const created = await prisma.announcement.create({
-      data: {
-        ...parsed.data,
-        status: direct ? "PUBLISHED" : "PENDING",
-        createdBy: session.userId,
-        ...(direct ? { publishedBy: session.userId, publishedAt: new Date() } : {}),
-      },
-      select: { id: true },
+    const created = await createAnnouncement({
+      ...parsed.data,
+      status: direct ? "PUBLISHED" : "PENDING",
+      createdBy: session.userId,
+      ...(direct ? { publishedBy: session.userId, publishedAt: new Date() } : {}),
     });
     await recordAudit({
       actorId: session.userId,
@@ -89,11 +90,8 @@ export async function publishAnnouncementAction(
   }
   try {
     const id = announcementIdSchema.parse(formData.get("id"));
-    const result = await prisma.announcement.updateMany({
-      where: { id, status: "PENDING" },
-      data: { status: "PUBLISHED", publishedBy: session.userId, publishedAt: new Date() },
-    });
-    if (result.count === 0) throw new ValidationError("This announcement was already handled.");
+    const changed = await publishPendingAnnouncement(id, session.userId);
+    if (changed === 0) throw new ValidationError("This announcement was already handled.");
     await recordAudit({
       actorId: session.userId,
       action: "ANNOUNCEMENT_PUBLISHED",
@@ -126,7 +124,7 @@ export async function archiveAnnouncementAction(
     if (existing.status === "PUBLISHED" && !session.permissions.has("change:apply_direct")) {
       throw new ValidationError("Only a Super Admin can take down a published announcement.");
     }
-    await prisma.announcement.update({ where: { id }, data: { status: "ARCHIVED" } });
+    await archiveAnnouncement(id);
     await recordAudit({
       actorId: session.userId,
       action: "ANNOUNCEMENT_ARCHIVED",

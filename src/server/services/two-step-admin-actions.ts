@@ -8,7 +8,7 @@ import { resetTwoStepSchema } from "@/lib/schemas/two-step";
 import { createNotification } from "@/server/repositories/identity/notification-repository";
 import { ConflictError, NotFoundError, ValidationError } from "@/server/lib/errors";
 import { failureFrom, requestId, validationFailure } from "@/server/lib/action-helpers";
-import { prisma } from "@/server/lib/prisma";
+import { findUserIdById } from "@/server/repositories/identity/user-repository";
 import type { ApiResult } from "@/lib/api-response";
 
 const TAG = "two_step_admin_action_failed";
@@ -41,7 +41,7 @@ export async function resetTwoStepAction(
     if (userId === session.userId) {
       throw new ValidationError("To change your own two-step login, use the Two-step login page.");
     }
-    const target = await prisma.user.findUnique({ where: { id: userId }, select: { id: true } });
+    const target = await findUserIdById(userId);
     if (!target) throw new NotFoundError("Account not found.");
 
     const removed = await removeAllTwoStepFactors(userId);

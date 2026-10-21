@@ -2,14 +2,16 @@
 
 import { revalidatePath, revalidateTag } from "next/cache";
 import { authorize } from "@/server/auth/authorize";
-import { prisma } from "@/server/lib/prisma";
 import { bannerFieldsSchema, bannerIdSchema, bannerMoveSchema } from "@/lib/schemas/banner";
 import { deleteBannerImage, uploadBannerImage } from "@/server/lib/banner-image";
 import {
   BANNERS_TAG,
+  createBanner,
+  deleteBanner,
   getBanner,
   moveBanner,
   nextSortOrder,
+  updateBanner,
 } from "@/server/repositories/content/banner-repository";
 import { recordAudit } from "@/server/domain/audit/record";
 import { NotFoundError, ValidationError } from "@/server/lib/errors";
@@ -60,15 +62,12 @@ export async function createBannerAction(
     const file = formData.get("image");
     if (!(file instanceof File)) throw new ValidationError("Choose a photo for the banner.");
     imagePath = await uploadBannerImage(file);
-    const banner = await prisma.banner.create({
-      data: {
-        ...parsed.data,
-        subline: parsed.data.subline ?? null,
-        imagePath,
-        sortOrder: await nextSortOrder(),
-        createdBy: session.userId,
-      },
-      select: { id: true },
+    const banner = await createBanner({
+      ...parsed.data,
+      subline: parsed.data.subline ?? null,
+      imagePath,
+      sortOrder: await nextSortOrder(),
+      createdBy: session.userId,
     });
     await recordAudit({
       actorId: session.userId,
@@ -115,13 +114,10 @@ export async function updateBannerAction(
     const file = formData.get("image");
     if (file instanceof File && file.size > 0) newImage = await uploadBannerImage(file);
 
-    await prisma.banner.update({
-      where: { id: id.data },
-      data: {
-        ...parsed.data,
-        subline: parsed.data.subline ?? null,
-        ...(newImage ? { imagePath: newImage } : {}),
-      },
+    await updateBanner(id.data, {
+      ...parsed.data,
+      subline: parsed.data.subline ?? null,
+      ...(newImage ? { imagePath: newImage } : {}),
     });
     if (newImage) await dropImage(existing.imagePath);
 
@@ -154,7 +150,7 @@ export async function toggleBannerAction(
     const id = bannerIdSchema.parse(formData.get("id"));
     const existing = await getBanner(id);
     if (!existing) throw new NotFoundError("Banner not found.");
-    await prisma.banner.update({ where: { id }, data: { isActive: !existing.isActive } });
+    await updateBanner(id, { isActive: !existing.isActive });
     await recordAudit({
       actorId: session.userId,
       action: existing.isActive ? "BANNER_HIDDEN" : "BANNER_SHOWN",
@@ -210,7 +206,7 @@ export async function deleteBannerAction(
     const id = bannerIdSchema.parse(formData.get("id"));
     const existing = await getBanner(id);
     if (!existing) throw new NotFoundError("Banner not found.");
-    await prisma.banner.delete({ where: { id } });
+    await deleteBanner(id);
     await dropImage(existing.imagePath);
     await recordAudit({
       actorId: session.userId,

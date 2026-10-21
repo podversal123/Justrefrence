@@ -5,7 +5,11 @@ import { redirect } from "next/navigation";
 import { cookies, headers } from "next/headers";
 import { PANEL_COOKIE } from "@/server/auth/panel";
 import { createClient } from "@/lib/supabase/server";
-import { prisma } from "@/server/lib/prisma";
+import {
+  findUserByEmail,
+  findUserByMemberId,
+  setLoginAttemptState,
+} from "@/server/repositories/identity/user-repository";
 import { MEMBER_ID_PATTERN } from "@/server/domain/identity/member-id";
 import { forgotPasswordSchema, loginSchema, resetPasswordSchema } from "@/lib/schemas/auth";
 import { loginRateLimiter, passwordResetRateLimiter } from "@/server/lib/rate-limit";
@@ -85,13 +89,8 @@ export async function loginAction(
   // for both. An unknown ID falls through to the same "incorrect" failure as a wrong password.
   const isMemberId = MEMBER_ID_PATTERN.test(parsed.data.identifier);
   const localUser = isMemberId
-    ? ((
-        await prisma.memberProfile.findUnique({
-          where: { memberId: parsed.data.identifier },
-          select: { user: true },
-        })
-      )?.user ?? null)
-    : await prisma.user.findUnique({ where: { email: parsed.data.identifier } });
+    ? await findUserByMemberId(parsed.data.identifier)
+    : await findUserByEmail(parsed.data.identifier);
   const loginEmail = localUser?.email ?? (isMemberId ? null : parsed.data.identifier);
 
   if (
@@ -133,10 +132,7 @@ export async function loginAction(
         failedLoginAttempts: localUser.failedLoginAttempts,
         lockedUntil: localUser.lockedUntil,
       });
-      await prisma.user.update({
-        where: { id: localUser.id },
-        data: { failedLoginAttempts: next.failedLoginAttempts, lockedUntil: next.lockedUntil },
-      });
+      await setLoginAttemptState(localUser.id, next);
     }
     await recordAudit({
       actorId: null,
@@ -156,10 +152,7 @@ export async function loginAction(
   }
 
   const reset = afterSuccessfulAttempt();
-  await prisma.user.update({
-    where: { id: data.user.id },
-    data: { failedLoginAttempts: reset.failedLoginAttempts, lockedUntil: reset.lockedUntil },
-  });
+  await setLoginAttemptState(data.user.id, reset);
 
   await recordAudit({
     actorId: data.user.id,

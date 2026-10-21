@@ -155,3 +155,11 @@ export async function listVendorListingSummaries(vendorProfileId: string) {
     projects: projects.map(summarize),
   };
 }
+
+/** Only the approval state of a vendor profile, to decide whether it may run ads, auctions or bids. */
+export function getVendorApprovalStatus(vendorProfileId: string) {
+  return prisma.vendorProfile.findUnique({
+    where: { id: vendorProfileId },
+    select: { approvalStatus: true },
+  });
+}

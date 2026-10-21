@@ -15,7 +15,7 @@ import { removeMessageDoc, uploadMessageDoc } from "@/server/lib/message-doc-sto
 import { KYC_FILE_KINDS, checkUpload } from "@/server/domain/kyc/rules";
 import { logger } from "@/server/lib/logger";
 import { createNotification } from "@/server/repositories/identity/notification-repository";
-import { prisma } from "@/server/lib/prisma";
+import { findUserIdAndStatus } from "@/server/repositories/identity/user-repository";
 import { messageDraftSchema, sendMessageSchema } from "@/lib/schemas/support";
 import { recordAudit } from "@/server/domain/audit/record";
 import {
@@ -72,10 +72,7 @@ export async function sendMessageAction(
 
     if (isStaff) {
       if (!parsed.data.toUserId) throw new ValidationError("Choose who to send this message to.");
-      const recipient = await prisma.user.findUnique({
-        where: { id: parsed.data.toUserId },
-        select: { id: true, status: true },
-      });
+      const recipient = await findUserIdAndStatus(parsed.data.toUserId);
       if (!recipient || recipient.status === "BLOCKED")
         throw new NotFoundError("That recipient was not found.");
       toUserId = recipient.id;

@@ -2,10 +2,17 @@
 
 import { revalidatePath, revalidateTag } from "next/cache";
 import { authorize } from "@/server/auth/authorize";
-import { prisma } from "@/server/lib/prisma";
 import { adFieldsSchema, adIdSchema, rejectAdSchema } from "@/lib/schemas/ad";
 import { deleteBannerImage, uploadBannerImage } from "@/server/lib/banner-image";
-import { ADS_TAG, getAd, userIdsWithPermission } from "@/server/repositories/ads/ad-repository";
+import {
+  ADS_TAG,
+  createAd,
+  deleteAd,
+  getAd,
+  updateAdsWhere,
+  userIdsWithPermission,
+} from "@/server/repositories/ads/ad-repository";
+import { getVendorApprovalStatus } from "@/server/repositories/vendor-repository";
 import { canApprove, canPause, canReject } from "@/server/domain/ads/rules";
 import { createNotification } from "@/server/repositories/identity/notification-repository";
 import { recordAudit } from "@/server/domain/audit/record";
@@ -54,10 +61,7 @@ async function dropImage(path: string) {
 
 async function requireApprovedVendor(vendorProfileId: string | null) {
   if (!vendorProfileId) throw new AuthorizationError("You need a vendor profile to run ads.");
-  const vendor = await prisma.vendorProfile.findUnique({
-    where: { id: vendorProfileId },
-    select: { approvalStatus: true },
-  });
+  const vendor = await getVendorApprovalStatus(vendorProfileId);
   if (vendor?.approvalStatus !== "APPROVED") {
     throw new AuthorizationError("Your vendor account must be approved before you can run ads.");
   }
@@ -101,9 +105,11 @@ export async function createAdAction(_prev: unknown, formData: FormData): Promis
     if (!(file instanceof File)) throw new ValidationError("Choose a photo for the ad.");
     imagePath = await uploadBannerImage(file, AD_IMAGE);
 
-    const ad = await prisma.advertisement.create({
-      data: { ...parsed.data, subline: parsed.data.subline ?? null, imagePath, vendorId },
-      select: { id: true, vendor: { select: { businessName: true } } },
+    const ad = await createAd({
+      ...parsed.data,
+      subline: parsed.data.subline ?? null,
+      imagePath,
+      vendorId,
     });
     await recordAudit({
       actorId: session.userId,
@@ -143,9 +149,9 @@ export async function updateAdAction(_prev: unknown, formData: FormData): Promis
     const file = formData.get("image");
     if (file instanceof File && file.size > 0) newImage = await uploadBannerImage(file, AD_IMAGE);
 
-    const moved = await prisma.advertisement.updateMany({
-      where: { id: existing.id, vendorId },
-      data: {
+    const movedCount = await updateAdsWhere(
+      { id: existing.id, vendorId },
+      {
         ...parsed.data,
         subline: parsed.data.subline ?? null,
         ...(newImage ? { imagePath: newImage } : {}),
@@ -154,8 +160,8 @@ export async function updateAdAction(_prev: unknown, formData: FormData): Promis
         reviewedBy: null,
         reviewedAt: null,
       },
-    });
-    if (moved.count === 0) throw new NotFoundError("Ad not found.");
+    );
+    if (movedCount === 0) throw new NotFoundError("Ad not found.");
     if (newImage) await dropImage(existing.imagePath);
 
     await recordAudit({
@@ -188,11 +194,11 @@ export async function toggleAdAction(_prev: unknown, formData: FormData): Promis
     const check = canPause(ad);
     if (!check.ok) throw new ConflictError(check.message ?? "This ad can't be changed.");
 
-    const moved = await prisma.advertisement.updateMany({
-      where: { id: adId, vendorId: ad.vendorId, status: "APPROVED" },
-      data: { isActive: !ad.isActive },
-    });
-    if (moved.count === 0) throw new ConflictError("This ad just changed. Refresh and try again.");
+    const movedCount = await updateAdsWhere(
+      { id: adId, vendorId: ad.vendorId, status: "APPROVED" },
+      { isActive: !ad.isActive },
+    );
+    if (movedCount === 0) throw new ConflictError("This ad just changed. Refresh and try again.");
     await recordAudit({
       actorId: session.userId,
       action: ad.isActive ? "AD_PAUSED" : "AD_RESUMED",
@@ -217,7 +223,7 @@ export async function deleteAdAction(_prev: unknown, formData: FormData): Promis
     const { adId } = adIdSchema.parse({ adId: formData.get("adId") });
     const ad = await getAd(adId);
     if (!ad || ad.vendorId !== session.vendorProfileId) throw new NotFoundError("Ad not found.");
-    await prisma.advertisement.delete({ where: { id: adId } });
+    await deleteAd(adId);
     await dropImage(ad.imagePath);
     await recordAudit({
       actorId: session.userId,
@@ -252,16 +258,16 @@ export async function approveAdAction(
 
     // Atomic: only the first reviewer's click changes it; the second sees it already decided.
     const now = new Date();
-    const moved = await prisma.advertisement.updateMany({
-      where: { id: adId, status: "PENDING" },
-      data: {
+    const movedCount = await updateAdsWhere(
+      { id: adId, status: "PENDING" },
+      {
         status: "APPROVED",
         reviewedBy: session.userId,
         reviewedAt: now,
         rejectedReason: null,
       },
-    });
-    if (moved.count === 0) throw new ConflictError("Someone just reviewed this ad.");
+    );
+    if (movedCount === 0) throw new ConflictError("Someone just reviewed this ad.");
 
     await notify(ad.vendor.userId, "AD_APPROVED", { adId });
     await recordAudit({
@@ -297,16 +303,16 @@ export async function rejectAdAction(_prev: unknown, formData: FormData): Promis
     const check = canReject(ad);
     if (!check.ok) throw new ConflictError(check.message ?? "This ad can't be turned down.");
 
-    const moved = await prisma.advertisement.updateMany({
-      where: { id: ad.id, status: { in: ["PENDING", "APPROVED"] } },
-      data: {
+    const movedCount = await updateAdsWhere(
+      { id: ad.id, status: { in: ["PENDING", "APPROVED"] } },
+      {
         status: "REJECTED",
         rejectedReason: parsed.data.reason,
         reviewedBy: session.userId,
         reviewedAt: new Date(),
       },
-    });
-    if (moved.count === 0) throw new ConflictError("Someone just reviewed this ad.");
+    );
+    if (movedCount === 0) throw new ConflictError("Someone just reviewed this ad.");
 
     await notify(ad.vendor.userId, "AD_REJECTED", { adId: ad.id });
     await recordAudit({

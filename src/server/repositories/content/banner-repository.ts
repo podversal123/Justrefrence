@@ -1,6 +1,7 @@
 import "server-only";
 import { unstable_cache } from "next/cache";
 import { prisma } from "@/server/lib/prisma";
+import type { Prisma } from "@/generated/prisma/client";
 import type { BannerPlacement } from "@/generated/prisma/enums";
 
 export const BANNERS_TAG = "banners";
@@ -89,4 +90,16 @@ export async function moveBanner(id: string, direction: "UP" | "DOWN"): Promise<
     }),
   );
   return true;
+}
+
+export function createBanner(data: Prisma.BannerUncheckedCreateInput) {
+  return prisma.banner.create({ data, select: { id: true } });
+}
+
+export function updateBanner(id: string, data: Prisma.BannerUncheckedUpdateInput) {
+  return prisma.banner.update({ where: { id }, data });
+}
+
+export function deleteBanner(id: string) {
+  return prisma.banner.delete({ where: { id } });
 }

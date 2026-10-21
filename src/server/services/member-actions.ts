@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
-import { prisma } from "@/server/lib/prisma";
+import { findUserById } from "@/server/repositories/identity/user-repository";
 import {
   addressSchema,
   bankAccountSchema,
@@ -129,7 +129,7 @@ export async function resendRegistrationOtpAction(
     };
   }
 
-  const user = await prisma.user.findUnique({ where: { id: userId } });
+  const user = await findUserById(userId);
   if (!user || user.status !== "PENDING_VERIFICATION") {
     return {
       success: false,

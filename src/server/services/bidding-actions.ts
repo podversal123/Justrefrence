@@ -13,7 +13,6 @@ import {
 } from "@/server/domain/bidding/bidding-service";
 import { formatRequirementNumber } from "@/server/domain/bidding/rules";
 import { createNotification } from "@/server/repositories/identity/notification-repository";
-import { prisma } from "@/server/lib/prisma";
 import {
   awardBidSchema,
   bidActionSchema,
@@ -25,6 +24,7 @@ import {
 import { recordAudit } from "@/server/domain/audit/record";
 import { AuthorizationError, RateLimitedError } from "@/server/lib/errors";
 import { getMemberProfileByUserId } from "@/server/repositories/identity/member-repository";
+import { getVendorApprovalStatus } from "@/server/repositories/vendor-repository";
 import { bidRateLimiter } from "@/server/lib/rate-limit";
 import { failureFrom, requestId, validationFailure } from "@/server/lib/action-helpers";
 import type { ApiResult } from "@/lib/api-response";
@@ -124,10 +124,7 @@ export async function placeBidAction(
   try {
     if (!session.vendorProfileId)
       throw new AuthorizationError("You need an approved vendor profile to bid.");
-    const vendor = await prisma.vendorProfile.findUnique({
-      where: { id: session.vendorProfileId },
-      select: { approvalStatus: true },
-    });
+    const vendor = await getVendorApprovalStatus(session.vendorProfileId);
     if (vendor?.approvalStatus !== "APPROVED") {
       throw new AuthorizationError("Your vendor account must be approved before you can bid.");
     }

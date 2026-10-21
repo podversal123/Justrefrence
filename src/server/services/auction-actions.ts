@@ -12,7 +12,7 @@ import {
 import { notifyAuction, notifyAuctionEnding } from "@/server/domain/auction/notify";
 import { formatAuctionNumber } from "@/server/domain/auction/rules";
 import { getMemberProfileByUserId } from "@/server/repositories/identity/member-repository";
-import { prisma } from "@/server/lib/prisma";
+import { getVendorApprovalStatus } from "@/server/repositories/vendor-repository";
 import {
   auctionIdSchema,
   cancelAuctionSchema,
@@ -75,10 +75,7 @@ export async function createAuctionAction(
   try {
     if (!session.vendorProfileId)
       throw new AuthorizationError("You need an approved vendor profile to start an auction.");
-    const vendor = await prisma.vendorProfile.findUnique({
-      where: { id: session.vendorProfileId },
-      select: { approvalStatus: true },
-    });
+    const vendor = await getVendorApprovalStatus(session.vendorProfileId);
     if (vendor?.approvalStatus !== "APPROVED") {
       throw new AuthorizationError("Your vendor account must be approved before you can sell.");
     }

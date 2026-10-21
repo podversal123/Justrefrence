@@ -6,7 +6,7 @@ import {
   isStaffAccount,
   setUserStatus,
 } from "@/server/repositories/identity/member-admin-repository";
-import { prisma } from "@/server/lib/prisma";
+import { findMemberModerationState } from "@/server/repositories/identity/user-repository";
 import { memberModerationSchema } from "@/lib/schemas/support";
 import { recordAudit } from "@/server/domain/audit/record";
 import {
@@ -53,10 +53,7 @@ export async function moderateMemberAction(
       throw new AuthorizationError("Staff accounts are managed under Admins, not Members.");
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { status: true, emailVerifiedAt: true, memberProfile: { select: { id: true } } },
-    });
+    const user = await findMemberModerationState(userId);
     if (!user?.memberProfile) throw new NotFoundError("Member not found.");
 
     // Unblocking restores the state the account would otherwise be in: an

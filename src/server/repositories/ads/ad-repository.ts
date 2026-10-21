@@ -100,3 +100,26 @@ export async function userIdsWithPermission(code: string, limit = 50): Promise<s
   });
   return users.map((u) => u.id);
 }
+
+export function createAd(data: Prisma.AdvertisementUncheckedCreateInput) {
+  return prisma.advertisement.create({
+    data,
+    select: { id: true, vendor: { select: { businessName: true } } },
+  });
+}
+
+/**
+ * A guarded update: changes only the rows that still match `where` (for example "still pending") and returns
+ * how many did, so two reviewers clicking at once cannot both win.
+ */
+export async function updateAdsWhere(
+  where: Prisma.AdvertisementWhereInput,
+  data: Prisma.AdvertisementUncheckedUpdateManyInput,
+): Promise<number> {
+  const result = await prisma.advertisement.updateMany({ where, data });
+  return result.count;
+}
+
+export function deleteAd(id: string) {
+  return prisma.advertisement.delete({ where: { id } });
+}

@@ -19,8 +19,10 @@ import {
   adminCreditWalletSchema,
 } from "@/lib/schemas/wallet";
 import { recordAudit } from "@/server/domain/audit/record";
-import { prisma } from "@/server/lib/prisma";
-import { getWalletByOwner } from "@/server/repositories/wallet/wallet-repository";
+import {
+  findRecentManualTopup,
+  getWalletByOwner,
+} from "@/server/repositories/wallet/wallet-repository";
 import { scopedIdempotencyKey } from "@/server/lib/idempotency";
 import { AppError, ConflictError, ValidationError } from "@/server/lib/errors";
 import { createNotification } from "@/server/repositories/identity/notification-repository";
@@ -321,16 +323,11 @@ export async function adminCreditWalletAction(
     // duplicate click/retry, even if the client minted a fresh key.
     const targetWallet = await getWalletByOwner(parsed.data.userId);
     if (targetWallet) {
-      const duplicate = await prisma.walletTransaction.findFirst({
-        where: {
-          walletId: targetWallet.id,
-          type: "TOPUP",
-          referenceType: "MANUAL_TOPUP",
-          referenceId: session.userId,
-          amount,
-          createdAt: { gte: new Date(Date.now() - DUPLICATE_TOPUP_WINDOW_MS) },
-        },
-        select: { id: true },
+      const duplicate = await findRecentManualTopup({
+        walletId: targetWallet.id,
+        adminUserId: session.userId,
+        amount,
+        since: new Date(Date.now() - DUPLICATE_TOPUP_WINDOW_MS),
       });
       if (duplicate) {
         throw new ConflictError(
