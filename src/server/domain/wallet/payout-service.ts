@@ -1,6 +1,12 @@
 // No "server-only" import — orchestration layer, same rationale as
 // wallet-service.ts.
-import { prisma } from "@/server/lib/prisma";
+import { runInTransaction } from "@/server/repositories/transaction";
+import {
+  findLedgerEntryByKey,
+  findPayoutRequestRow,
+  findRecentOpenPayout,
+  loadPayoutApplicant,
+} from "@/server/repositories/wallet/payout-lookups";
 import {
   createPayoutRequest,
   createPayoutTransaction,
@@ -49,11 +55,7 @@ export async function requestPayout(userId: string, input: RequestPayoutInput) {
     throw new ValidationError("Enter a payout amount greater than zero.");
   }
 
-  const [user, memberProfile, bankAccount] = await Promise.all([
-    prisma.user.findUniqueOrThrow({ where: { id: userId } }),
-    prisma.memberProfile.findUnique({ where: { userId } }),
-    prisma.bankAccount.findFirst({ where: { id: input.bankAccountId, userId, deletedAt: null } }),
-  ]);
+  const [user, memberProfile, bankAccount] = await loadPayoutApplicant(userId, input.bankAccountId);
 
   if (!bankAccount) {
     throw new NotFoundError("That bank account was not found on your profile.");
@@ -77,9 +79,9 @@ export async function requestPayout(userId: string, input: RequestPayoutInput) {
   // payout request id it was recorded for (see recordLedgerEntry() call
   // below) — return that same request instead of creating a new one.
   const replay = async () => {
-    const existing = await prisma.walletTransaction.findUnique({ where: { idempotencyKey } });
+    const existing = await findLedgerEntryByKey(idempotencyKey);
     if (!existing) return null;
-    const request = await prisma.payoutRequest.findUnique({ where: { id: existing.referenceId } });
+    const request = await findPayoutRequestRow(existing.referenceId);
     if (!request) return null;
     if (
       request.walletId !== wallet.id ||
@@ -96,15 +98,11 @@ export async function requestPayout(userId: string, input: RequestPayoutInput) {
   const replayed = await replay();
   if (replayed) return replayed;
 
-  const recentDuplicate = await prisma.payoutRequest.findFirst({
-    where: {
-      walletId: wallet.id,
-      bankAccountId: input.bankAccountId,
-      amount: input.amount,
-      status: "REQUESTED",
-      createdAt: { gte: new Date(Date.now() - DUPLICATE_PAYOUT_WINDOW_MS) },
-    },
-    select: { id: true },
+  const recentDuplicate = await findRecentOpenPayout({
+    walletId: wallet.id,
+    bankAccountId: input.bankAccountId,
+    amount: input.amount,
+    since: new Date(Date.now() - DUPLICATE_PAYOUT_WINDOW_MS),
   });
   if (recentDuplicate) {
     throw new ConflictError(
@@ -114,7 +112,7 @@ export async function requestPayout(userId: string, input: RequestPayoutInput) {
 
   let result;
   try {
-    result = await prisma.$transaction(async (tx) => {
+    result = await runInTransaction(async (tx) => {
       const request = await createPayoutRequest(tx, {
         walletId: wallet.id,
         bankAccountId: input.bankAccountId,
@@ -189,7 +187,7 @@ export async function transitionPayoutStatus(
   if (toStatus === "REJECTED") {
     if (!extra?.rejectedReason)
       throw new ValidationError("A reason is required when rejecting a payout.");
-    await prisma.$transaction(async (tx) => {
+    await runInTransaction(async (tx) => {
       await releaseHoldToBalance(tx, request.walletId, request.amount);
       await updatePayoutStatus(tx, payoutRequestId, "REJECTED", {
         rejectedReason: extra.rejectedReason,
@@ -198,7 +196,7 @@ export async function transitionPayoutStatus(
   } else if (toStatus === "PAID") {
     const tdsDeducted = extra?.tdsDeducted ?? 0n;
     const netAmount = request.amount - tdsDeducted;
-    await prisma.$transaction(async (tx) => {
+    await runInTransaction(async (tx) => {
       await releaseHoldAsPaid(tx, request.walletId, request.amount);
       await createPayoutTransaction(tx, {
         payoutRequestId,
@@ -212,7 +210,7 @@ export async function transitionPayoutStatus(
     });
   } else {
     const approvedBy = toStatus === "APPROVED" ? actor.userId : request.approvedBy;
-    await prisma.$transaction((tx) =>
+    await runInTransaction((tx) =>
       updatePayoutStatus(tx, payoutRequestId, toStatus, { approvedBy }),
     );
   }

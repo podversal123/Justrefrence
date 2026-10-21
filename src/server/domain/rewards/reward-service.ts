@@ -1,7 +1,18 @@
 // No "server-only" import — orchestration layer, same rationale as wallet-service.ts
 // (its prisma and repository dependencies carry the guard).
 import { randomBytes, randomUUID } from "node:crypto";
-import { prisma } from "@/server/lib/prisma";
+import { runInTransaction, type Tx } from "@/server/repositories/transaction";
+import {
+  createRewardCoupon,
+  createRewardRow,
+  findMemberForReward,
+  findRecentDuplicateReward,
+  findRewardByKey,
+  findRewardGivenState,
+  getGivenRewardSummary,
+  isCouponCodeTaken,
+  markOtherRewardGiven,
+} from "@/server/repositories/rewards/reward-write-repository";
 import { creditWallet, getOrCreateWallet } from "@/server/repositories/wallet/wallet-repository";
 import { isUniqueConstraintViolation, scopedIdempotencyKey } from "@/server/lib/idempotency";
 import {
@@ -42,10 +53,7 @@ export async function grantReward(
   const replay = await findByKey(idempotencyKey);
   if (replay) return replay;
 
-  const member = await prisma.memberProfile.findUnique({
-    where: { userId: input.userId },
-    select: { id: true, user: { select: { status: true } } },
-  });
+  const member = await findMemberForReward(input.userId);
   if (!member) throw new NotFoundError("That member was not found.");
   if (member.user.status !== "ACTIVE") {
     throw new ValidationError("Rewards can only be paid to an active member.");
@@ -53,16 +61,13 @@ export async function grantReward(
 
   // Key-independent double-submit guard: the same admin paying the same member the same reward
   // within the window is almost certainly a duplicate click, even if the client minted a fresh key.
-  const duplicate = await prisma.reward.findFirst({
-    where: {
-      memberId: member.id,
-      grantedBy,
-      type: input.type,
-      title: input.title,
-      amount: input.type === "CASH" ? input.amount : null,
-      createdAt: { gte: new Date(Date.now() - DUPLICATE_WINDOW_MS) },
-    },
-    select: { id: true },
+  const duplicate = await findRecentDuplicateReward({
+    memberId: member.id,
+    grantedBy,
+    type: input.type,
+    title: input.title,
+    amount: input.type === "CASH" ? input.amount : null,
+    since: new Date(Date.now() - DUPLICATE_WINDOW_MS),
   });
   if (duplicate) {
     throw new ConflictError(
@@ -74,7 +79,7 @@ export async function grantReward(
   const rewardId = randomUUID();
 
   try {
-    return await prisma.$transaction(async (tx) => {
+    return await runInTransaction(async (tx) => {
       let walletTransactionId: string | null = null;
       let couponId: string | null = null;
       let couponCode: string | null = null;
@@ -94,41 +99,35 @@ export async function grantReward(
 
       if (input.type === "COUPON") {
         couponCode = await uniqueCouponCode(tx);
-        const coupon = await tx.coupon.create({
-          data: {
-            code: couponCode,
-            discountType: input.discountType,
-            valuePercentBps: input.valuePercentBps,
-            valueFixed: input.valueFixed,
-            minOrderAmount: input.minOrderAmount,
-            startsAt: new Date(),
-            expiresAt: input.expiresAt,
-            usageLimit: 1,
-            usageLimitPerMember: 1,
-            assignedMemberId: member.id,
-            createdBy: grantedBy,
-          },
-          select: { id: true },
+        const coupon = await createRewardCoupon(tx, {
+          code: couponCode,
+          discountType: input.discountType,
+          valuePercentBps: input.valuePercentBps,
+          valueFixed: input.valueFixed,
+          minOrderAmount: input.minOrderAmount,
+          startsAt: new Date(),
+          expiresAt: input.expiresAt,
+          usageLimit: 1,
+          usageLimitPerMember: 1,
+          assignedMemberId: member.id,
+          createdBy: grantedBy,
         });
         couponId = coupon.id;
       }
 
-      const reward = await tx.reward.create({
-        data: {
-          id: rewardId,
-          memberId: member.id,
-          type: input.type,
-          title: input.title,
-          reason: input.reason,
-          amount: input.type === "CASH" ? input.amount : null,
-          couponId,
-          walletTransactionId,
-          expiresAt: input.type === "OTHER" ? input.expiresAt : null,
-          usedAt: input.type === "CASH" ? new Date() : null,
-          grantedBy,
-          idempotencyKey,
-        },
-        select: { id: true, rewardSeq: true },
+      const reward = await createRewardRow(tx, {
+        id: rewardId,
+        memberId: member.id,
+        type: input.type,
+        title: input.title,
+        reason: input.reason,
+        amount: input.type === "CASH" ? input.amount : null,
+        couponId,
+        walletTransactionId,
+        expiresAt: input.type === "OTHER" ? input.expiresAt : null,
+        usedAt: input.type === "CASH" ? new Date() : null,
+        grantedBy,
+        idempotencyKey,
       });
 
       return {
@@ -153,17 +152,7 @@ export async function grantReward(
 }
 
 async function findByKey(idempotencyKey: string): Promise<GrantRewardResult | null> {
-  const existing = await prisma.reward.findUnique({
-    where: { idempotencyKey },
-    select: {
-      id: true,
-      rewardSeq: true,
-      type: true,
-      title: true,
-      member: { select: { userId: true } },
-      coupon: { select: { code: true } },
-    },
-  });
+  const existing = await findRewardByKey(idempotencyKey);
   if (!existing) return null;
   return {
     rewardId: existing.id,
@@ -177,36 +166,22 @@ async function findByKey(idempotencyKey: string): Promise<GrantRewardResult | nu
 }
 
 /** Generates a coupon code nobody has used. A collision among 32^8 codes is vanishingly rare, but is checked anyway. */
-async function uniqueCouponCode(tx: Pick<typeof prisma, "coupon">): Promise<string> {
+async function uniqueCouponCode(tx: Tx): Promise<string> {
   for (let attempt = 0; attempt < 5; attempt += 1) {
     const code = rewardCouponCode(randomBytes(8));
-    if (!(await tx.coupon.findUnique({ where: { code }, select: { id: true } }))) return code;
+    if (!(await isCouponCodeTaken(tx, code))) return code;
   }
   throw new ConflictError("Could not create a coupon code. Please try again.");
 }
 
 /** An admin marks a gift or benefit as handed over. Atomic, so a repeat click is a no-op error. */
 export async function markRewardGiven(rewardId: string, now = new Date()) {
-  const moved = await prisma.reward.updateMany({
-    where: {
-      id: rewardId,
-      type: "OTHER",
-      usedAt: null,
-      OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
-    },
-    data: { usedAt: now },
-  });
-  if (moved.count === 0) {
-    const reward = await prisma.reward.findUnique({
-      where: { id: rewardId },
-      select: { type: true, expiresAt: true, usedAt: true },
-    });
+  const moved = await markOtherRewardGiven(rewardId, now);
+  if (moved === 0) {
+    const reward = await findRewardGivenState(rewardId);
     if (!reward) throw new NotFoundError("Reward not found.");
     const check = canMarkGiven({ ...reward, coupon: null }, now);
     throw new ConflictError(check.message ?? "This reward can't be marked as given.");
   }
-  return prisma.reward.findUniqueOrThrow({
-    where: { id: rewardId },
-    select: { id: true, rewardSeq: true, title: true, member: { select: { userId: true } } },
-  });
+  return getGivenRewardSummary(rewardId);
 }

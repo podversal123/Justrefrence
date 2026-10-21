@@ -1,6 +1,18 @@
 // No "server-only" import — orchestration layer, same rationale as reward-service.ts
 // (its prisma and repository dependencies carry the guard).
-import { prisma } from "@/server/lib/prisma";
+import {
+  createSmsDraft,
+  deleteSmsDraft,
+  findActiveMemberByEmail,
+  findActiveMembersForSms,
+  findMemberByEmailForDraft,
+  findSmsBatchStatuses,
+  markAllSmsReadForUser,
+  markSmsReadForUser,
+  queueSmsBatch,
+  updateSmsDraft,
+  updateSmsMessage,
+} from "@/server/repositories/sms/sms-write-repository";
 import { sendSms } from "@/server/lib/notification-providers";
 import { isUniqueConstraintViolation, scopedIdempotencyKey } from "@/server/lib/idempotency";
 import { createNotifications } from "@/server/repositories/identity/notification-repository";
@@ -38,14 +50,7 @@ export async function resolveRecipients(
   recipientEmail?: string,
 ): Promise<ResolvedRecipients> {
   if (audience === "SINGLE") {
-    const user = await prisma.user.findFirst({
-      where: {
-        email: { equals: recipientEmail ?? "", mode: "insensitive" },
-        status: "ACTIVE",
-        memberProfile: { isNot: null },
-      },
-      select: { id: true, phone: true },
-    });
+    const user = await findActiveMemberByEmail(recipientEmail ?? "");
     if (!user) throw new NotFoundError("No active member has that email address.");
     if (!isSendablePhone(user.phone)) {
       throw new ValidationError("That member has no mobile number on their profile.");
@@ -53,15 +58,7 @@ export async function resolveRecipients(
     return { recipients: [{ userId: user.id, phone: user.phone.trim() }], skippedNoPhone: 0 };
   }
 
-  const users = await prisma.user.findMany({
-    where: {
-      status: "ACTIVE",
-      memberProfile: { isNot: null },
-      ...(audience === "VENDORS" ? { vendorProfile: { approvalStatus: "APPROVED" } } : {}),
-    },
-    select: { id: true, phone: true },
-    take: MAX_BULK_RECIPIENTS + 1,
-  });
+  const users = await findActiveMembersForSms(audience === "VENDORS", MAX_BULK_RECIPIENTS + 1);
   if (users.length > MAX_BULK_RECIPIENTS) {
     throw new ValidationError(
       `This would go to more than ${MAX_BULK_RECIPIENTS} people. Send to a smaller group.`,
@@ -109,24 +106,12 @@ export async function sendSmsBatch(
 
   let rows: { id: string; recipientUserId: string; phone: string }[];
   try {
-    rows = await prisma.$transaction(async (tx) => {
-      await tx.smsMessage.createMany({
-        data: recipients.map((r) => ({
-          batchKey,
-          senderId,
-          recipientUserId: r.userId,
-          phone: r.phone,
-          body: input.body,
-          status: "QUEUED" as const,
-        })),
-      });
-      if (input.draftId) {
-        await tx.smsDraft.deleteMany({ where: { id: input.draftId, authorId: senderId } });
-      }
-      return tx.smsMessage.findMany({
-        where: { batchKey },
-        select: { id: true, recipientUserId: true, phone: true },
-      });
+    rows = await queueSmsBatch({
+      batchKey,
+      senderId,
+      recipients,
+      body: input.body,
+      draftId: input.draftId,
     });
   } catch (error) {
     // Concurrent same-key submission: the unique index rejected the loser before anything was sent.
@@ -151,14 +136,11 @@ export async function sendSmsBatch(
             vars: { message: input.body },
           });
           if (isRecordedOnly(result.provider)) recordedOnly = true;
-          await prisma.smsMessage.update({
-            where: { id: row.id },
-            data: {
-              status: result.delivered ? "SENT" : "FAILED",
-              provider: result.provider,
-              failureReason: result.delivered ? null : "The SMS service did not accept it.",
-              sentAt: result.delivered ? new Date() : null,
-            },
+          await updateSmsMessage(row.id, {
+            status: result.delivered ? "SENT" : "FAILED",
+            provider: result.provider,
+            failureReason: result.delivered ? null : "The SMS service did not accept it.",
+            sentAt: result.delivered ? new Date() : null,
           });
           if (result.delivered) delivered.push(row.recipientUserId);
           else failed += 1;
@@ -167,12 +149,10 @@ export async function sendSmsBatch(
           logger.error("sms_send_failed", {
             message: error instanceof Error ? error.message : String(error),
           });
-          await prisma.smsMessage
-            .update({
-              where: { id: row.id },
-              data: { status: "FAILED", failureReason: "Could not reach the SMS service." },
-            })
-            .catch(() => undefined);
+          await updateSmsMessage(row.id, {
+            status: "FAILED",
+            failureReason: "Could not reach the SMS service.",
+          }).catch(() => undefined);
         }
       }),
     );
@@ -195,10 +175,7 @@ export async function sendSmsBatch(
 
 /** The outcome of a send that already happened, rebuilt from its rows (used for replays). */
 async function summaryFor(batchKey: string): Promise<SendSummary | null> {
-  const rows = await prisma.smsMessage.findMany({
-    where: { batchKey },
-    select: { status: true, provider: true },
-  });
+  const rows = await findSmsBatchStatuses(batchKey);
   if (rows.length === 0) return null;
   return {
     total: rows.length,
@@ -216,13 +193,7 @@ export async function saveDraft(
 ) {
   let recipientUserId: string | null = null;
   if (input.audience === "SINGLE") {
-    const user = await prisma.user.findFirst({
-      where: {
-        email: { equals: input.recipientEmail ?? "", mode: "insensitive" },
-        memberProfile: { isNot: null },
-      },
-      select: { id: true },
-    });
+    const user = await findMemberByEmailForDraft(input.recipientEmail ?? "");
     if (!user) throw new NotFoundError("No member has that email address.");
     recipientUserId = user.id;
   }
@@ -230,32 +201,23 @@ export async function saveDraft(
 
   if (input.draftId) {
     // Ownership is part of the update's own condition, so another admin's draft can't be overwritten.
-    const moved = await prisma.smsDraft.updateMany({
-      where: { id: input.draftId, authorId },
-      data,
-    });
-    if (moved.count === 0) throw new NotFoundError("Draft not found.");
+    const moved = await updateSmsDraft(input.draftId, authorId, data);
+    if (moved === 0) throw new NotFoundError("Draft not found.");
     return { id: input.draftId };
   }
-  return prisma.smsDraft.create({ data: { ...data, authorId }, select: { id: true } });
+  return createSmsDraft({ ...data, authorId });
 }
 
 export async function deleteDraft(authorId: string, draftId: string) {
-  const result = await prisma.smsDraft.deleteMany({ where: { id: draftId, authorId } });
-  if (result.count === 0) throw new NotFoundError("Draft not found.");
+  const removed = await deleteSmsDraft(draftId, authorId);
+  if (removed === 0) throw new NotFoundError("Draft not found.");
 }
 
 /** A member opens one of their messages. Scoped to the owner, so no one can mark another's. */
 export async function markSmsRead(userId: string, smsId: string) {
-  await prisma.smsMessage.updateMany({
-    where: { id: smsId, recipientUserId: userId, readAt: null },
-    data: { readAt: new Date() },
-  });
+  await markSmsReadForUser(userId, smsId);
 }
 
 export async function markAllSmsRead(userId: string) {
-  await prisma.smsMessage.updateMany({
-    where: { recipientUserId: userId, readAt: null, status: "SENT" },
-    data: { readAt: new Date() },
-  });
+  await markAllSmsReadForUser(userId);
 }
