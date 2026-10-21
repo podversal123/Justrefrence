@@ -183,31 +183,14 @@ async function main() {
   const rewards: GrantRewardInput[] = [
     {
       userId: member.id,
-      title: "Diwali bonus",
-      reason: "Top referrer of the month",
-      idempotencyKey: randomUUID(),
-      type: "CASH",
-      amount: rupees(250),
-    },
-    {
-      userId: member.id,
       title: "Welcome 10% off",
       reason: "Thanks for your first order",
       idempotencyKey: randomUUID(),
-      type: "COUPON",
       discountType: "PERCENT",
       valuePercentBps: 1000,
       valueFixed: null,
       minOrderAmount: 0n,
       expiresAt: days(30),
-    },
-    {
-      userId: member.id,
-      title: "Branded jacket",
-      reason: "Goodwill gift from the team",
-      idempotencyKey: randomUUID(),
-      type: "OTHER",
-      expiresAt: null,
     },
   ];
   for (const reward of rewards) {

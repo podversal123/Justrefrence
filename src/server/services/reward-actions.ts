@@ -2,9 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { authorize } from "@/server/auth/authorize";
-import { grantReward, markRewardGiven } from "@/server/domain/rewards/reward-service";
+import { grantReward } from "@/server/domain/rewards/reward-service";
 import { createNotification } from "@/server/repositories/identity/notification-repository";
-import { grantRewardSchema, markRewardGivenSchema } from "@/lib/schemas/reward";
+import { grantRewardSchema } from "@/lib/schemas/reward";
 import { recordAudit } from "@/server/domain/audit/record";
 import { failureFrom, requestId, validationFailure } from "@/server/lib/action-helpers";
 import type { ApiResult } from "@/lib/api-response";
@@ -15,7 +15,6 @@ function revalidateRewards() {
   revalidatePath("/admin/rewards");
   revalidatePath("/rewards");
   revalidatePath("/coupons");
-  revalidatePath("/wallet");
 }
 
 /** Notifications are a courtesy: a failure to deliver one never undoes the reward it describes. */
@@ -26,7 +25,7 @@ async function notify(userId: string, type: string, payload: Record<string, stri
 export async function grantRewardAction(
   _prev: unknown,
   formData: FormData,
-): Promise<ApiResult<{ rewardId: string; number: string; couponCode: string | null }>> {
+): Promise<ApiResult<{ rewardId: string; number: string; couponCode: string }>> {
   let session;
   try {
     session = await authorize("reward:grant");
@@ -36,11 +35,9 @@ export async function grantRewardAction(
 
   const parsed = grantRewardSchema.safeParse({
     userId: formData.get("userId"),
-    type: formData.get("type"),
     title: formData.get("title"),
     reason: formData.get("reason"),
     idempotencyKey: formData.get("idempotencyKey"),
-    amountRupees: formData.get("amountRupees") || undefined,
     discountType: formData.get("discountType") || undefined,
     percent: formData.get("percent") || undefined,
     fixedRupees: formData.get("fixedRupees") || undefined,
@@ -64,10 +61,9 @@ export async function grantRewardAction(
         after: {
           number: result.number,
           memberUserId: result.userId,
-          type: result.type,
+          type: "COUPON",
           title: result.title,
           reason: parsed.data.reason,
-          amount: parsed.data.type === "CASH" ? parsed.data.amount.toString() : null,
           couponCode: result.couponCode,
         },
       });
@@ -80,34 +76,5 @@ export async function grantRewardAction(
     };
   } catch (error) {
     return failureFrom(TAG, error, "Could not pay that reward.");
-  }
-}
-
-export async function markRewardGivenAction(
-  _prev: unknown,
-  formData: FormData,
-): Promise<ApiResult<null>> {
-  let session;
-  try {
-    session = await authorize("reward:grant");
-  } catch (error) {
-    return failureFrom(TAG, error, "You don't have permission to update rewards.");
-  }
-  const parsed = markRewardGivenSchema.safeParse({ rewardId: formData.get("rewardId") });
-  if (!parsed.success) return validationFailure("Invalid request.", parsed.error);
-
-  try {
-    const reward = await markRewardGiven(parsed.data.rewardId);
-    await recordAudit({
-      actorId: session.userId,
-      action: "REWARD_MARKED_GIVEN",
-      entityType: "rewards",
-      entityId: reward.id,
-      after: { memberUserId: reward.member.userId, title: reward.title },
-    });
-    revalidateRewards();
-    return { success: true, data: null, meta: { requestId: requestId() } };
-  } catch (error) {
-    return failureFrom(TAG, error, "Could not update that reward.");
   }
 }

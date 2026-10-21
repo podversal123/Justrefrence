@@ -1,8 +1,8 @@
 /**
  * End-to-end verification of paying rewards against the REAL database (not
- * mocks): cash through the wallet ledger (idempotency, concurrency, duplicate
- * guard), a coupon that only its member can use (list, checkout, one use),
- * gifts marked as given, and the derived Used / Unused / Expired status.
+ * mocks): a reward is a coupon only its member can use (idempotency, concurrency,
+ * duplicate guard, list, checkout, one use) and the derived Used / Unused /
+ * Expired status.
  * Creates throwaway users (marker domain @rewardtest.justreference.test) and
  * deletes them again, even on failure.
  *
@@ -10,7 +10,7 @@
  */
 import { randomUUID } from "node:crypto";
 import { prisma } from "@/server/lib/prisma";
-import { grantReward, markRewardGiven } from "@/server/domain/rewards/reward-service";
+import { grantReward } from "@/server/domain/rewards/reward-service";
 import { rewardStatus } from "@/server/domain/rewards/rules";
 import { placeOrder } from "@/server/domain/commerce/checkout-service";
 import {
@@ -145,62 +145,65 @@ async function main() {
   const blocked = await makeUser("blocked", { status: "BLOCKED" });
   const outsider = await makeUser("outsider", { member: false });
 
-  const cash = (
-    userId: string,
-    amount: bigint,
-    key = randomUUID(),
-    title = "Bonus",
-  ): GrantRewardInput => ({
+  const plain = (userId: string, key = randomUUID(), title = "Bonus"): GrantRewardInput => ({
     userId,
     title,
     reason: "Verification run",
     idempotencyKey: key,
-    type: "CASH",
-    amount,
+    discountType: "FIXED",
+    valuePercentBps: null,
+    valueFixed: rupees(200),
+    minOrderAmount: 0n,
+    expiresAt: days(10),
   });
 
-  // ---------------------------------------------------------------- cash
+  // ---------------------------------------------------------------- paying
   const key1 = randomUUID();
-  const first = await grantReward(admin.user.id, cash(ann.user.id, rupees(500), key1));
-  check("cash reward is created", first.created && first.type === "CASH");
-  const wallet = await prisma.wallet.findUniqueOrThrow({ where: { ownerUserId: ann.user.id } });
+  const first = await grantReward(admin.user.id, plain(ann.user.id, key1));
   check(
-    "the wallet is credited with the exact amount",
-    wallet.balance === rupees(500),
-    wallet.balance,
+    "a reward is created with a RWD- coupon code",
+    first.created && /^RWD-/.test(first.couponCode),
   );
-  const txn = await prisma.walletTransaction.findFirstOrThrow({ where: { walletId: wallet.id } });
+  const firstRow = await prisma.reward.findUniqueOrThrow({ where: { id: first.rewardId } });
   check(
-    "the ledger row is a REWARD credit pointing at the reward",
-    txn.type === "REWARD" && txn.referenceId === first.rewardId,
+    "it is stored as a coupon reward, not cash",
+    firstRow.type === "COUPON" && firstRow.amount === null,
   );
-  check("the ledger row records the balance after", txn.balanceAfter === rupees(500));
+  check(
+    "no wallet credit is made for a reward",
+    (await prisma.wallet.findUnique({ where: { ownerUserId: ann.user.id } })) === null ||
+      (await prisma.walletTransaction.count({
+        where: { wallet: { ownerUserId: ann.user.id } },
+      })) === 0,
+  );
 
-  const replay = await grantReward(admin.user.id, cash(ann.user.id, rupees(500), key1));
+  const replay = await grantReward(admin.user.id, plain(ann.user.id, key1));
   check(
-    "the same submission is a replay, not a second payment",
-    !replay.created && replay.rewardId === first.rewardId,
+    "the same submission is a replay, not a second reward",
+    !replay.created && replay.rewardId === first.rewardId && replay.couponCode === first.couponCode,
   );
-  const afterReplay = await prisma.wallet.findUniqueOrThrow({ where: { id: wallet.id } });
-  check("a replay does not credit twice", afterReplay.balance === rupees(500));
+  check(
+    "a replay creates no second coupon",
+    (await prisma.reward.count({ where: { member: { userId: ann.user.id }, title: "Bonus" } })) ===
+      1,
+  );
 
   await expectReject(
     "an identical reward with a fresh key right away is refused",
-    () => grantReward(admin.user.id, cash(ann.user.id, rupees(500))),
+    () => grantReward(admin.user.id, plain(ann.user.id)),
     "identical",
   );
 
   const burstKey = randomUUID();
   const burst = await Promise.allSettled([
-    grantReward(admin.user.id, cash(raj.user.id, rupees(100), burstKey, "Burst")),
-    grantReward(admin.user.id, cash(raj.user.id, rupees(100), burstKey, "Burst")),
-    grantReward(admin.user.id, cash(raj.user.id, rupees(100), burstKey, "Burst")),
+    grantReward(admin.user.id, plain(raj.user.id, burstKey, "Burst")),
+    grantReward(admin.user.id, plain(raj.user.id, burstKey, "Burst")),
+    grantReward(admin.user.id, plain(raj.user.id, burstKey, "Burst")),
   ]);
-  const rajWallet = await prisma.wallet.findUniqueOrThrow({ where: { ownerUserId: raj.user.id } });
   check(
-    "three simultaneous identical submissions credit exactly once",
-    rajWallet.balance === rupees(100),
-    rajWallet.balance,
+    "three simultaneous identical submissions create exactly one reward",
+    (await prisma.reward.count({ where: { member: { userId: raj.user.id }, title: "Burst" } })) ===
+      1,
   );
   check(
     "and every one of them is answered with the same reward",
@@ -211,20 +214,15 @@ async function main() {
     ).size === 1,
     burst.map((r) => r.status),
   );
-  check(
-    "only one reward row exists for that submission",
-    (await prisma.reward.count({ where: { member: { userId: raj.user.id }, title: "Burst" } })) ===
-      1,
-  );
 
   await expectReject(
     "a blocked member can't be paid",
-    () => grantReward(admin.user.id, cash(blocked.user.id, rupees(10))),
+    () => grantReward(admin.user.id, plain(blocked.user.id)),
     "active",
   );
   await expectReject(
     "a non-member can't be paid",
-    () => grantReward(admin.user.id, cash(outsider.user.id, rupees(10))),
+    () => grantReward(admin.user.id, plain(outsider.user.id)),
     "not found",
   );
 
@@ -235,7 +233,6 @@ async function main() {
     title: "Welcome gift",
     reason: "First order",
     idempotencyKey: couponKey,
-    type: "COUPON",
     discountType: "FIXED",
     valuePercentBps: null,
     valueFixed: rupees(200),
@@ -350,75 +347,27 @@ async function main() {
     rewardStatus(toRewardFacts(expiringRow), new Date()) === "EXPIRED",
   );
 
-  // ---------------------------------------------------------------- gift
-  const gift = await grantReward(admin.user.id, {
-    userId: raj.user.id,
-    title: "Branded jacket",
-    reason: "Top performer",
-    idempotencyKey: randomUUID(),
-    type: "OTHER",
-    expiresAt: days(5),
-  });
-  const giftBefore = (await listRewardsForMember(raj.profileId!)).find(
-    (r) => r.id === gift.rewardId,
-  )!;
-  check("a new gift is Unused", rewardStatus(toRewardFacts(giftBefore), new Date()) === "UNUSED");
-  await markRewardGiven(gift.rewardId);
-  const giftAfter = (await listRewardsForMember(raj.profileId!)).find(
-    (r) => r.id === gift.rewardId,
-  )!;
-  check(
-    "marking it given makes it Used",
-    rewardStatus(toRewardFacts(giftAfter), new Date()) === "USED",
-  );
-  await expectReject(
-    "it can't be marked given twice",
-    () => markRewardGiven(gift.rewardId),
-    "already",
-  );
-
-  const stale = await grantReward(admin.user.id, {
-    userId: raj.user.id,
-    title: "Old voucher",
-    reason: "Expired test",
-    idempotencyKey: randomUUID(),
-    type: "OTHER",
-    expiresAt: days(5),
-  });
-  await prisma.reward.update({
-    where: { id: stale.rewardId },
-    data: { expiresAt: new Date(Date.now() - 1000) },
-  });
-  await expectReject(
-    "an expired gift can't be marked given",
-    () => markRewardGiven(stale.rewardId),
-    "expired",
-  );
-  await expectReject("cash can't be marked given by hand", () => markRewardGiven(first.rewardId));
-
   // ---------------------------------------------------------------- admin list filters
   const now = new Date();
   const used = await listRewardsForAdmin({ status: "USED", search: "ann" }, now);
   check(
     "the admin list filters by status and member",
-    used.items.length >= 2 &&
+    used.items.length >= 1 &&
       used.items.every((r) => rewardStatus(toRewardFacts(r), now) === "USED"),
   );
   const expired = await listRewardsForAdmin({ status: "EXPIRED" }, now);
   const expiredIds = new Set(expired.items.map((r) => r.id));
-  check(
-    "the Expired filter finds the lapsed coupon and gift",
-    expiredIds.has(expiring.rewardId) && expiredIds.has(stale.rewardId),
-  );
+  check("the Expired filter finds the lapsed coupon", expiredIds.has(expiring.rewardId));
   const unused = await listRewardsForAdmin({ status: "UNUSED" }, now);
   check(
     "the Unused filter does not include used or expired ones",
-    !unused.items.some((r) =>
-      [gift.rewardId, expiring.rewardId, stale.rewardId, coupon.rewardId].includes(r.id),
-    ),
+    !unused.items.some((r) => [expiring.rewardId, coupon.rewardId].includes(r.id)),
   );
-  const byType = await listRewardsForAdmin({ type: "COUPON", search: first.number }, now);
-  check("search by reward number and type narrows correctly", byType.items.length === 0);
+  const byFirst = await listRewardsForAdmin({ search: first.number }, now);
+  check(
+    "search by reward number narrows to that reward",
+    byFirst.items.length === 1 && byFirst.items[0]?.id === first.rewardId,
+  );
   const bySeq = await listRewardsForAdmin({ search: coupon.number }, now);
   check(
     "search by reward number finds it",

@@ -66,9 +66,7 @@ export default async function MyRewardsPage() {
       <div>
         <h1>{t("Rewards")}</h1>
         <p className="text-muted-foreground">
-          {t(
-            "Bonuses and rewards paid to you. Cash is added to your wallet, and coupons can be used at checkout.",
-          )}
+          {t("Coupons paid to you as rewards. Use them at checkout.")}
         </p>
       </div>
 

@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  canMarkGiven,
   formatRewardNumber,
   rewardCouponCode,
   rewardStatus,
@@ -57,28 +56,6 @@ describe("rewardStatus", () => {
     expect(rewardStatus({ ...base, expiresAt: day(-1), usedAt: null }, NOW)).toBe("EXPIRED");
     // Given before it expired stays used.
     expect(rewardStatus({ ...base, expiresAt: day(-1), usedAt: day(-2) }, NOW)).toBe("USED");
-  });
-});
-
-describe("canMarkGiven", () => {
-  const gift = (over: Partial<RewardFacts> = {}): RewardFacts => ({
-    type: "OTHER",
-    expiresAt: null,
-    usedAt: null,
-    coupon: null,
-    ...over,
-  });
-
-  it("allows an unused gift", () => {
-    expect(canMarkGiven(gift(), NOW).ok).toBe(true);
-  });
-  it("refuses a gift already given or expired", () => {
-    expect(canMarkGiven(gift({ usedAt: NOW }), NOW).ok).toBe(false);
-    expect(canMarkGiven(gift({ expiresAt: day(-1) }), NOW).ok).toBe(false);
-  });
-  it("refuses cash and coupons", () => {
-    expect(canMarkGiven(gift({ type: "CASH" }), NOW).ok).toBe(false);
-    expect(canMarkGiven(gift({ type: "COUPON", coupon: coupon() }), NOW).ok).toBe(false);
   });
 });
 

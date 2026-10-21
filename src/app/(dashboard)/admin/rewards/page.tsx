@@ -9,15 +9,13 @@ import {
   listRewardsForAdmin,
   toRewardFacts,
 } from "@/server/repositories/rewards/reward-repository";
-import { REWARD_TYPES } from "@/lib/schemas/reward";
 import {
   REWARD_STATUS_LABEL,
-  REWARD_TYPE_LABEL,
   formatRewardNumber,
   rewardStatus,
   type RewardStatus,
 } from "@/server/domain/rewards/rules";
-import { RewardStatusBadge, RewardTypeLabel } from "@/components/rewards/reward-badges";
+import { RewardStatusBadge } from "@/components/rewards/reward-badges";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
@@ -35,7 +33,6 @@ import { describeDiscount } from "@/lib/coupon-display";
 import { formatPaise } from "@/lib/money";
 import { cn } from "@/lib/utils";
 import { PayRewardForm } from "./pay-reward-form";
-import { MarkGivenButton } from "./mark-given-button";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
@@ -58,17 +55,16 @@ export default async function AdminRewardsPage({
 
   const params = await searchParams;
   const email = params["email"]?.trim() ?? "";
-  const type = REWARD_TYPES.find((t) => t === params["type"]);
   const status = STATUSES.find((s) => s === params["status"]);
   const search = params["search"]?.slice(0, 100);
 
   const member = canPay && email ? await findMemberByEmail(email) : null;
   const now = new Date();
   const { items, nextCursor } = await listRewardsForAdmin(
-    { type, status, search, cursor: params["cursor"] },
+    { status, search, cursor: params["cursor"] },
     now,
   );
-  const filtered = Boolean(type || status || search);
+  const filtered = Boolean(status || search);
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-8">
@@ -145,19 +141,6 @@ export default async function AdminRewardsPage({
             />
           </div>
           <div className="space-y-1">
-            <label htmlFor="rl-type" className="text-xs font-medium">
-              {t("Type")}
-            </label>
-            <NativeSelect id="rl-type" name="type" defaultValue={type ?? ""} className="w-44">
-              <option value="">{t("All types")}</option>
-              {REWARD_TYPES.map((type_) => (
-                <option key={type_} value={type_}>
-                  {t(REWARD_TYPE_LABEL[type_])}
-                </option>
-              ))}
-            </NativeSelect>
-          </div>
-          <div className="space-y-1">
             <label htmlFor="rl-status" className="text-xs font-medium">
               {t("Status")}
             </label>
@@ -198,11 +181,9 @@ export default async function AdminRewardsPage({
                 <TableRow>
                   <TableHead>{t("Reward")}</TableHead>
                   <TableHead>{t("Member")}</TableHead>
-                  <TableHead>{t("Type")}</TableHead>
                   <TableHead>{t("Value")}</TableHead>
                   <TableHead>{t("Status")}</TableHead>
                   <TableHead>{t("Paid on")}</TableHead>
-                  <TableHead className="w-0" />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -222,9 +203,6 @@ export default async function AdminRewardsPage({
                           {reward.member.user.fullName ?? reward.member.user.email}
                         </p>
                         <p className="text-muted-foreground text-xs">{reward.member.memberId}</p>
-                      </TableCell>
-                      <TableCell>
-                        <RewardTypeLabel type={reward.type} />
                       </TableCell>
                       <TableCell className="text-sm">
                         {reward.type === "CASH" && reward.amount !== null ? (
@@ -250,11 +228,6 @@ export default async function AdminRewardsPage({
                         <RewardStatusBadge status={state} />
                       </TableCell>
                       <TableCell className="text-sm">{formatDate(reward.createdAt)}</TableCell>
-                      <TableCell>
-                        {canPay && reward.type === "OTHER" && state === "UNUSED" ? (
-                          <MarkGivenButton rewardId={reward.id} title={reward.title} />
-                        ) : null}
-                      </TableCell>
                     </TableRow>
                   );
                 })}

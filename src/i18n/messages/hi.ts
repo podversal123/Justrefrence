@@ -122,7 +122,6 @@ export const HI_MESSAGES: Messages = {
   "Add banner": "बैनर जोड़ें",
   "Add image": "फ़ोटो जोड़ें",
   "Add to cart": "कार्ट में डालें",
-  "Added to the member's wallet right away.": "सदस्य के वॉलेट में तुरंत जुड़ जाता है।",
   "Added to your cart.": "आपके कार्ट में जोड़ दिया गया।",
   "Adding…": "जोड़ा जा रहा है…",
   "Address line 1": "पता पंक्ति 1",
@@ -302,8 +301,10 @@ export const HI_MESSAGES: Messages = {
   "Block this member?": "इस सदस्य को ब्लॉक करें?",
   Blocked: "रोका गया",
   Blog: "ब्लॉग",
-  "Bonuses and rewards paid to you. Cash is added to your wallet, and coupons can be used at checkout.":
-    "आपको दिए गए बोनस और इनाम। नकद राशि आपके वॉलेट में जुड़ती है, और कूपन चेकआउट पर इस्तेमाल हो सकते हैं।",
+  "The coupon can be used only by this member, once, at checkout.":
+    "कूपन सिर्फ़ यही सदस्य, एक बार, चेकआउट पर इस्तेमाल कर सकता है।",
+  "Coupons paid to you as rewards. Use them at checkout.":
+    "इनाम के तौर पर आपको दिए गए कूपन। इन्हें चेकआउट पर इस्तेमाल करें।",
   Branch: "शाखा",
   "Branch address": "शाखा का पता",
   Breadcrumb: "ब्रेडक्रम्ब",
@@ -356,9 +357,6 @@ export const HI_MESSAGES: Messages = {
   "Cart subtotal": "कार्ट का उप-योग",
   "Cart, {count} items": "कार्ट, {count} आइटम",
   Cash: "नकद",
-  "Cash (added to wallet)": "नकद (वॉलेट में जुड़ेगा)",
-  "Cash goes straight to their wallet. A coupon can be used only by this member. A gift is handed over by you, and you mark it as given.":
-    'नकद सीधे उनके वॉलेट में जाता है। कूपन सिर्फ़ यही सदस्य इस्तेमाल कर सकता है। उपहार आप खुद देते हैं और फिर उसे "दिया गया" चिह्नित करते हैं।',
   Catalog: "कैटलॉग",
   "Catalog Manager": "कैटलॉग मैनेजर",
   Categories: "श्रेणियाँ",
@@ -508,7 +506,6 @@ export const HI_MESSAGES: Messages = {
   "Could not create that coupon.": "वह कूपन नहीं बन सका।",
   "Could not create the admin account.": "एडमिन खाता नहीं बन सका।",
   "Could not create the vendor account.": "विक्रेता खाता नहीं बन सका।",
-  "Could not credit the wallet.": "वॉलेट में राशि जमा नहीं हो सकी।",
   "Could not delete the ad.": "विज्ञापन हटाया नहीं जा सका।",
   "Could not delete the banner.": "बैनर हटाया नहीं जा सका।",
   "Could not delete the draft.": "ड्राफ़्ट हटाया नहीं जा सका।",
@@ -549,7 +546,6 @@ export const HI_MESSAGES: Messages = {
   "Could not update that feedback.": "वह फ़ीडबैक अपडेट नहीं हो सका।",
   "Could not update that member.": "वह सदस्य अपडेट नहीं हो सका।",
   "Could not update that message.": "वह संदेश अपडेट नहीं हो सका।",
-  "Could not update that reward.": "वह इनाम अपडेट नहीं हो सका।",
   "Could not update that vendor.": "वह विक्रेता अपडेट नहीं हो सका।",
   "Could not update the post.": "पोस्ट अपडेट नहीं हो सकी।",
   "Could not update the ticket.": "टिकट अपडेट नहीं हो सका।",
@@ -570,7 +566,6 @@ export const HI_MESSAGES: Messages = {
   "Couldn't load your wallet": "आपका वॉलेट नहीं खुल सका",
   Country: "देश",
   Coupon: "कूपन",
-  "Coupon (only for this member)": "कूपन (सिर्फ़ इस सदस्य के लिए)",
   "Coupon code": "कूपन कोड",
   "Coupon created": "कूपन बन गया",
   "Coupon deactivated": "कूपन बंद कर दिया गया",
@@ -863,7 +858,6 @@ export const HI_MESSAGES: Messages = {
   "Get in touch with {name}.": "{name} से संपर्क करें।",
   "Get the solution of financial problems.": "आर्थिक समस्याओं का समाधान पाएँ।",
   "Gift or benefit": "उपहार या लाभ",
-  "Gift or benefit (handed over by you)": "उपहार या लाभ (आप खुद देते हैं)",
   "Give a short reason for cancelling.": "रद्द करने का एक छोटा कारण दें।",
   "Give a short reason for this change.": "इस बदलाव का एक छोटा कारण दें।",
   "Give a short reason the vendor can act on.": "एक छोटा कारण दें जिस पर विक्रेता कुछ कर सके।",
@@ -984,7 +978,6 @@ export const HI_MESSAGES: Messages = {
   "Larger engagements scoped and delivered by vendors.":
     "विक्रेताओं द्वारा तय और पूरे किए जाने वाले बड़े प्रोजेक्ट।",
   "Last 30 days": "पिछले 30 दिन",
-  "Last day to claim (optional)": "दावा करने की आखिरी तारीख (वैकल्पिक)",
   "Last day to use": "इस्तेमाल की आखिरी तारीख",
   "Last edited": "आखिरी बार बदला",
   "Last reviewed by {name}": "आखिरी समीक्षा {name} ने की",
@@ -1024,7 +1017,6 @@ export const HI_MESSAGES: Messages = {
     "सिर्फ़ हाथ से मिलान के लिए। यह उस जमा को दर्ज करता है जिसके हो चुके होने का आप दावा करते हैं (जैसे बैंक ट्रांसफ़र)। इसकी जाँच किसी पेमेंट गेटवे से नहीं होती।",
   "Mark all as read": "सभी को पढ़ा हुआ चिह्नित करें",
   "Mark all read": "सभी को पढ़ा हुआ चिह्नित करें",
-  "Mark as given": '"दिया गया" चिह्नित करें',
   "Mark as read": "पढ़ा हुआ चिह्नित करें",
   "Mark failed": "असफल चिह्नित करें",
   "Mark in progress": "प्रगति में चिह्नित करें",
@@ -1034,11 +1026,9 @@ export const HI_MESSAGES: Messages = {
   "Mark resolved": "सुलझा हुआ चिह्नित करें",
   "Mark reviewed": "समीक्षित चिह्नित करें",
   "Mark this payout as paid": "इस पेआउट को चुकाया हुआ चिह्नित करें",
-  "Mark this reward as given?": 'इस इनाम को "दिया गया" चिह्नित करें?',
   "Mark this ticket in progress?": "इस टिकट को प्रगति में चिह्नित करें?",
   "Mark this ticket resolved?": "इस टिकट को सुलझा हुआ चिह्नित करें?",
   "Mark this transfer as failed?": "इस ट्रांसफ़र को असफल चिह्नित करें?",
-  "Marked as given": '"दिया गया" चिह्नित हुआ',
   Marketplace: "मार्केटप्लेस",
   "Marking…": "चिह्नित हो रहा है…",
   "Matching categories": "मेल खाती श्रेणियाँ",
@@ -1274,8 +1264,6 @@ export const HI_MESSAGES: Messages = {
   "Only a Super Admin can take down a published announcement.":
     "प्रकाशित घोषणा को सिर्फ़ सुपर एडमिन हटा सकता है।",
   "Only a captured payment can be refunded.": "सिर्फ़ मिल चुके भुगतान का रिफ़ंड हो सकता है।",
-  "Only a gift or benefit is marked as given by hand.":
-    'सिर्फ़ उपहार या लाभ को हाथ से "दिया गया" चिह्नित किया जाता है।',
   "Only an approved ad can be paused or resumed.":
     "सिर्फ़ मंज़ूर विज्ञापन को रोका या फिर चालू किया जा सकता है।",
   "Only an approved, active listing can be put up for auction.":
@@ -1514,17 +1502,21 @@ export const HI_MESSAGES: Messages = {
     "नई का मतलब अभी चालू है। पुरानी का मतलब पूरी हो चुकी, रद्द या रिफंड हो चुकी।",
   "My cart": "मेरी कार्ट",
   "Paying from the wallet": "वॉलेट से भुगतान",
-  "Lets a member pay for an order with the balance in their wallet (earnings, rewards and top-ups), instead of paying online.": "सदस्य को ऑनलाइन भुगतान करने की जगह अपने वॉलेट के बैलेंस (कमाई, इनाम और टॉप-अप) से ऑर्डर का भुगतान करने देता है।",
+  "Lets a member pay for an order with the balance in their wallet (earnings, rewards and top-ups), instead of paying online.":
+    "सदस्य को ऑनलाइन भुगतान करने की जगह अपने वॉलेट के बैलेंस (कमाई, इनाम और टॉप-अप) से ऑर्डर का भुगतान करने देता है।",
   "Allow paying for orders from the wallet": "वॉलेट से ऑर्डर का भुगतान करने दें",
-  "Paid from your wallet. Redirecting to your orders…": "आपके वॉलेट से भुगतान हो गया। आपके ऑर्डर पर ले जा रहे हैं…",
+  "Paid from your wallet. Redirecting to your orders…":
+    "आपके वॉलेट से भुगतान हो गया। आपके ऑर्डर पर ले जा रहे हैं…",
   "Amount to pay": "भुगतान की राशि",
   "Pay from wallet": "वॉलेट से भुगतान करें",
   "Pay online instead": "इसकी जगह ऑनलाइन भुगतान करें",
   "Order payment": "ऑर्डर का भुगतान",
   "Payment for an order": "ऑर्डर का भुगतान",
   "Paying from the wallet is switched off right now.": "वॉलेट से भुगतान अभी बंद है।",
-  "Your wallet balance is not enough for this order.": "इस ऑर्डर के लिए आपके वॉलेट में बैलेंस कम है।",
-  "This request id was already used for a different checkout.": "यह अनुरोध किसी दूसरे चेकआउट के लिए पहले इस्तेमाल हो चुका है।",
+  "Your wallet balance is not enough for this order.":
+    "इस ऑर्डर के लिए आपके वॉलेट में बैलेंस कम है।",
+  "This request id was already used for a different checkout.":
+    "यह अनुरोध किसी दूसरे चेकआउट के लिए पहले इस्तेमाल हो चुका है।",
   "This payment can no longer be completed.": "यह भुगतान अब पूरा नहीं हो सकता।",
   Résumés: "रिज़्यूमे",
   "Résumés sent through the Careers page. Only staff with this access can open them.":
@@ -1796,7 +1788,6 @@ export const HI_MESSAGES: Messages = {
   Revoked: "रद्द किया गया",
   Reward: "इनाम",
   "Reward name": "इनाम का नाम",
-  "Reward not found.": "इनाम नहीं मिला।",
   "Reward paid": "इनाम दे दिया गया",
   Rewards: "इनाम",
   "Rewards are paid to member accounts.": "इनाम सदस्य खातों में दिए जाते हैं।",
@@ -2174,8 +2165,6 @@ export const HI_MESSAGES: Messages = {
   "This requirement has already been awarded.": "यह आवश्यकता किसी को दी जा चुकी है।",
   "This requirement has been awarded.": "यह आवश्यकता किसी को दी जा चुकी है।",
   "This requirement was cancelled.": "यह आवश्यकता रद्द कर दी गई थी।",
-  "This reward has expired.": "यह इनाम खत्म हो चुका है।",
-  "This reward is already marked as given.": 'यह इनाम पहले से "दिया गया" चिह्नित है।',
   "This ticket is already closed.": "यह टिकट पहले से बंद है।",
   "This ticket is closed.": "यह टिकट बंद है।",
   "This ticket is closed. If the problem is back, open a new ticket from the Support page.":
@@ -2243,7 +2232,6 @@ export const HI_MESSAGES: Messages = {
   "Turn down": "अस्वीकार करें",
   "Turn down this ad?": "यह विज्ञापन अस्वीकार करें?",
   Type: "प्रकार",
-  "Type of reward": "इनाम का प्रकार",
   "Unavailable right now": "अभी उपलब्ध नहीं",
   Unit: "यूनिट",
   Unpublish: "प्रकाशन हटाएँ",
@@ -2517,7 +2505,6 @@ export const HI_MESSAGES: Messages = {
   "You don't have permission to send SMS.": "आपको SMS भेजने की अनुमति नहीं है।",
   "You don't have permission to send announcements.": "आपको घोषणाएँ भेजने की अनुमति नहीं है।",
   "You don't have permission to send messages.": "आपको संदेश भेजने की अनुमति नहीं है।",
-  "You don't have permission to update rewards.": "आपको इनाम अपडेट करने की अनुमति नहीं है।",
   "You don't have permission to write blog posts.": "आपको ब्लॉग पोस्ट लिखने की अनुमति नहीं है।",
   "You have a new SMS from the team": "टीम की ओर से आपके लिए नया SMS है",
   "You have a new message": "आपके लिए नया संदेश है",

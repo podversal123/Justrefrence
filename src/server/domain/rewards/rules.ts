@@ -57,17 +57,6 @@ export function formatRewardNumber(seq: bigint): string {
   return `RWD-${seq.toString().padStart(6, "0")}`;
 }
 
-/** An OTHER reward can be marked as handed over only while it is still unused. */
-export function canMarkGiven(reward: RewardFacts, now: Date): { ok: boolean; message?: string } {
-  if (reward.type !== "OTHER") {
-    return { ok: false, message: "Only a gift or benefit is marked as given by hand." };
-  }
-  const status = rewardStatus(reward, now);
-  if (status === "USED") return { ok: false, message: "This reward is already marked as given." };
-  if (status === "EXPIRED") return { ok: false, message: "This reward has expired." };
-  return { ok: true };
-}
-
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no 0/O/1/I, easy to read out loud
 
 /** `RWD-` plus 8 characters, from caller-supplied random bytes so tests are deterministic. */

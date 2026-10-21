@@ -47,9 +47,9 @@ Status legend: 🔴 **blocking** (money/legal — cannot go live without it) · 
 - **Status:** 🔴 blocking — this is the exact scenario the brief's testing checklist calls out ("refund after commission already withdrawn").
 
 ### REQUIREMENT_DECISION_REQUIRED — Q-08: Rewards/bonus/coupon triggers
-- **Unclear:** What triggers each reward type, which types (cash/coupon/other), expiry rules, checkout usability.
-- **Recommended implementation:** `rewards`/`reward_transactions` schema present; no automatic reward trigger is implemented in Phase 1 beyond manual admin grant + coupon redemption, which already works (per Live Testing doc §15).
-- **Status:** 🟡.
+- **Decided by the client:** a reward is a coupon. The member receives it and uses it to buy. Cash and gift rewards are not paid any more (old rows stay visible).
+- **Implementation:** an admin pays a reward by creating a coupon for one member (single use, last day to use); it is used at checkout. No automatic trigger.
+- **Status:** 🟢.
 
 ## B. Wallet & payouts
 
@@ -261,7 +261,6 @@ Status legend: 🔴 **blocking** (money/legal — cannot go live without it) · 
 | Investment income / withdrawn-balance reports (Q-14) | Possible deposit/return-rule legal exposure | Client explanation + lawyer's written view |
 | Member-to-member wallet transfers (Q-10) | Possible RBI prepaid-instrument approval requirement | Legal-advised decision |
 | Member-generated e-pins (Q-15) | Moves money; rules undefined | Rules for who may create them and at what price |
-| Automatic (rule-triggered) rewards (Q-08) | Triggers/types undefined | Trigger, type, and expiry rules |
 | Payment for an accepted bid (Q-25) | Built with a working default: the poster pays the winning price as a normal order (see Q-25 above) | Confirm it, or tell us what to change (advance and balance, milestones, disputes) |
 | Full SMS inbox/compose/drafts (Q-34) | Needs a real SMS provider connected first, and scope confirmation | Confirmation this feature (vs. a read-only log) is wanted |
 | Payment-gateway-initiated refunds | Refunds are recorded in the ledger; gateway call-out is a Phase 4-equivalent (production-build) task, not a Phase 0/1 gap | No client input needed — scheduled, not blocked |

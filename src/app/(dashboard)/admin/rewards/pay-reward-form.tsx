@@ -11,12 +11,9 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { toast } from "@/components/ui/toast";
 import { grantRewardAction } from "@/server/services/reward-actions";
 
-type RewardKind = "CASH" | "COUPON" | "OTHER";
-
 export function PayRewardForm({ userId, memberLabel }: { userId: string; memberLabel: string }) {
   const t = useT();
   const router = useRouter();
-  const [type, setType] = useState<RewardKind>("CASH");
   const [discountType, setDiscountType] = useState<"PERCENT" | "FIXED">("PERCENT");
   // A fresh key per form, replaced after each success, so a double click can't pay twice.
   const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
@@ -30,9 +27,7 @@ export function PayRewardForm({ userId, memberLabel }: { userId: string; memberL
           {t("Pay a reward to {member}", { member: memberLabel })}
         </h2>
         <p className="text-muted-foreground text-sm">
-          {t(
-            "Cash goes straight to their wallet. A coupon can be used only by this member. A gift is handed over by you, and you mark it as given.",
-          )}
+          {t("The coupon can be used only by this member, once, at checkout.")}
         </p>
       </div>
 
@@ -52,19 +47,7 @@ export function PayRewardForm({ userId, memberLabel }: { userId: string; memberL
             <input type="hidden" name="userId" value={userId} />
             <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <FormField htmlFor="rw-type" label={t("Type of reward")} error={errors["type"]}>
-                <NativeSelect
-                  id="rw-type"
-                  name="type"
-                  value={type}
-                  onChange={(event) => setType(event.target.value as RewardKind)}
-                >
-                  <option value="CASH">{t("Cash (added to wallet)")}</option>
-                  <option value="COUPON">{t("Coupon (only for this member)")}</option>
-                  <option value="OTHER">{t("Gift or benefit (handed over by you)")}</option>
-                </NativeSelect>
-              </FormField>
+            <div>
               <FormField
                 htmlFor="rw-title"
                 label={t("Reward name")}
@@ -81,78 +64,51 @@ export function PayRewardForm({ userId, memberLabel }: { userId: string; memberL
               </FormField>
             </div>
 
-            {type === "CASH" ? (
+            <fieldset className="grid gap-4 rounded-lg border p-4 sm:grid-cols-2">
+              <legend className="px-1 text-sm font-medium">{t("Coupon details")}</legend>
               <FormField
-                htmlFor="rw-amount"
-                label={t("Amount (₹)")}
-                hint={t("Added to the member's wallet right away.")}
-                error={errors["amountRupees"]}
+                htmlFor="rw-dtype"
+                label={t("Discount type")}
+                error={errors["discountType"]}
               >
-                <Input id="rw-amount" name="amountRupees" inputMode="decimal" required />
+                <NativeSelect
+                  id="rw-dtype"
+                  name="discountType"
+                  value={discountType}
+                  onChange={(event) => setDiscountType(event.target.value as "PERCENT" | "FIXED")}
+                >
+                  <option value="PERCENT">{t("Percentage off")}</option>
+                  <option value="FIXED">{t("Fixed amount off")}</option>
+                </NativeSelect>
               </FormField>
-            ) : null}
-
-            {type === "COUPON" ? (
-              <fieldset className="grid gap-4 rounded-lg border p-4 sm:grid-cols-2">
-                <legend className="px-1 text-sm font-medium">{t("Coupon details")}</legend>
-                <FormField
-                  htmlFor="rw-dtype"
-                  label={t("Discount type")}
-                  error={errors["discountType"]}
-                >
-                  <NativeSelect
-                    id="rw-dtype"
-                    name="discountType"
-                    value={discountType}
-                    onChange={(event) => setDiscountType(event.target.value as "PERCENT" | "FIXED")}
-                  >
-                    <option value="PERCENT">{t("Percentage off")}</option>
-                    <option value="FIXED">{t("Fixed amount off")}</option>
-                  </NativeSelect>
+              {discountType === "PERCENT" ? (
+                <FormField htmlFor="rw-percent" label={t("Percent off")} error={errors["percent"]}>
+                  <Input id="rw-percent" name="percent" inputMode="decimal" placeholder="10" />
                 </FormField>
-                {discountType === "PERCENT" ? (
-                  <FormField
-                    htmlFor="rw-percent"
-                    label={t("Percent off")}
-                    error={errors["percent"]}
-                  >
-                    <Input id="rw-percent" name="percent" inputMode="decimal" placeholder="10" />
-                  </FormField>
-                ) : (
-                  <FormField
-                    htmlFor="rw-fixed"
-                    label={t("Amount off (₹)")}
-                    error={errors["fixedRupees"]}
-                  >
-                    <Input id="rw-fixed" name="fixedRupees" inputMode="decimal" placeholder="200" />
-                  </FormField>
-                )}
+              ) : (
                 <FormField
-                  htmlFor="rw-min"
-                  label={t("Minimum order (₹), optional")}
-                  error={errors["minOrderRupees"]}
+                  htmlFor="rw-fixed"
+                  label={t("Amount off (₹)")}
+                  error={errors["fixedRupees"]}
                 >
-                  <Input id="rw-min" name="minOrderRupees" inputMode="decimal" />
+                  <Input id="rw-fixed" name="fixedRupees" inputMode="decimal" placeholder="200" />
                 </FormField>
-                <FormField
-                  htmlFor="rw-expiry"
-                  label={t("Last day to use")}
-                  error={errors["expiresOn"]}
-                >
-                  <Input id="rw-expiry" name="expiresOn" type="date" min={today} required />
-                </FormField>
-              </fieldset>
-            ) : null}
-
-            {type === "OTHER" ? (
+              )}
               <FormField
-                htmlFor="rw-gift-expiry"
-                label={t("Last day to claim (optional)")}
+                htmlFor="rw-min"
+                label={t("Minimum order (₹), optional")}
+                error={errors["minOrderRupees"]}
+              >
+                <Input id="rw-min" name="minOrderRupees" inputMode="decimal" />
+              </FormField>
+              <FormField
+                htmlFor="rw-expiry"
+                label={t("Last day to use")}
                 error={errors["expiresOn"]}
               >
-                <Input id="rw-gift-expiry" name="expiresOn" type="date" min={today} />
+                <Input id="rw-expiry" name="expiresOn" type="date" min={today} required />
               </FormField>
-            ) : null}
+            </fieldset>
 
             <FormField
               htmlFor="rw-reason"
