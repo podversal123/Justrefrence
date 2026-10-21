@@ -223,3 +223,25 @@ export async function getAuctionOrderStatus(checkoutId: string) {
   });
   return order;
 }
+
+/** Cheap fingerprint of an auction's live state; see getRequirementLiveVersion for the idea. */
+export async function getAuctionLiveVersion(id: string) {
+  const [auction, bids] = await Promise.all([
+    prisma.auction.findUnique({
+      where: { id },
+      select: { status: true, closesAt: true, updatedAt: true },
+    }),
+    prisma.auctionBid.aggregate({ where: { auctionId: id }, _count: { _all: true } }),
+  ]);
+  if (!auction) return null;
+  return {
+    status: auction.status,
+    closesAt: auction.closesAt,
+    version: [
+      auction.status,
+      auction.closesAt.getTime(),
+      auction.updatedAt.getTime(),
+      bids._count._all,
+    ].join("."),
+  };
+}

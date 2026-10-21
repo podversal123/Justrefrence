@@ -12,6 +12,18 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
+/**
+ * Connections each server instance may hold. Every serverless instance has its own pool, so the
+ * database sees (instances x this number): on Vercel keep it small, and use the database's
+ * transaction pooler (Supabase port 6543) so those few connections are shared instead of each
+ * holding a database connection for the whole session. Override with DB_POOL_MAX.
+ */
+function poolSize(): number {
+  const fromEnv = Number.parseInt(process.env["DB_POOL_MAX"] ?? "", 10);
+  if (Number.isInteger(fromEnv) && fromEnv > 0) return fromEnv;
+  return process.env["VERCEL"] ? 5 : 10;
+}
+
 function createPrismaClient() {
   const connectionString = process.env["DATABASE_URL"];
 
@@ -28,7 +40,7 @@ function createPrismaClient() {
     // tight and surfaced as "Connection terminated due to connection
     // timeout" sections. Bounded pool + generous connect timeout + TCP
     // keepalive so idle pooler-dropped sockets are noticed.
-    max: 10,
+    max: poolSize(),
     connectionTimeoutMillis: 20_000,
     idleTimeoutMillis: 30_000,
     keepAlive: true,

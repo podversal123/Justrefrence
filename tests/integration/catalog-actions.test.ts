@@ -18,7 +18,7 @@ import type { Permission } from "@/server/auth/permissions";
  * case, since that's where the guarantee actually lives.
  */
 
-vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
+vi.mock("next/cache", () => ({ revalidatePath: vi.fn(), revalidateTag: vi.fn() }));
 
 const mockRecordAudit = vi.fn();
 vi.mock("@/server/domain/audit/record", () => ({ recordAudit: mockRecordAudit }));

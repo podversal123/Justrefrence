@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getAuthSession } from "@/server/auth/session";
 import { loadRequirementView, viewerFromSession } from "@/server/domain/bidding/load-view";
 import { toLiveSnapshot } from "@/server/domain/bidding/snapshot";
+import { getRequirementLiveVersion } from "@/server/repositories/bidding/bidding-repository";
 import { NotFoundError, RateLimitedError } from "@/server/lib/errors";
 import { defaultRateLimiter } from "@/server/lib/rate-limit";
 import { jsonSuccess, toApiErrorResponse } from "@/lib/api-response";
@@ -24,11 +25,28 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     const limit = await defaultRateLimiter.consume(`bidlive:${session?.userId ?? ip}`);
     if (!limit.allowed) throw new RateLimitedError("Too many requests. Please slow down.");
 
+    // The browser sends the version it already shows. If nothing changed (and bidding has not just
+    // run out, which needs the full path to close it) answer with one cheap query instead of
+    // loading and ranking every bid.
+    const known = new URL(request.url).searchParams.get("v");
+    const current = await getRequirementLiveVersion(id);
+    if (!current) throw new NotFoundError("Requirement not found.");
+    const expired = current.status === "OPEN" && current.closesAt.getTime() <= Date.now();
+    if (known && known === current.version && !expired) {
+      const same = jsonSuccess({ unchanged: true as const, version: current.version });
+      same.headers.set("Cache-Control", "private, no-store");
+      return same;
+    }
+
     const loaded = await loadRequirementView(id, viewerFromSession(session));
     if (!loaded) throw new NotFoundError("Requirement not found.");
     const { requirement, view, now } = loaded;
 
-    const response = jsonSuccess(toLiveSnapshot(requirement, view, now));
+    const response = jsonSuccess({
+      ...toLiveSnapshot(requirement, view, now),
+      // Taken before the load: a change landing meanwhile only costs one extra refresh next poll.
+      version: current.version,
+    });
     response.headers.set("Cache-Control", "private, no-store");
     return response;
   } catch (error) {

@@ -5,6 +5,7 @@ Full variable catalog for `.env.example` (see repo root). No real values are eve
 | Variable | Scope | Purpose |
 |---|---|---|
 | `DATABASE_URL` | server | Prisma connection string (Supabase Postgres, pooled) |
+| `DB_POOL_MAX` | server | Optional. Database connections each server instance may hold (default 5 on Vercel, 10 elsewhere). Use the Supabase transaction pooler (port 6543) for `DATABASE_URL` in production so many instances share few connections. |
 | `DIRECT_URL` | server | Prisma direct connection (migrations, bypasses connection pooler) |
 | `NEXT_PUBLIC_SUPABASE_URL` | client+server | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | client+server | Supabase anon key (RLS-restricted, safe to expose) |

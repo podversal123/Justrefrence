@@ -15,9 +15,22 @@ export interface LiveSnapshot {
   bidCount: number;
   l1Total: string | null;
   myBid: { totalPrice: string; unitPrice: string; rank: number | null; status: string } | null;
+  /** Fingerprint sent back on the next poll so the server can answer "unchanged" cheaply. */
+  version?: string;
 }
 
 const POLL_MS = 4000;
+
+/**
+ * Far from the deadline nothing moves fast, so poll slowly (each poll is a database read for every
+ * viewer); in the last hour and especially the last minutes keep the quick pace.
+ */
+function pollDelay(closesAt: string): number {
+  const left = new Date(closesAt).getTime() - Date.now();
+  if (left > 60 * 60_000) return 10_000;
+  if (left > 10 * 60_000) return 6_000;
+  return POLL_MS;
+}
 
 /**
  * Live status of one requirement. Polls the live API while bidding is open
@@ -47,16 +60,30 @@ export function LivePanel({
     if (snapshot.status !== "OPEN") return;
     let cancelled = false;
 
+    let timer: number | undefined;
+
     async function poll() {
-      if (document.visibilityState === "hidden") return;
+      if (document.visibilityState !== "hidden") await fetchOnce();
+      if (!cancelled) timer = window.setTimeout(poll, pollDelay(last.current.closesAt));
+    }
+
+    async function fetchOnce() {
       try {
-        const response = await fetch(`/api/bids/${requirementId}/live`, { cache: "no-store" });
-        const body = (await response.json()) as { success: boolean; data?: LiveSnapshot };
+        const known = last.current.version;
+        const response = await fetch(
+          `/api/bids/${requirementId}/live${known ? `?v=${encodeURIComponent(known)}` : ""}`,
+          { cache: "no-store" },
+        );
+        const body = (await response.json()) as {
+          success: boolean;
+          data?: LiveSnapshot | { unchanged: true; version: string };
+        };
         if (cancelled || !response.ok || !body.success || !body.data) {
           if (!cancelled) setStale(true);
           return;
         }
         setStale(false);
+        if ("unchanged" in body.data) return;
         const next = body.data;
         const previous = last.current;
         last.current = next;
@@ -68,10 +95,10 @@ export function LivePanel({
       }
     }
 
-    const timer = window.setInterval(poll, POLL_MS);
+    timer = window.setTimeout(poll, pollDelay(last.current.closesAt));
     return () => {
       cancelled = true;
-      window.clearInterval(timer);
+      window.clearTimeout(timer);
     };
   }, [requirementId, snapshot.status, router]);
 

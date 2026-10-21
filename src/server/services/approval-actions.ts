@@ -1,6 +1,7 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { CATALOG_PUBLIC_TAG } from "@/server/domain/catalog/cache-tags";
 import { authorize } from "@/server/auth/authorize";
 import { reviewChangeSchema } from "@/lib/schemas/approvals";
 import { reviewChange } from "@/server/domain/approvals/change-service";
@@ -42,6 +43,7 @@ export async function reviewChangeAction(
     });
     // The record itself changed too, so every screen that shows it is refreshed.
     revalidatePath("/admin/approvals");
+    revalidateTag(CATALOG_PUBLIC_TAG, { expire: 0 });
     revalidatePath("/admin/members", "layout");
     revalidatePath("/admin/vendors", "layout");
     revalidatePath("/admin/catalog", "layout");

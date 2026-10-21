@@ -1,6 +1,7 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { CATALOG_PUBLIC_TAG } from "@/server/domain/catalog/cache-tags";
 import {
   createListing,
   updateListing,
@@ -60,6 +61,7 @@ function revalidateCatalogPaths(kind: CatalogKind, id?: string) {
   revalidatePath(`/admin/${segment}`);
   revalidatePath(`/vendor/${segment}`);
   revalidatePath(`/${segment}`);
+  revalidateTag(CATALOG_PUBLIC_TAG, { expire: 0 });
   if (id) {
     revalidatePath(`/admin/${segment}/${id}`);
     revalidatePath(`/vendor/${segment}/${id}`);
@@ -267,6 +269,7 @@ export async function removeCategoryAction(
     await removeCategory(kind, id);
     revalidateCatalogPaths(kind);
     revalidatePath(`/admin/catalog/${kind.toLowerCase()}s/categories`);
+    revalidateTag(CATALOG_PUBLIC_TAG, { expire: 0 });
     return { success: true, data: null, meta: { requestId: requestId() } };
   } catch (error) {
     return toFailure(error, "Could not remove the category.");
@@ -285,6 +288,7 @@ export async function removeSubcategoryAction(
     await removeSubcategory(kind, id);
     revalidateCatalogPaths(kind);
     revalidatePath(`/admin/catalog/${kind.toLowerCase()}s/categories`);
+    revalidateTag(CATALOG_PUBLIC_TAG, { expire: 0 });
     return { success: true, data: null, meta: { requestId: requestId() } };
   } catch (error) {
     return toFailure(error, "Could not remove the subcategory.");

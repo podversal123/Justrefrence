@@ -1,6 +1,7 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { CATALOG_PUBLIC_TAG } from "@/server/domain/catalog/cache-tags";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { findRoleRowByCode } from "@/server/repositories/role-write-repository";
@@ -254,6 +255,7 @@ export async function updateVendorStatusAction(
   revalidatePath("/admin/vendors");
   revalidatePath(`/admin/vendors/${vendorProfileId}`);
   revalidatePath("/become-seller");
+  revalidateTag(CATALOG_PUBLIC_TAG, { expire: 0 });
 
   return { success: true, data: null, meta: { requestId: requestId() } };
 }
@@ -415,6 +417,7 @@ export async function updateVendorByAdminAction(
     revalidatePath(`/admin/vendors/${vendorProfileId}`);
     revalidatePath("/admin/vendors");
     revalidatePath("/admin/approvals");
+    revalidateTag(CATALOG_PUBLIC_TAG, { expire: 0 });
     return { success: true, data: { mode: result.mode }, meta: { requestId: requestId() } };
   } catch (error) {
     return failureFrom("admin_update_vendor_failed", error, "Could not update that vendor.");

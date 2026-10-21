@@ -174,3 +174,34 @@ export async function listBidsForVendor(vendorId: string) {
     },
   });
 }
+
+/**
+ * A cheap fingerprint of everything a live snapshot is built from (status, deadline, bid count and
+ * the newest bid change). The polling API compares it with the one the browser already holds and
+ * skips loading and ranking every bid when nothing changed. Null when the requirement is missing.
+ */
+export async function getRequirementLiveVersion(id: string) {
+  const [requirement, bids] = await Promise.all([
+    prisma.requirement.findUnique({
+      where: { id },
+      select: { status: true, closesAt: true, updatedAt: true },
+    }),
+    prisma.bid.aggregate({
+      where: { requirementId: id },
+      _count: { _all: true },
+      _max: { updatedAt: true },
+    }),
+  ]);
+  if (!requirement) return null;
+  return {
+    status: requirement.status,
+    closesAt: requirement.closesAt,
+    version: [
+      requirement.status,
+      requirement.closesAt.getTime(),
+      requirement.updatedAt.getTime(),
+      bids._count._all,
+      bids._max.updatedAt?.getTime() ?? 0,
+    ].join("."),
+  };
+}

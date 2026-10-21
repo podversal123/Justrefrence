@@ -8,7 +8,10 @@ import { categoryVisual } from "@/components/portal/category-visual";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CursorPagination } from "@/components/ui/pagination";
-import { getCatalogRepository } from "@/server/repositories/catalog/registry";
+import {
+  listPublicCatalog,
+  listPublicCategories,
+} from "@/server/repositories/catalog/public-cache";
 import { catalogListQuerySchema } from "@/lib/schemas/catalog";
 import {
   CATALOG_LABELS,
@@ -50,10 +53,9 @@ export async function PublicCatalogList({
   });
   const query = parsed.success ? parsed.data : catalogListQuerySchema.parse({});
 
-  const repo = getCatalogRepository(kind);
   const [{ items, nextCursor }, categories] = await Promise.all([
-    repo.list(query, { publicOnly: true }),
-    repo.listCategories(),
+    listPublicCatalog(kind, query),
+    listPublicCategories(kind),
   ]);
 
   const labels = CATALOG_LABELS[kind];

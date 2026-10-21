@@ -18,6 +18,17 @@ import type { AuctionSnapshot } from "@/server/domain/auction/view";
 const POLL_MS = 4000;
 
 /**
+ * Far from the deadline nothing moves fast, so poll slowly (each poll is a database read for every
+ * viewer); in the last hour and especially the last minutes keep the quick pace.
+ */
+function pollDelay(closesAt: string): number {
+  const left = new Date(closesAt).getTime() - Date.now();
+  if (left > 60 * 60_000) return 10_000;
+  if (left > 10 * 60_000) return 6_000;
+  return POLL_MS;
+}
+
+/**
  * Live status of one auction plus the bid box. Polls the live API while bidding is open and the
  * tab is visible; the server answers with exactly what this viewer may see. When the status,
  * closing time or number of bids changes, the server-rendered parts of the page (the bid history)
@@ -40,6 +51,8 @@ export function AuctionLive({
   const [snapshot, setSnapshot] = useState(initial);
   const [stale, setStale] = useState(false);
   const last = useRef(initial);
+  // Fingerprint of the state last fetched; sent back so the server can answer "unchanged" cheaply.
+  const version = useRef<string | undefined>(undefined);
 
   // A page refresh (after this viewer's own bid, or when the poll sees a change) brings a newer
   // server snapshot; adopt it without remounting, so a half-typed bid is never lost.
@@ -54,16 +67,31 @@ export function AuctionLive({
     if (snapshot.status !== "OPEN") return;
     let cancelled = false;
 
+    let timer: number | undefined;
+
     async function poll() {
-      if (document.visibilityState === "hidden") return;
+      if (document.visibilityState !== "hidden") await fetchOnce();
+      if (!cancelled) timer = window.setTimeout(poll, pollDelay(last.current.closesAt));
+    }
+
+    async function fetchOnce() {
       try {
-        const response = await fetch(`/api/auctions/${auctionId}/live`, { cache: "no-store" });
-        const body = (await response.json()) as { success: boolean; data?: AuctionSnapshot };
+        const known = version.current;
+        const response = await fetch(
+          `/api/auctions/${auctionId}/live${known ? `?v=${encodeURIComponent(known)}` : ""}`,
+          { cache: "no-store" },
+        );
+        const body = (await response.json()) as {
+          success: boolean;
+          data?: (AuctionSnapshot & { version?: string }) | { unchanged: true; version: string };
+        };
         if (cancelled || !response.ok || !body.success || !body.data) {
           if (!cancelled) setStale(true);
           return;
         }
         setStale(false);
+        version.current = body.data.version;
+        if ("unchanged" in body.data) return;
         const next = body.data;
         const previous = last.current;
         last.current = next;
@@ -80,10 +108,10 @@ export function AuctionLive({
       }
     }
 
-    const timer = window.setInterval(poll, POLL_MS);
+    timer = window.setTimeout(poll, pollDelay(last.current.closesAt));
     return () => {
       cancelled = true;
-      window.clearInterval(timer);
+      window.clearTimeout(timer);
     };
   }, [auctionId, snapshot.status, router]);
 
