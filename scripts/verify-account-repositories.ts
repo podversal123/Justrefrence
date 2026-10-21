@@ -40,6 +40,18 @@ import {
   setUserFullName,
 } from "@/server/repositories/identity/user-repository";
 import { getVendorApprovalStatus } from "@/server/repositories/vendor-repository";
+import { createAd, deleteAd, updateAdsWhere } from "@/server/repositories/ads/ad-repository";
+import {
+  createBanner,
+  deleteBanner,
+  updateBanner,
+} from "@/server/repositories/content/banner-repository";
+import {
+  archiveAnnouncement,
+  createAnnouncement,
+  publishPendingAnnouncement,
+} from "@/server/repositories/content/announcement-repository";
+import { insertAuditLog, listRecentAuditEntries } from "@/server/repositories/audit/audit-log-repository";
 
 const DOMAIN = "@repotest.justreference.test";
 const ROLE_CODE = "REPOTEST_ROLE";
@@ -66,6 +78,13 @@ async function cleanup() {
   await prisma.userRole.deleteMany({
     where: { OR: [{ userId: { in: ids } }, ...(role ? [{ roleId: role.id }] : [])] },
   });
+  const vendorIds = (
+    await prisma.vendorProfile.findMany({ where: { userId: { in: ids } }, select: { id: true } })
+  ).map((v) => v.id);
+  await prisma.advertisement.deleteMany({ where: { vendorId: { in: vendorIds } } });
+  await prisma.banner.deleteMany({ where: { headline: { startsWith: "REPOTEST" } } });
+  await prisma.announcement.deleteMany({ where: { title: { startsWith: "REPOTEST" } } });
+  await prisma.auditLog.deleteMany({ where: { actorId: { in: ids } } });
   await prisma.vendorProfile.deleteMany({ where: { userId: { in: ids } } });
   await prisma.notification.deleteMany({ where: { userId: { in: ids } } });
   await prisma.user.deleteMany({ where: { id: { in: ids } } });
@@ -205,6 +224,26 @@ async function main() {
     await updateVendorProfileDetails(app!.id, { businessName: "Repo Traders Ltd", phone: "9000000003", telephone: null, gstin: null, pan: null });
     check("own details can be updated", (await findVendorProfileById(app!.id))?.businessName === "Repo Traders Ltd");
 
+    // ---------------------------------------------------------------- an ad's review life, guarded by status
+    const ad = await createAd({
+      vendorId: app!.id,
+      headline: "REPOTEST ad",
+      subline: null,
+      ctaLabel: "Open",
+      ctaHref: "/products",
+      imagePath: "repotest/none.jpg",
+    });
+    check("an ad is created PENDING and returns its vendor's name", ad.vendor.businessName === "Repo Traders Ltd");
+    const approvals = await Promise.all(
+      [1, 2].map(() =>
+        updateAdsWhere({ id: ad.id, status: "PENDING" }, { status: "APPROVED", reviewedBy: boss.id, reviewedAt: new Date() }),
+      ),
+    );
+    check("two reviewers at once: exactly one approves", approvals.reduce((a, b) => a + b, 0) === 1, approvals);
+    check("a decision for a status the ad no longer has changes nothing", (await updateAdsWhere({ id: ad.id, status: "PENDING" }, { status: "REJECTED" })) === 0);
+    await deleteAd(ad.id);
+    check("an ad can be deleted", (await prisma.advertisement.count({ where: { id: ad.id } })) === 0);
+
     // member applying to become a seller
     const mid = await prisma.user.create({
       data: { id: randomUUID(), email: `member-${randomUUID().slice(0, 8)}${DOMAIN}`, fullName: "Applicant", status: "ACTIVE" },
@@ -217,6 +256,30 @@ async function main() {
     check("a rejection keeps its reason and grants no role", rejected?.approvalStatus === "REJECTED" && rejected.rejectedReason === "Incomplete papers" && (await findActiveRoleGrant(mid.id, vendorRole.id)) === null);
     check("a rejected application can be resubmitted once, clearing the reason", (await resubmitRejectedVendorProfile(created.id, { businessName: "Applicant Co 2", phone: "9000000004", gstin: null })) === 1 && (await findVendorProfileById(created.id))?.rejectedReason === null);
   }
+
+  // ---------------------------------------------------------------- banner, announcement and audit writes
+  const banner = await createBanner({
+    headline: "REPOTEST banner",
+    ctaLabel: "Open",
+    ctaHref: "/products",
+    imagePath: "repotest/none.jpg",
+    createdBy: boss.id,
+  });
+  await updateBanner(banner.id, { isActive: false });
+  check("a banner is created, then hidden", (await prisma.banner.findUnique({ where: { id: banner.id } }))?.isActive === false);
+  await deleteBanner(banner.id);
+  check("and deleted", (await prisma.banner.count({ where: { id: banner.id } })) === 0);
+
+  const notice = await createAnnouncement({ title: "REPOTEST notice", body: "Temporary.", createdBy: boss.id });
+  check("a notice starts PENDING", (await prisma.announcement.findUnique({ where: { id: notice.id } }))?.status === "PENDING");
+  const published = await Promise.all([1, 2].map(() => publishPendingAnnouncement(notice.id, boss.id)));
+  check("two publishers at once: exactly one wins", published.reduce((a, b) => a + b, 0) === 1, published);
+  await archiveAnnouncement(notice.id);
+  check("a notice can be archived", (await prisma.announcement.findUnique({ where: { id: notice.id } }))?.status === "ARCHIVED");
+
+  await insertAuditLog({ actorId: boss.id, action: "REPOTEST_ACTION", entityType: "users", entityId: boss.id });
+  const recent = await listRecentAuditEntries(5);
+  check("an audit entry is written and listed with its actor's email", recent.some((e) => e.action === "REPOTEST_ACTION" && e.actor?.email === boss.email));
 }
 
 main()

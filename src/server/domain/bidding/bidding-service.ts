@@ -1,6 +1,37 @@
 // No "server-only" import — orchestration layer, same rationale as
 // checkout-service.ts (its prisma dependency carries the guard).
-import { prisma } from "@/server/lib/prisma";
+import { runInTransaction } from "@/server/repositories/transaction";
+import {
+  createCheckedOutCart,
+  findCheckoutWithOrders,
+} from "@/server/repositories/commerce/checkout-claim-repository";
+import {
+  acceptBid,
+  cancelOpenRequirement,
+  claimRequirementCheckout,
+  closeRequirementIfExpired,
+  createBid,
+  createBidRevision,
+  extendRequirementClosing,
+  findActiveBidders,
+  findBidForAward,
+  findOtherActiveBids,
+  findRankableBids,
+  findRequirement,
+  findRequirementForClaim,
+  findRequirementOwnerAndStatus,
+  findRequirementType,
+  findVendorBid,
+  findVendorUserId,
+  getRequirementHeader,
+  insertRequirement,
+  lockOpenRequirement,
+  lockOpenTender,
+  markRequirementAwarded,
+  rejectBids,
+  updateBid,
+  withdrawActiveBid,
+} from "@/server/repositories/bidding/bidding-write-repository";
 import {
   canAward,
   checkBid,
@@ -66,19 +97,12 @@ export interface CreateRequirementInput {
 }
 
 export async function createRequirement(buyerId: string, input: CreateRequirementInput) {
-  return prisma.requirement.create({
-    data: { ...input, buyerId },
-    select: { id: true, reqSeq: true },
-  });
+  return insertRequirement({ ...input, buyerId });
 }
 
 /** Persists OPEN -> CLOSED once the deadline has passed. Safe to call any time, any number of times. */
 export async function closeIfExpired(requirementId: string, now = new Date()): Promise<boolean> {
-  const result = await prisma.requirement.updateMany({
-    where: { id: requirementId, status: "OPEN", closesAt: { lte: now } },
-    data: { status: "CLOSED" },
-  });
-  return result.count > 0;
+  return (await closeRequirementIfExpired(requirementId, now)) > 0;
 }
 
 export interface PlaceBidInput {
@@ -107,27 +131,17 @@ export interface PlaceBidResult {
 export async function placeBid(input: PlaceBidInput): Promise<PlaceBidResult> {
   const now = new Date();
 
-  return prisma.$transaction(async (tx) => {
+  return runInTransaction(async (tx) => {
     // Lock + precondition: only an OPEN requirement whose deadline hasn't passed.
-    const locked = await tx.requirement.updateMany({
-      where: { id: input.requirementId, status: "OPEN", closesAt: { gt: now } },
-      data: { updatedAt: now },
-    });
-    const requirement = await tx.requirement.findUnique({ where: { id: input.requirementId } });
+    const lockedCount = await lockOpenRequirement(tx, input.requirementId, now);
+    const requirement = await findRequirement(tx, input.requirementId);
     if (!requirement) throw new NotFoundError("Requirement not found.");
-    if (locked.count === 0) throw new ConflictError("Bidding on this requirement is closed.");
+    if (lockedCount === 0) throw new ConflictError("Bidding on this requirement is closed.");
     if (requirement.buyerId === input.vendorUserId) {
       throw new AuthorizationError("You can't bid on your own requirement.");
     }
 
-    const existing = await tx.bid.findUnique({
-      where: {
-        requirementId_vendorId: {
-          requirementId: input.requirementId,
-          vendorId: input.vendorProfileId,
-        },
-      },
-    });
+    const existing = await findVendorBid(tx, input.requirementId, input.vendorProfileId);
     // A withdrawn tender bid starts fresh; only an ACTIVE bid constrains the new price.
     const live = existing && existing.status === "ACTIVE" ? existing : null;
 
@@ -140,10 +154,7 @@ export async function placeBid(input: PlaceBidInput): Promise<PlaceBidResult> {
     });
     if (violation) throw new ValidationError(violation.message, { code: violation.code });
 
-    const before = await tx.bid.findMany({
-      where: { requirementId: input.requirementId, status: { not: "WITHDRAWN" } },
-      select: { id: true, vendorId: true, totalPrice: true, priceSetAt: true },
-    });
+    const before = await findRankableBids(tx, input.requirementId);
     const previousLeader = rankBids(before)[0] ?? null;
 
     const totalPrice = totalFor(input.unitPrice, requirement.quantity);
@@ -159,33 +170,28 @@ export async function placeBid(input: PlaceBidInput): Promise<PlaceBidResult> {
       priceSetAt,
     };
     const bid = existing
-      ? await tx.bid.update({ where: { id: existing.id }, data })
-      : await tx.bid.create({
-          data: { ...data, requirementId: input.requirementId, vendorId: input.vendorProfileId },
+      ? await updateBid(tx, existing.id, data)
+      : await createBid(tx, {
+          ...data,
+          requirementId: input.requirementId,
+          vendorId: input.vendorProfileId,
         });
 
     // Append-only history: every submit and every revision.
-    await tx.bidRevision.create({
-      data: {
-        bidId: bid.id,
-        unitPrice: input.unitPrice,
-        totalPrice,
-        deliveryDays: input.deliveryDays,
-      },
+    await createBidRevision(tx, {
+      bidId: bid.id,
+      unitPrice: input.unitPrice,
+      totalPrice,
+      deliveryDays: input.deliveryDays,
     });
 
     const closesAt = nextClosesAt(asRuleInput(requirement), now);
     const extended = closesAt.getTime() > requirement.closesAt.getTime();
     if (extended) {
-      await tx.requirement.update({ where: { id: requirement.id }, data: { closesAt } });
+      await extendRequirementClosing(tx, requirement.id, closesAt);
     }
 
-    const after = rankBids(
-      await tx.bid.findMany({
-        where: { requirementId: input.requirementId, status: { not: "WITHDRAWN" } },
-        select: { id: true, vendorId: true, totalPrice: true, priceSetAt: true },
-      }),
-    );
+    const after = rankBids(await findRankableBids(tx, input.requirementId));
     const mine = after.find((entry) => entry.id === bid.id);
 
     let outbidVendorUserId: string | null = null;
@@ -195,10 +201,7 @@ export async function placeBid(input: PlaceBidInput): Promise<PlaceBidResult> {
       previousLeader.vendorId !== input.vendorProfileId &&
       after[0]?.id === bid.id
     ) {
-      const leaderVendor = await tx.vendorProfile.findUnique({
-        where: { id: previousLeader.vendorId },
-        select: { userId: true },
-      });
+      const leaderVendor = await findVendorUserId(tx, previousLeader.vendorId);
       outbidVendorUserId = leaderVendor?.userId ?? null;
     }
 
@@ -219,16 +222,10 @@ export async function placeBid(input: PlaceBidInput): Promise<PlaceBidResult> {
 /** Sealed-tender vendors may withdraw until the deadline; an auction bid is final. */
 export async function withdrawBid(input: { requirementId: string; vendorProfileId: string }) {
   const now = new Date();
-  return prisma.$transaction(async (tx) => {
-    const locked = await tx.requirement.updateMany({
-      where: { id: input.requirementId, status: "OPEN", closesAt: { gt: now }, type: "TENDER" },
-      data: { updatedAt: now },
-    });
-    if (locked.count === 0) {
-      const requirement = await tx.requirement.findUnique({
-        where: { id: input.requirementId },
-        select: { type: true },
-      });
+  return runInTransaction(async (tx) => {
+    const lockedCount = await lockOpenTender(tx, input.requirementId, now);
+    if (lockedCount === 0) {
+      const requirement = await findRequirementType(tx, input.requirementId);
       if (!requirement) throw new NotFoundError("Requirement not found.");
       if (requirement.type === "REVERSE_AUCTION") {
         throw new ConflictError("A bid in a reverse auction can't be withdrawn.");
@@ -237,15 +234,8 @@ export async function withdrawBid(input: { requirementId: string; vendorProfileI
         "Bidding on this requirement is closed, so the bid can't be withdrawn.",
       );
     }
-    const result = await tx.bid.updateMany({
-      where: {
-        requirementId: input.requirementId,
-        vendorId: input.vendorProfileId,
-        status: "ACTIVE",
-      },
-      data: { status: "WITHDRAWN" },
-    });
-    if (result.count === 0)
+    const withdrawn = await withdrawActiveBid(tx, input.requirementId, input.vendorProfileId);
+    if (withdrawn === 0)
       throw new NotFoundError("You don't have an active bid on this requirement.");
   });
 }
@@ -265,44 +255,35 @@ export async function awardBid(input: {
   buyerId: string;
 }): Promise<AwardResult> {
   const now = new Date();
-  return prisma.$transaction(async (tx) => {
-    const requirement = await tx.requirement.findUnique({ where: { id: input.requirementId } });
+  return runInTransaction(async (tx) => {
+    const requirement = await findRequirement(tx, input.requirementId);
     if (!requirement) throw new NotFoundError("Requirement not found.");
     // Ownership is checked here, separately from the permission the action already checked.
     if (requirement.buyerId !== input.buyerId) throw new NotFoundError("Requirement not found.");
 
-    const bid = await tx.bid.findFirst({
-      where: { id: input.bidId, requirementId: input.requirementId },
-      select: { id: true, status: true, totalPrice: true, vendor: { select: { userId: true } } },
-    });
+    const bid = await findBidForAward(tx, input.bidId, input.requirementId);
     if (!bid) throw new NotFoundError("Bid not found.");
 
     const check = canAward(requirement, bid.status, now);
     if (!check.ok) throw new ConflictError(check.message ?? "This requirement can't be awarded.");
 
     // Atomic: only one request can move it to AWARDED.
-    const moved = await tx.requirement.updateMany({
-      where: {
-        id: requirement.id,
-        buyerId: input.buyerId,
-        status: { in: ["OPEN", "CLOSED"] },
-        closesAt: { lte: now },
-      },
-      data: { status: "AWARDED", awardedBidId: bid.id },
+    const moved = await markRequirementAwarded(tx, {
+      requirementId: requirement.id,
+      buyerId: input.buyerId,
+      bidId: bid.id,
+      now,
     });
-    if (moved.count === 0)
+    if (moved === 0)
       throw new ConflictError("This requirement has already been awarded or cancelled.");
 
-    await tx.bid.update({ where: { id: bid.id }, data: { status: "ACCEPTED" } });
-    const others = await tx.bid.findMany({
-      where: { requirementId: requirement.id, status: "ACTIVE", id: { not: bid.id } },
-      select: { id: true, vendor: { select: { userId: true } } },
-    });
+    await acceptBid(tx, bid.id);
+    const others = await findOtherActiveBids(tx, requirement.id, bid.id);
     if (others.length > 0) {
-      await tx.bid.updateMany({
-        where: { id: { in: others.map((o) => o.id) } },
-        data: { status: "REJECTED" },
-      });
+      await rejectBids(
+        tx,
+        others.map((o) => o.id),
+      );
     }
     return {
       reqSeq: requirement.reqSeq,
@@ -320,20 +301,14 @@ export async function cancelRequirement(input: {
   buyerId: string;
   reason: string;
 }) {
-  return prisma.$transaction(async (tx) => {
-    const moved = await tx.requirement.updateMany({
-      where: {
-        id: input.requirementId,
-        buyerId: input.buyerId,
-        status: { in: ["OPEN", "CLOSED"] },
-      },
-      data: { status: "CANCELLED", cancelledReason: input.reason },
+  return runInTransaction(async (tx) => {
+    const moved = await cancelOpenRequirement(tx, {
+      requirementId: input.requirementId,
+      buyerId: input.buyerId,
+      reason: input.reason,
     });
-    if (moved.count === 0) {
-      const requirement = await tx.requirement.findUnique({
-        where: { id: input.requirementId },
-        select: { buyerId: true, status: true },
-      });
+    if (moved === 0) {
+      const requirement = await findRequirementOwnerAndStatus(tx, input.requirementId);
       if (!requirement || requirement.buyerId !== input.buyerId)
         throw new NotFoundError("Requirement not found.");
       throw new ConflictError(
@@ -342,20 +317,14 @@ export async function cancelRequirement(input: {
           : "This requirement is already cancelled.",
       );
     }
-    const bidders = await tx.bid.findMany({
-      where: { requirementId: input.requirementId, status: "ACTIVE" },
-      select: { id: true, vendor: { select: { userId: true } } },
-    });
+    const bidders = await findActiveBidders(tx, input.requirementId);
     if (bidders.length > 0) {
-      await tx.bid.updateMany({
-        where: { id: { in: bidders.map((b) => b.id) } },
-        data: { status: "REJECTED" },
-      });
+      await rejectBids(
+        tx,
+        bidders.map((b) => b.id),
+      );
     }
-    const requirement = await tx.requirement.findUniqueOrThrow({
-      where: { id: input.requirementId },
-      select: { reqSeq: true, title: true },
-    });
+    const requirement = await getRequirementHeader(tx, input.requirementId);
     return { ...requirement, bidderUserIds: bidders.map((b) => b.vendor.userId) };
   });
 }
@@ -387,14 +356,7 @@ export async function claimAwardedBid(input: {
     input.requirementId,
   );
 
-  const requirement = await prisma.requirement.findUnique({
-    where: { id: input.requirementId },
-    include: {
-      awardedBid: {
-        select: { id: true, unitPrice: true, vendorId: true, vendor: { select: { userId: true } } },
-      },
-    },
-  });
+  const requirement = await findRequirementForClaim(input.requirementId);
   // Same answer for "no such requirement" and "not yours", so ids cannot be probed.
   if (!requirement || requirement.buyerId !== input.buyerUserId) {
     throw new NotFoundError("Requirement not found.");
@@ -403,10 +365,7 @@ export async function claimAwardedBid(input: {
   const bid = requirement.awardedBid;
 
   // Idempotent replay: a double click or retry returns the order already made.
-  const existing = await prisma.checkout.findUnique({
-    where: { idempotencyKey },
-    include: { orders: { select: { id: true } } },
-  });
+  const existing = await findCheckoutWithOrders(idempotencyKey);
   if (existing?.orders[0] && bid) {
     return {
       checkoutId: existing.id,
@@ -427,10 +386,8 @@ export async function claimAwardedBid(input: {
 
   let result: { checkoutId: string; orderId: string };
   try {
-    result = await prisma.$transaction(async (tx) => {
-      const cart = await tx.cart.create({
-        data: { ownerUserId: input.buyerUserId, status: "CHECKED_OUT" },
-      });
+    result = await runInTransaction(async (tx) => {
+      const cart = await createCheckedOutCart(tx, input.buyerUserId);
       const checkout = await createCheckout(tx, {
         cartId: cart.id,
         buyerId: input.buyerUserId,
@@ -439,16 +396,12 @@ export async function claimAwardedBid(input: {
       });
 
       // Once-only guard: only the call that moves checkoutId from null wins.
-      const claimed = await tx.requirement.updateMany({
-        where: {
-          id: requirement.id,
-          buyerId: input.buyerUserId,
-          status: "AWARDED",
-          checkoutId: null,
-        },
-        data: { checkoutId: checkout.id },
+      const claimed = await claimRequirementCheckout(tx, {
+        requirementId: requirement.id,
+        buyerId: input.buyerUserId,
+        checkoutId: checkout.id,
       });
-      if (claimed.count === 0) {
+      if (claimed === 0) {
         throw new ConflictError("This requirement has already been paid for.");
       }
 
@@ -478,10 +431,7 @@ export async function claimAwardedBid(input: {
   } catch (error) {
     // Concurrent same-key claim: the unique index rejected the loser; answer with the winner's order.
     if (isUniqueConstraintViolation(error)) {
-      const winner = await prisma.checkout.findUnique({
-        where: { idempotencyKey },
-        include: { orders: { select: { id: true } } },
-      });
+      const winner = await findCheckoutWithOrders(idempotencyKey);
       if (winner?.orders[0]) {
         return {
           checkoutId: winner.id,

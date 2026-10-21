@@ -26,7 +26,9 @@ Repositories (Prisma)             (data access only — no business logic)
 PostgreSQL (Supabase)
 ```
 
-One boundary is enforced by an automated test, `tests/unit/layering.test.ts`: pages, components and shared helpers (`src/app`, `src/components`, `src/lib`) may not import the database client. They call a repository or a domain function. Server actions and domain services do use the database client directly in places; moving those behind repositories is not done.
+One boundary is enforced by an automated test, `tests/unit/layering.test.ts`: pages, components, shared helpers, server actions and business rules (`src/app`, `src/components`, `src/lib`, `src/server/services`, `src/server/domain`) may not import the database client. They call a repository, and a business rule that needs one all-or-nothing change calls `runInTransaction` from `src/server/repositories/transaction.ts`, passing the `tx` it receives on to repository functions. The one exception is a small group of infrastructure readers (`src/server/auth/session.ts`, `src/server/lib/site-settings.ts`, `pricing-config.ts`, `legal-store.ts`), which still read the database themselves.
+
+Most of the repository files added for this boundary deliberately carry no `server-only` import, for the same reason `wallet-repository.ts` and `payment-repository.ts` do: tests run the rules against a fake database client, and the client itself still carries the guard.
 
 Rules enforced by code review / lint, not just convention:
 

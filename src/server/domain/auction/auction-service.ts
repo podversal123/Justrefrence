@@ -1,6 +1,27 @@
 // No "server-only" import — orchestration layer, same rationale as bidding-service.ts
 // (its prisma dependency carries the guard).
-import { prisma } from "@/server/lib/prisma";
+import { runInTransaction } from "@/server/repositories/transaction";
+import {
+  cancelAuctionIfAllowed,
+  claimAuctionCheckout,
+  createAuctionBid,
+  extendAuctionClosing,
+  findAuctionForClaim,
+  findAuctionWithBidCount,
+  findAuctionWithVendor,
+  findDistinctBidders,
+  findTopAuctionBid,
+  findTopAuctionBidSummary,
+  getAuctionWithVendor,
+  insertAuction,
+  lockEndedAuction,
+  lockOpenAuction,
+  setAuctionOutcome,
+} from "@/server/repositories/auction/auction-write-repository";
+import {
+  createCheckedOutCart,
+  findCheckoutWithOrders,
+} from "@/server/repositories/commerce/checkout-claim-repository";
 import { getCatalogRepository } from "@/server/repositories/catalog/registry";
 import {
   createCheckout,
@@ -72,21 +93,18 @@ export async function createAuction(input: CreateAuctionInput) {
     throw new ValidationError(`You only have ${listing.stock} in stock.`);
   }
 
-  return prisma.auction.create({
-    data: {
-      vendorId: input.vendorProfileId,
-      itemType: input.itemType,
-      itemId: input.itemId,
-      title: listing.title,
-      description: input.description,
-      quantity: input.quantity,
-      startPrice: input.startPrice,
-      reservePrice: input.reservePrice,
-      minIncrement: input.minIncrement,
-      autoExtendMinutes: input.autoExtendMinutes,
-      closesAt: input.closesAt,
-    },
-    select: { id: true, auctionSeq: true },
+  return insertAuction({
+    vendorId: input.vendorProfileId,
+    itemType: input.itemType,
+    itemId: input.itemId,
+    title: listing.title,
+    description: input.description,
+    quantity: input.quantity,
+    startPrice: input.startPrice,
+    reservePrice: input.reservePrice,
+    minIncrement: input.minIncrement,
+    autoExtendMinutes: input.autoExtendMinutes,
+    closesAt: input.closesAt,
   });
 }
 
@@ -111,36 +129,17 @@ export async function finalizeIfEnded(
   auctionId: string,
   now = new Date(),
 ): Promise<AuctionEnding | null> {
-  return prisma.$transaction(async (tx) => {
-    const moved = await tx.auction.updateMany({
-      where: { id: auctionId, status: "OPEN", closesAt: { lte: now } },
-      data: { updatedAt: now },
-    });
-    if (moved.count === 0) return null;
+  return runInTransaction(async (tx) => {
+    const moved = await lockEndedAuction(tx, auctionId, now);
+    if (moved === 0) return null;
 
-    const auction = await tx.auction.findUniqueOrThrow({
-      where: { id: auctionId },
-      include: { vendor: { select: { userId: true } } },
-    });
-    const top = await tx.auctionBid.findFirst({
-      where: { auctionId },
-      orderBy: [{ unitPrice: "desc" }, { createdAt: "asc" }],
-    });
+    const auction = await getAuctionWithVendor(tx, auctionId);
+    const top = await findTopAuctionBid(tx, auctionId);
     const outcome = decideOutcome(auction, top?.unitPrice ?? null);
 
-    await tx.auction.update({
-      where: { id: auctionId },
-      data: {
-        status: outcome,
-        winningBidId: outcome === "SOLD" && top ? top.id : null,
-      },
-    });
+    await setAuctionOutcome(tx, auctionId, outcome, outcome === "SOLD" && top ? top.id : null);
 
-    const bidders = await tx.auctionBid.findMany({
-      where: { auctionId },
-      distinct: ["bidderId"],
-      select: { bidderId: true },
-    });
+    const bidders = await findDistinctBidders(tx, auctionId);
     const winnerUserId = outcome === "SOLD" && top ? top.bidderId : null;
     return {
       auctionId,
@@ -175,24 +174,14 @@ export async function placeAuctionBid(input: {
 }): Promise<PlaceAuctionBidResult> {
   const now = new Date();
 
-  return prisma.$transaction(async (tx) => {
+  return runInTransaction(async (tx) => {
     // Lock + precondition: only an OPEN auction whose deadline hasn't passed.
-    const locked = await tx.auction.updateMany({
-      where: { id: input.auctionId, status: "OPEN", closesAt: { gt: now } },
-      data: { updatedAt: now },
-    });
-    const auction = await tx.auction.findUnique({
-      where: { id: input.auctionId },
-      include: { vendor: { select: { userId: true } } },
-    });
+    const lockedCount = await lockOpenAuction(tx, input.auctionId, now);
+    const auction = await findAuctionWithVendor(tx, input.auctionId);
     if (!auction) throw new NotFoundError("Auction not found.");
-    if (locked.count === 0) throw new ConflictError("Bidding on this auction is closed.");
+    if (lockedCount === 0) throw new ConflictError("Bidding on this auction is closed.");
 
-    const top = await tx.auctionBid.findFirst({
-      where: { auctionId: input.auctionId },
-      orderBy: [{ unitPrice: "desc" }, { createdAt: "asc" }],
-      select: { unitPrice: true, bidderId: true },
-    });
+    const top = await findTopAuctionBidSummary(tx, input.auctionId);
 
     const violation = checkBid({
       auction: asRuleInput(auction),
@@ -205,19 +194,17 @@ export async function placeAuctionBid(input: {
     if (violation) throw new ValidationError(violation.message, { code: violation.code });
 
     const totalPrice = totalFor(input.unitPrice, auction.quantity);
-    const bid = await tx.auctionBid.create({
-      data: {
-        auctionId: input.auctionId,
-        bidderId: input.bidderId,
-        unitPrice: input.unitPrice,
-        totalPrice,
-      },
+    const bid = await createAuctionBid(tx, {
+      auctionId: input.auctionId,
+      bidderId: input.bidderId,
+      unitPrice: input.unitPrice,
+      totalPrice,
     });
 
     const closesAt = nextClosesAt(auction, now);
     const extended = closesAt.getTime() > auction.closesAt.getTime();
     if (extended) {
-      await tx.auction.update({ where: { id: auction.id }, data: { closesAt } });
+      await extendAuctionClosing(tx, auction.id, closesAt);
     }
 
     return {
@@ -239,11 +226,8 @@ export async function cancelAuction(input: {
   vendorProfileId: string;
   reason: string;
 }) {
-  return prisma.$transaction(async (tx) => {
-    const auction = await tx.auction.findUnique({
-      where: { id: input.auctionId },
-      include: { _count: { select: { bids: true } } },
-    });
+  return runInTransaction(async (tx) => {
+    const auction = await findAuctionWithBidCount(tx, input.auctionId);
     if (!auction || auction.vendorId !== input.vendorProfileId) {
       throw new NotFoundError("Auction not found.");
     }
@@ -252,26 +236,16 @@ export async function cancelAuction(input: {
 
     // Atomic: the WHERE re-checks the exact rule, so a bid or payment that landed since the
     // read above makes this update match nothing instead of cancelling a live sale.
-    const moved = await tx.auction.updateMany({
-      where: {
-        id: auction.id,
-        vendorId: input.vendorProfileId,
-        OR: [
-          { status: "OPEN", bids: { none: {} } },
-          { status: "SOLD", checkoutId: null },
-        ],
-      },
-      data: { status: "CANCELLED", cancelledReason: input.reason },
+    const moved = await cancelAuctionIfAllowed(tx, {
+      auctionId: auction.id,
+      vendorId: input.vendorProfileId,
+      reason: input.reason,
     });
-    if (moved.count === 0) {
+    if (moved === 0) {
       throw new ConflictError("This auction just changed and can't be cancelled any more.");
     }
 
-    const bidders = await tx.auctionBid.findMany({
-      where: { auctionId: auction.id },
-      distinct: ["bidderId"],
-      select: { bidderId: true },
-    });
+    const bidders = await findDistinctBidders(tx, auction.id);
     return {
       number: formatAuctionNumber(auction.auctionSeq),
       title: auction.title,
@@ -300,23 +274,14 @@ export async function claimAuction(input: {
 }): Promise<ClaimResult> {
   const idempotencyKey = scopedIdempotencyKey("auction", input.winnerUserId, input.auctionId);
 
-  const auction = await prisma.auction.findUnique({
-    where: { id: input.auctionId },
-    include: {
-      winningBid: { select: { id: true, bidderId: true, unitPrice: true } },
-      vendor: { select: { userId: true } },
-    },
-  });
+  const auction = await findAuctionForClaim(input.auctionId);
   if (!auction || !auction.winningBid || auction.winningBid.bidderId !== input.winnerUserId) {
     throw new NotFoundError("Auction not found.");
   }
   const number = formatAuctionNumber(auction.auctionSeq);
 
   // Idempotent replay: a double click or retry returns the order already made.
-  const existing = await prisma.checkout.findUnique({
-    where: { idempotencyKey },
-    include: { orders: { select: { id: true } } },
-  });
+  const existing = await findCheckoutWithOrders(idempotencyKey);
   if (existing?.orders[0]) {
     return {
       checkoutId: existing.id,
@@ -339,10 +304,8 @@ export async function claimAuction(input: {
 
   let result: { checkoutId: string; orderId: string };
   try {
-    result = await prisma.$transaction(async (tx) => {
-      const cart = await tx.cart.create({
-        data: { ownerUserId: input.winnerUserId, status: "CHECKED_OUT" },
-      });
+    result = await runInTransaction(async (tx) => {
+      const cart = await createCheckedOutCart(tx, input.winnerUserId);
       const checkout = await createCheckout(tx, {
         cartId: cart.id,
         buyerId: input.winnerUserId,
@@ -351,11 +314,11 @@ export async function claimAuction(input: {
       });
 
       // Once-only guard: only the call that moves checkoutId from null wins.
-      const claimed = await tx.auction.updateMany({
-        where: { id: auction.id, status: "SOLD", checkoutId: null },
-        data: { checkoutId: checkout.id },
+      const claimed = await claimAuctionCheckout(tx, {
+        auctionId: auction.id,
+        checkoutId: checkout.id,
       });
-      if (claimed.count === 0) throw new ConflictError("This auction has already been paid for.");
+      if (claimed === 0) throw new ConflictError("This auction has already been paid for.");
 
       const created = await createVendorOrder(tx, {
         checkoutId: checkout.id,
@@ -382,10 +345,7 @@ export async function claimAuction(input: {
   } catch (error) {
     // Concurrent same-key claim: the unique index rejected the loser; answer with the winner's order.
     if (isUniqueConstraintViolation(error)) {
-      const winner = await prisma.checkout.findUnique({
-        where: { idempotencyKey },
-        include: { orders: { select: { id: true } } },
-      });
+      const winner = await findCheckoutWithOrders(idempotencyKey);
       if (winner?.orders[0]) {
         return {
           checkoutId: winner.id,

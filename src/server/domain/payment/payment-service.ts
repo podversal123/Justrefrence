@@ -3,7 +3,18 @@
 // the one exception, for the same reason wallet-repository.ts is — see
 // its own doc comment). Same precedent as checkout-service.ts (Phase 5).
 import { randomUUID } from "node:crypto";
-import { prisma } from "@/server/lib/prisma";
+import { runInTransaction } from "@/server/repositories/transaction";
+import {
+  findCapturedPayment,
+  findCheckoutBuyer,
+  findCheckoutOrderIds,
+  findCheckoutOrderStatuses,
+  findCheckoutOrderTotals,
+  findOwnedCheckout,
+  findPaymentById,
+  findStaleCreatedPayments,
+  findWalletBalance,
+} from "@/server/repositories/payment/payment-lookups";
 import { debitWallet, creditWallet, getOrCreateWallet } from "@/server/repositories/wallet/wallet-repository";
 import {
   createPayment,
@@ -45,10 +56,7 @@ import type { Prisma } from "@/generated/prisma/client";
 export async function getCheckoutPayableAmount(
   checkoutId: string,
 ): Promise<{ amount: bigint; currency: string }> {
-  const orders = await prisma.order.findMany({
-    where: { checkoutId },
-    select: { grandTotal: true, currency: true },
-  });
+  const orders = await findCheckoutOrderTotals(checkoutId);
   if (orders.length === 0) {
     throw new NotFoundError("No orders found for this checkout.");
   }
@@ -79,10 +87,7 @@ export async function createPaymentOrderForCheckout(
   idempotencyKey: string,
 ): Promise<CreatePaymentOrderResult> {
   // Ownership: only the buyer who placed this checkout may pay for it.
-  const checkout = await prisma.checkout.findUnique({
-    where: { id: checkoutId },
-    select: { buyerId: true },
-  });
+  const checkout = await findCheckoutBuyer(checkoutId);
   if (!checkout || checkout.buyerId !== payerId) {
     throw new NotFoundError("Checkout not found.");
   }
@@ -174,10 +179,7 @@ export async function createPaymentOrderForCheckout(
 
 export async function markCheckoutOrdersPaid(checkoutId: string | null): Promise<void> {
   if (!checkoutId) return;
-  const orders = await prisma.order.findMany({
-    where: { checkoutId },
-    select: { id: true, status: true },
-  });
+  const orders = await findCheckoutOrderStatuses(checkoutId);
   for (const order of orders) {
     if (order.status !== "PLACED") continue; // already moved on (e.g. admin manually marked it) — don't fight that
     try {
@@ -195,7 +197,7 @@ async function finalizeCapture(
   payment: { id: string; checkoutId: string | null; amount: bigint },
   providerPaymentId: string,
 ): Promise<boolean> {
-  const captured = await prisma.$transaction(async (tx) => {
+  const captured = await runInTransaction(async (tx) => {
     const applied = await tryCapturePayment(tx, payment.id, providerPaymentId);
     if (applied) {
       await createPaymentTransaction(tx, {
@@ -252,8 +254,7 @@ export async function verifyCheckoutCallback(
       )
     : input.signature.startsWith("dev_"); // dev-fallback mode (no live credentials) — see razorpay-client.ts
 
-  await prisma
-    .$transaction((tx) =>
+  await runInTransaction((tx) =>
       createPaymentEvent(tx, {
         provider: "RAZORPAY",
         eventId: `callback:${input.providerPaymentId}`,
@@ -320,7 +321,7 @@ export async function processWebhookEvent(
   const providerOrderId = entity?.["order_id"] as string | undefined;
   const payment = providerOrderId ? await getPaymentByProviderOrderId(providerOrderId) : null;
 
-  await prisma.$transaction((tx) =>
+  await runInTransaction((tx) =>
     createPaymentEvent(tx, {
       provider: "RAZORPAY",
       eventId,
@@ -352,7 +353,7 @@ export async function processWebhookEvent(
 }
 
 export async function markPaymentFailed(paymentId: string, reason: string): Promise<boolean> {
-  const applied = await prisma.$transaction((tx) => tryMarkPaymentFailed(tx, paymentId));
+  const applied = await runInTransaction((tx) => tryMarkPaymentFailed(tx, paymentId));
   if (applied) {
     await recordAudit({
       actorId: null,
@@ -371,9 +372,7 @@ export async function expireStalePayments(
   now: Date = new Date(),
 ): Promise<number> {
   const cutoff = new Date(now.getTime() - timeoutMinutes * 60 * 1000);
-  const stale = await prisma.payment.findMany({
-    where: { status: "CREATED", createdAt: { lte: cutoff } },
-  });
+  const stale = await findStaleCreatedPayments(cutoff);
 
   let count = 0;
   for (const payment of stale) {
@@ -388,7 +387,7 @@ export async function expireStalePayments(
 
 /** ADMIN/FINANCE-initiated refund — the verified result (not the admin's own session) is what flips the order to REFUNDED. See ADR-0016. */
 export async function initiateRefund(paymentId: string, actorId: string): Promise<void> {
-  const payment = await prisma.payment.findUnique({ where: { id: paymentId } });
+  const payment = await findPaymentById(paymentId);
   if (!payment) throw new NotFoundError("Payment not found.");
   if (payment.status !== "CAPTURED") {
     throw new ConflictError("Only a captured payment can be refunded.");
@@ -402,7 +401,7 @@ export async function initiateRefund(paymentId: string, actorId: string): Promis
   if (payment.provider === "WALLET") {
     const wallet = await getOrCreateWallet(payment.payerId);
     refund = { id: `wallet_refund_${payment.id}` };
-    await prisma.$transaction(async (tx) => {
+    await runInTransaction(async (tx) => {
       const applied = await tryMarkPaymentRefunded(tx, paymentId);
       if (!applied) throw new ConflictError("This payment is no longer refundable.");
       await creditWallet(tx, {
@@ -425,7 +424,7 @@ export async function initiateRefund(paymentId: string, actorId: string): Promis
       providerPaymentId: payment.providerPaymentId,
       amountPaise: payment.amount,
     });
-    await prisma.$transaction(async (tx) => {
+    await runInTransaction(async (tx) => {
       const applied = await tryMarkPaymentRefunded(tx, paymentId);
       if (!applied) throw new ConflictError("This payment is no longer refundable.");
       await createPaymentTransaction(tx, {
@@ -446,10 +445,7 @@ export async function initiateRefund(paymentId: string, actorId: string): Promis
   });
 
   if (payment.checkoutId) {
-    const orders = await prisma.order.findMany({
-      where: { checkoutId: payment.checkoutId },
-      select: { id: true },
-    });
+    const orders = await findCheckoutOrderIds(payment.checkoutId);
     for (const order of orders) {
       try {
         await transitionOrderStatusBySystem(order.id, "REFUNDED", "Payment refunded");
@@ -475,10 +471,7 @@ export async function payCheckoutWithWallet(input: {
   payerId: string;
   idempotencyKey: string;
 }): Promise<{ paymentId: string; amount: bigint; replay: boolean }> {
-  const checkout = await prisma.checkout.findUnique({
-    where: { id: input.checkoutId },
-    select: { buyerId: true },
-  });
+  const checkout = await findCheckoutBuyer(input.checkoutId);
   // Same answer for "no such checkout" and "not yours", so ids cannot be probed.
   if (!checkout || checkout.buyerId !== input.payerId) {
     throw new NotFoundError("Checkout not found.");
@@ -504,7 +497,7 @@ export async function payCheckoutWithWallet(input: {
 
   let payment: { id: string };
   try {
-    payment = await prisma.$transaction(async (tx) => {
+    payment = await runInTransaction(async (tx) => {
       const created = await createPayment({
         checkoutId: input.checkoutId,
         payerId: input.payerId,
@@ -567,19 +560,13 @@ export async function getWalletPayOffer(
   userId: string,
 ): Promise<{ amount: string; balance: string } | null> {
   if (!/^[0-9a-f-]{36}$/i.test(checkoutId)) return null;
-  const owns = await prisma.checkout.findFirst({
-    where: { id: checkoutId, buyerId: userId },
-    select: { id: true },
-  });
+  const owns = await findOwnedCheckout(checkoutId, userId);
   if (!owns) return null;
-  const paid = await prisma.payment.findFirst({
-    where: { checkoutId, status: "CAPTURED" },
-    select: { id: true },
-  });
+  const paid = await findCapturedPayment(checkoutId);
   if (paid) return null;
   const [{ amount }, wallet] = await Promise.all([
     getCheckoutPayableAmount(checkoutId).catch(() => ({ amount: 0n })),
-    prisma.wallet.findUnique({ where: { ownerUserId: userId }, select: { balance: true } }),
+    findWalletBalance(userId),
   ]);
   if (amount <= 0n || !wallet || wallet.balance < amount) return null;
   return { amount: amount.toString(), balance: wallet.balance.toString() };
