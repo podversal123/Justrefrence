@@ -1,5 +1,5 @@
 import "server-only";
-import { prisma } from "@/server/lib/prisma";
+import { findMatchingCategories } from "@/server/repositories/search/category-search-repository";
 import { getCatalogRepository } from "@/server/repositories/catalog/registry";
 import {
   CATALOG_ROUTE_SEGMENTS,
@@ -93,21 +93,7 @@ async function searchKind(kind: CatalogKind, query: string, fetchLimit: number, 
 }
 
 async function searchCategories(query: string, keep: number): Promise<CategoryHit[]> {
-  const where = { deletedAt: null, name: { contains: query, mode: "insensitive" as const } };
-  const [products, services] = await Promise.all([
-    prisma.productCategory.findMany({
-      where,
-      take: keep,
-      orderBy: { name: "asc" },
-      select: { id: true, name: true },
-    }),
-    prisma.serviceCategory.findMany({
-      where,
-      take: keep,
-      orderBy: { name: "asc" },
-      select: { id: true, name: true },
-    }),
-  ]);
+  const { products, services } = await findMatchingCategories(query, keep);
   return [
     ...products.map((c) => ({
       kind: "PRODUCT" as const,

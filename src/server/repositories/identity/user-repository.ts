@@ -2,6 +2,7 @@
 // payment-repository.ts. Tests exercise the services built on these queries against a fake database client,
 // and the only dependency (`@/server/lib/prisma`) still carries the guard.
 import { prisma } from "@/server/lib/prisma";
+import type { Tx } from "@/server/repositories/transaction";
 
 /** The whole user row, or null. */
 export function findUserById(id: string) {
@@ -86,4 +87,62 @@ export function findUserFullName(id: string) {
 
 export function setUserFullName(id: string, fullName: string) {
   return prisma.user.update({ where: { id }, data: { fullName } });
+}
+
+export function findUserByPhone(phone: string) {
+  return prisma.user.findUnique({ where: { phone } });
+}
+
+export function findUserIdByEmail(email: string) {
+  return prisma.user.findUnique({ where: { email }, select: { id: true } });
+}
+
+/** A person retrying sign-up before verifying: keep their latest name and phone. */
+export function updatePendingRegistration(userId: string, details: { fullName: string; phone: string }) {
+  return prisma.user.update({
+    where: { id: userId },
+    data: { fullName: details.fullName, phone: details.phone },
+  });
+}
+
+/** The local row for a new sign-up, waiting for the code to be confirmed. */
+export function createPendingUser(input: { id: string; email: string; phone: string; fullName: string }) {
+  return prisma.user.create({
+    data: {
+      id: input.id,
+      email: input.email,
+      phone: input.phone,
+      fullName: input.fullName,
+      status: "PENDING_VERIFICATION",
+    },
+  });
+}
+
+/** Marks a sign-up as confirmed, inside the transaction that also creates the member. */
+export function activateUser(tx: Tx, userId: string) {
+  return tx.user.update({
+    where: { id: userId },
+    data: { status: "ACTIVE", emailVerifiedAt: new Date() },
+  });
+}
+
+/** A member made by an admin: active and verified from the start. */
+export function createActiveUser(
+  tx: Tx,
+  input: { id: string; email: string; phone: string | null; fullName: string },
+) {
+  return tx.user.create({
+    data: {
+      id: input.id,
+      email: input.email,
+      phone: input.phone,
+      fullName: input.fullName,
+      status: "ACTIVE",
+      emailVerifiedAt: new Date(),
+    },
+  });
+}
+
+export function grantRole(tx: Tx, userId: string, roleId: string) {
+  return tx.userRole.create({ data: { userId, roleId } });
 }

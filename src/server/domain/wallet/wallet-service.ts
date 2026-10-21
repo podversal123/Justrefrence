@@ -1,13 +1,14 @@
 // No "server-only" import — orchestration layer; every dependency below
 // already carries its own "server-only" guard. Same precedent as
 // checkout-service.ts (Phase 5) and commission-service.ts (Phase 6).
-import { prisma } from "@/server/lib/prisma";
+import { runInTransaction } from "@/server/repositories/transaction";
 import {
   creditWallet,
   debitWallet,
   getOrCreateWallet,
   getWalletByOwner,
   setWalletPinHash,
+  getWalletByIdOrThrow,
 } from "@/server/repositories/wallet/wallet-repository";
 import {
   hashWalletPin,
@@ -35,7 +36,7 @@ export interface CreditWalletInput {
 /** Ensures a wallet exists, then credits it — used by commission-service.ts's AVAILABLE hook and by admin manual top-ups. */
 export async function creditMemberWallet(userId: string, input: CreditWalletInput) {
   const wallet = await getOrCreateWallet(userId);
-  return prisma.$transaction((tx) => creditWallet(tx, { walletId: wallet.id, ...input }));
+  return runInTransaction((tx) => creditWallet(tx, { walletId: wallet.id, ...input }));
 }
 
 export interface DebitWalletInput {
@@ -49,7 +50,7 @@ export interface DebitWalletInput {
 export async function debitMemberWallet(userId: string, input: DebitWalletInput) {
   const wallet = await getWalletByOwner(userId);
   if (!wallet) throw new ValidationError("No wallet found for this account.");
-  return prisma.$transaction((tx) => debitWallet(tx, { walletId: wallet.id, ...input }));
+  return runInTransaction((tx) => debitWallet(tx, { walletId: wallet.id, ...input }));
 }
 
 export async function setWalletPin(userId: string, pin: string): Promise<void> {
@@ -129,7 +130,7 @@ export async function assertWalletPinIfSet(
   walletId: string,
   pin: string | undefined,
 ): Promise<void> {
-  const wallet = await prisma.wallet.findUniqueOrThrow({ where: { id: walletId } });
+  const wallet = await getWalletByIdOrThrow(walletId);
   if (!wallet.walletPinHash) return; // no PIN configured — nothing to check (Q-13: optional)
   if (!pin || !verifyWalletPin(pin, wallet.walletPinHash)) {
     throw new ConflictError("Incorrect wallet PIN.");

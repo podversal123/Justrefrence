@@ -1,5 +1,5 @@
 import "server-only";
-import { prisma } from "@/server/lib/prisma";
+import { insertAuditLog } from "@/server/repositories/audit/audit-log-repository";
 import { logger } from "@/server/lib/logger";
 
 /**
@@ -38,17 +38,15 @@ export interface AuditEntry {
 
 export async function recordAudit(entry: AuditEntry): Promise<void> {
   try {
-    await prisma.auditLog.create({
-      data: {
-        actorId: entry.actorId,
-        action: entry.action,
-        entityType: entry.entityType,
-        entityId: entry.entityId,
-        beforeJson: entry.before ? (redactSnapshot(entry.before) as object) : undefined,
-        afterJson: entry.after ? (redactSnapshot(entry.after) as object) : undefined,
-        ip: entry.ip ?? undefined,
-        userAgent: entry.userAgent ?? undefined,
-      },
+    await insertAuditLog({
+      actorId: entry.actorId,
+      action: entry.action,
+      entityType: entry.entityType,
+      entityId: entry.entityId,
+      beforeJson: entry.before ? (redactSnapshot(entry.before) as object) : undefined,
+      afterJson: entry.after ? (redactSnapshot(entry.after) as object) : undefined,
+      ip: entry.ip ?? undefined,
+      userAgent: entry.userAgent ?? undefined,
     });
   } catch (error) {
     // An audit-write failure must never take down the business operation it

@@ -4,7 +4,7 @@
 // integration tests with those mocked — see
 // tests/integration/checkout-actions.test.ts. Same precedent as
 // registration-service.ts (Phase 4) and listing-service.ts (Phase 3).
-import { prisma } from "@/server/lib/prisma";
+import { runInTransaction } from "@/server/repositories/transaction";
 import { getCatalogRepository } from "@/server/repositories/catalog/registry";
 import {
   getOpenCartWithItems,
@@ -147,7 +147,7 @@ export async function placeOrder(
 
   let result: PlaceOrderResult;
   try {
-    result = await prisma.$transaction(async (tx) => {
+    result = await runInTransaction(async (tx) => {
       const checkout = await createCheckout(tx, {
         cartId: cart.id,
         buyerId,

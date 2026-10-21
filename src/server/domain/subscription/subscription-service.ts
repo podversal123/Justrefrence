@@ -1,6 +1,6 @@
 // No "server-only" import — orchestration layer, same rationale as
 // wallet-service.ts.
-import { prisma } from "@/server/lib/prisma";
+import { runInTransaction } from "@/server/repositories/transaction";
 import {
   findExpiredActiveSubscriptions,
   updateSubscriptionStatus,
@@ -12,7 +12,7 @@ export async function expireSubscriptions(now: Date = new Date()): Promise<numbe
   const due = await findExpiredActiveSubscriptions(now);
   if (due.length === 0) return 0;
 
-  await prisma.$transaction(async (tx) => {
+  await runInTransaction(async (tx) => {
     for (const subscription of due) {
       await updateSubscriptionStatus(tx, subscription.id, "EXPIRED");
     }

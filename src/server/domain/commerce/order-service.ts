@@ -1,6 +1,6 @@
 // No "server-only" import — orchestration layer, same rationale as
 // checkout-service.ts.
-import { prisma } from "@/server/lib/prisma";
+import { runInTransaction } from "@/server/repositories/transaction";
 import {
   createOrderStatusHistory,
   getOrderDetail,
@@ -58,7 +58,7 @@ async function applyTransition(
   actorId: string | null,
   reason: string | null,
 ) {
-  await prisma.$transaction(async (tx) => {
+  await runInTransaction(async (tx) => {
     await updateOrderStatus(tx, orderId, toStatus);
     await createOrderStatusHistory(tx, { orderId, fromStatus, toStatus, actorId, reason });
   });

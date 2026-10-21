@@ -379,3 +379,8 @@ export function findRecentManualTopup(input: {
     select: { id: true },
   });
 }
+
+/** A wallet by id; throws when it does not exist. */
+export function getWalletByIdOrThrow(id: string) {
+  return prisma.wallet.findUniqueOrThrow({ where: { id } });
+}

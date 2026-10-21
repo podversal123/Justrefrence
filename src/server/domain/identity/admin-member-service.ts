@@ -1,6 +1,12 @@
 // Orchestration layer, same convention as registration-service.ts: no "server-only"
 // import here, every dependency below already carries its own guard.
-import { prisma } from "@/server/lib/prisma";
+import { runInTransaction } from "@/server/repositories/transaction";
+import {
+  createActiveUser,
+  findUserIdByEmail,
+  findUserIdByPhone,
+  grantRole,
+} from "@/server/repositories/identity/user-repository";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { findRoleByCode } from "@/server/repositories/role-repository";
 import {
@@ -41,12 +47,12 @@ export async function registerMemberByAdmin(
     throw new ValidationError("That referral code isn't valid.", { path: ["referralCode"] });
   }
 
-  if (await prisma.user.findUnique({ where: { email: input.email }, select: { id: true } })) {
+  if (await findUserIdByEmail(input.email)) {
     throw new ConflictError("An account with that email already exists.");
   }
   if (
     input.phone &&
-    (await prisma.user.findUnique({ where: { phone: input.phone }, select: { id: true } }))
+    (await findUserIdByPhone(input.phone))
   ) {
     throw new ConflictError("An account with that mobile number already exists.");
   }
@@ -71,16 +77,12 @@ export async function registerMemberByAdmin(
 
   let profile;
   try {
-    profile = await prisma.$transaction(async (tx) => {
-      await tx.user.create({
-        data: {
-          id: userId,
-          email: input.email,
-          phone: input.phone ?? null,
-          fullName: input.fullName,
-          status: "ACTIVE",
-          emailVerifiedAt: new Date(),
-        },
+    profile = await runInTransaction(async (tx) => {
+      await createActiveUser(tx, {
+        id: userId,
+        email: input.email,
+        phone: input.phone ?? null,
+        fullName: input.fullName,
       });
       const member = await createMemberProfile(tx, {
         userId,
@@ -90,7 +92,7 @@ export async function registerMemberByAdmin(
       if (referrer) {
         await createReferralRelationship(tx, { memberId: member.id, referrerId: referrer.id });
       }
-      await tx.userRole.create({ data: { userId, roleId: customerRole.id } });
+      await grantRole(tx, userId, customerRole.id);
       return member;
     });
   } catch (error) {

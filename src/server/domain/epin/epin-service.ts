@@ -1,7 +1,7 @@
 // No "server-only" import — orchestration layer, same rationale as
 // wallet-service.ts. Nothing in this file ever passes a raw e-pin code to
 // logger.*() — only codeLast4/epin id, per docs/security.md.
-import { prisma } from "@/server/lib/prisma";
+import { runInTransaction } from "@/server/repositories/transaction";
 import {
   createEpin,
   createRedemption,
@@ -83,7 +83,7 @@ export async function redeemEpin(
   }
 
   if (epin.status === "FRESH" && epin.expiresAt && epin.expiresAt.getTime() <= Date.now()) {
-    await prisma.$transaction((tx) =>
+    await runInTransaction((tx) =>
       updateEpinStatus(tx, epin.id, assertEpinTransition("FRESH", "EXPIRED", "SYSTEM")),
     );
     throw new ConflictError("This e-pin has expired.");
@@ -111,7 +111,7 @@ export async function redeemEpin(
 
   assertEpinTransition("FRESH", "USED", "MEMBER"); // policy check — the actual race defense is tryClaimFreshEpin() below
 
-  const result = await prisma.$transaction(async (tx) => {
+  const result = await runInTransaction(async (tx) => {
     const claimed = await tryClaimFreshEpin(tx, epin.id);
     if (!claimed) {
       // Lost the race to a concurrent redemption of the same e-pin (or it
@@ -151,7 +151,7 @@ export async function revokeEpin(epinId: string, actorId: string): Promise<void>
   if (!epin) throw new NotFoundError("E-pin not found.");
 
   assertEpinTransition(epin.status, "REVOKED", "ADMIN");
-  await prisma.$transaction((tx) => updateEpinStatus(tx, epinId, "REVOKED"));
+  await runInTransaction((tx) => updateEpinStatus(tx, epinId, "REVOKED"));
 
   await recordAudit({
     actorId,
@@ -167,7 +167,7 @@ export async function expireFreshEpins(now: Date = new Date()): Promise<number> 
   const due = await findExpiredFreshEpins(now);
   if (due.length === 0) return 0;
 
-  await prisma.$transaction(async (tx) => {
+  await runInTransaction(async (tx) => {
     for (const epin of due) {
       await updateEpinStatus(tx, epin.id, assertEpinTransition("FRESH", "EXPIRED", "SYSTEM"));
     }

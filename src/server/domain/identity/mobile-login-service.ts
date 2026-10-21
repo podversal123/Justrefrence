@@ -1,6 +1,6 @@
 // No "server-only" import — orchestration layer, same rationale as
 // registration-service.ts.
-import { prisma } from "@/server/lib/prisma";
+import { findUserByPhone, setLoginAttemptState } from "@/server/repositories/identity/user-repository";
 import { requestOtp, verifyOtp } from "@/server/domain/identity/otp-service";
 import { mintSessionForVerifiedUser } from "@/server/domain/identity/session-bridge";
 import {
@@ -18,7 +18,7 @@ import { AccountBlockedError, AuthenticationError, RateLimitedError } from "@/se
  * enumeration — matching forgotPasswordAction's discipline in auth-actions.ts.
  */
 export async function requestMobileLoginOtp(phone: string): Promise<void> {
-  const user = await prisma.user.findUnique({ where: { phone } });
+  const user = await findUserByPhone(phone);
   if (!user) return; // no enumeration — caller always shows the generic "code sent" message
 
   if (user.status === "BLOCKED") return; // same reason — don't reveal block state pre-auth
@@ -38,7 +38,7 @@ export async function confirmMobileLoginOtp(
   code: string,
   ip: string | null,
 ): Promise<ConfirmMobileLoginResult> {
-  const user = await prisma.user.findUnique({ where: { phone } });
+  const user = await findUserByPhone(phone);
   if (!user) {
     throw new AuthenticationError("Incorrect mobile number or code.");
   }
@@ -58,13 +58,7 @@ export async function confirmMobileLoginOtp(
       failedLoginAttempts: user.failedLoginAttempts,
       lockedUntil: user.lockedUntil,
     });
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        failedLoginAttempts: nextLockState.failedLoginAttempts,
-        lockedUntil: nextLockState.lockedUntil,
-      },
-    });
+    await setLoginAttemptState(user.id, nextLockState);
     await recordAudit({
       actorId: null,
       action: "LOGIN_FAILED",
@@ -76,13 +70,7 @@ export async function confirmMobileLoginOtp(
   }
 
   const resetLockState = afterSuccessfulAttempt();
-  await prisma.user.update({
-    where: { id: user.id },
-    data: {
-      failedLoginAttempts: resetLockState.failedLoginAttempts,
-      lockedUntil: resetLockState.lockedUntil,
-    },
-  });
+  await setLoginAttemptState(user.id, resetLockState);
 
   await mintSessionForVerifiedUser(user.email);
 

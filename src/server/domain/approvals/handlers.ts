@@ -1,6 +1,15 @@
 import { Prisma } from "@/generated/prisma/client";
 import type { ChangeEntityType } from "@/generated/prisma/enums";
-import { prisma } from "@/server/lib/prisma";
+import {
+  findListingCategoryNames,
+  findListingForChange,
+  loadMemberForChange,
+  loadVendorForChange,
+  updateListingInTx,
+  updateMemberProfileInTx,
+  updateUserFullNameInTx,
+  updateVendorProfileInTx,
+} from "@/server/repositories/approvals/change-request-repository";
 import { formatPaise } from "@/lib/money";
 import type { FieldSpec, FieldValues } from "@/server/domain/approvals/diff";
 
@@ -46,23 +55,7 @@ const MEMBER_FIELDS = [
 const memberHandler: ChangeHandler = {
   fields: MEMBER_FIELDS,
   async load(userId) {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        fullName: true,
-        email: true,
-        memberProfile: {
-          select: {
-            dob: true,
-            pan: true,
-            gstin: true,
-            telephone: true,
-            websiteUrl: true,
-            socialLinks: true,
-          },
-        },
-      },
-    });
+    const user = await loadMemberForChange(userId);
     if (!user?.memberProfile) return null;
     const p = user.memberProfile;
     return {
@@ -83,7 +76,7 @@ const memberHandler: ChangeHandler = {
   },
   async apply(tx, userId, changed) {
     if (has(changed, "fullName")) {
-      await tx.user.update({ where: { id: userId }, data: { fullName: changed["fullName"] } });
+      await updateUserFullNameInTx(tx, userId, changed["fullName"] ?? null);
     }
     const data: Prisma.MemberProfileUpdateInput = {};
     if (has(changed, "dob")) data.dob = changed["dob"] ? new Date(changed["dob"]) : null;
@@ -95,7 +88,7 @@ const memberHandler: ChangeHandler = {
       data.socialLinks = changed["socialLinks"] ? changed["socialLinks"] : Prisma.JsonNull;
     }
     if (Object.keys(data).length > 0) {
-      await tx.memberProfile.update({ where: { userId }, data });
+      await updateMemberProfileInTx(tx, userId, data);
     }
   },
 };
@@ -113,10 +106,7 @@ const VENDOR_FIELDS = [
 const vendorHandler: ChangeHandler = {
   fields: VENDOR_FIELDS,
   async load(vendorProfileId) {
-    const v = await prisma.vendorProfile.findUnique({
-      where: { id: vendorProfileId },
-      select: { businessName: true, phone: true, telephone: true, gstin: true, pan: true },
-    });
+    const v = await loadVendorForChange(vendorProfileId);
     if (!v) return null;
     return { label: v.businessName, raw: { ...v } };
   },
@@ -133,7 +123,7 @@ const vendorHandler: ChangeHandler = {
     if (has(changed, "gstin")) data.gstin = changed["gstin"];
     if (has(changed, "pan")) data.pan = changed["pan"];
     if (Object.keys(data).length > 0) {
-      await tx.vendorProfile.update({ where: { id: vendorProfileId }, data });
+      await updateVendorProfileInTx(tx, vendorProfileId, data);
     }
   },
 };
@@ -169,40 +159,11 @@ const LISTING_FIELDS: Record<ListingKind, readonly FieldSpec[]> = {
   ],
 };
 
-/**
- * Prisma gives each model its own delegate type; these three share the same shape for what is
- * needed here, so they are reached through one small, explicit lookup instead of three copies.
- */
-type AnyDelegate = any;
-
-function listingDelegates(client: Tx | typeof prisma, kind: ListingKind) {
-  switch (kind) {
-    case "PRODUCT":
-      return {
-        item: client.product as AnyDelegate,
-        category: client.productCategory as AnyDelegate,
-        subcategory: client.productSubcategory as AnyDelegate,
-      };
-    case "SERVICE":
-      return {
-        item: client.service as AnyDelegate,
-        category: client.serviceCategory as AnyDelegate,
-        subcategory: client.serviceSubcategory as AnyDelegate,
-      };
-    case "PROJECT":
-      return {
-        item: client.project as AnyDelegate,
-        category: client.projectCategory as AnyDelegate,
-        subcategory: client.projectSubcategory as AnyDelegate,
-      };
-  }
-}
-
 function listingHandler(kind: ListingKind): ChangeHandler {
   return {
     fields: LISTING_FIELDS[kind],
     async load(id) {
-      const row = await listingDelegates(prisma, kind).item.findUnique({ where: { id } });
+      const row = await findListingForChange(kind, id);
       if (!row || row.deletedAt) return null;
       return {
         label: row.title,
@@ -219,18 +180,11 @@ function listingHandler(kind: ListingKind): ChangeHandler {
       };
     },
     async display(raw) {
-      const d = listingDelegates(prisma, kind);
-      const [category, subcategory] = await Promise.all([
-        raw["categoryId"]
-          ? d.category.findUnique({ where: { id: raw["categoryId"] }, select: { name: true } })
-          : null,
-        raw["subcategoryId"]
-          ? d.subcategory.findUnique({
-              where: { id: raw["subcategoryId"] },
-              select: { name: true },
-            })
-          : null,
-      ]);
+      const [category, subcategory] = await findListingCategoryNames(
+        kind,
+        raw["categoryId"],
+        raw["subcategoryId"],
+      );
       return {
         ...raw,
         categoryId: category?.name ?? null,
@@ -257,7 +211,7 @@ function listingHandler(kind: ListingKind): ChangeHandler {
       if (has(changed, "stock")) data["stock"] = Number(changed["stock"] ?? 0);
       if (has(changed, "pricingType")) data["pricingType"] = changed["pricingType"];
       if (Object.keys(data).length > 0) {
-        await listingDelegates(tx, kind).item.update({ where: { id }, data });
+        await updateListingInTx(tx, kind, id, data);
       }
     },
   };

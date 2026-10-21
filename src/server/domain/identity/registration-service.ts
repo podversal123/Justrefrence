@@ -3,7 +3,15 @@
 // "server-only" guard. Kept importable from integration tests with those
 // mocked, matching listing-service.ts's precedent — see
 // tests/integration/registration-actions.test.ts.
-import { prisma } from "@/server/lib/prisma";
+import { runInTransaction } from "@/server/repositories/transaction";
+import {
+  activateUser,
+  createPendingUser,
+  findUserByEmail,
+  findUserById,
+  grantRole,
+  updatePendingRegistration,
+} from "@/server/repositories/identity/user-repository";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { findRoleByCode } from "@/server/repositories/role-repository";
 import {
@@ -54,7 +62,7 @@ export async function startRegistration(
     }
   }
 
-  const existing = await prisma.user.findUnique({ where: { email: input.email } });
+  const existing = await findUserByEmail(input.email);
 
   let userId: string;
   if (existing) {
@@ -65,10 +73,7 @@ export async function startRegistration(
     // Keep the local row in sync with the latest attempt's inputs (a
     // person may retry with a corrected phone number, name, etc. before
     // ever verifying).
-    await prisma.user.update({
-      where: { id: userId },
-      data: { fullName: input.fullName, phone: input.phone },
-    });
+    await updatePendingRegistration(userId, { fullName: input.fullName, phone: input.phone });
   } else {
     const supabaseAdmin = createAdminClient();
     const created = await supabaseAdmin.auth.admin.createUser({
@@ -88,14 +93,11 @@ export async function startRegistration(
     userId = created.data.user.id;
 
     try {
-      await prisma.user.create({
-        data: {
-          id: userId,
-          email: input.email,
-          phone: input.phone,
-          fullName: input.fullName,
-          status: "PENDING_VERIFICATION",
-        },
+      await createPendingUser({
+        id: userId,
+        email: input.email,
+        phone: input.phone,
+        fullName: input.fullName,
       });
     } catch (error) {
       // Compensate: don't leave an orphaned Supabase Auth user with no local row.
@@ -142,7 +144,7 @@ export async function confirmRegistration(input: {
   code: string;
   referralCode?: string | undefined;
 }): Promise<ConfirmRegistrationResult> {
-  const user = await prisma.user.findUnique({ where: { id: input.userId } });
+  const user = await findUserById(input.userId);
   if (!user) {
     throw new ValidationError("Registration session not found. Please start again.");
   }
@@ -161,14 +163,8 @@ export async function confirmRegistration(input: {
     throw new Error(`Seed error: "${CUSTOMER_ROLE_CODE}" role is missing.`);
   }
 
-  const memberProfile = await prisma.$transaction(async (tx) => {
-    await tx.user.update({
-      where: { id: input.userId },
-      data: {
-        status: "ACTIVE",
-        emailVerifiedAt: new Date(),
-      },
-    });
+  const memberProfile = await runInTransaction(async (tx) => {
+    await activateUser(tx, input.userId);
 
     const created = await createMemberProfile(tx, {
       userId: input.userId,
@@ -180,9 +176,7 @@ export async function confirmRegistration(input: {
       await createReferralRelationship(tx, { memberId: created.id, referrerId: referrer.id });
     }
 
-    await tx.userRole.create({
-      data: { userId: input.userId, roleId: customerRole.id },
-    });
+    await grantRole(tx, input.userId, customerRole.id);
 
     return created;
   });

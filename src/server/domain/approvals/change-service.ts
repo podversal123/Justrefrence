@@ -2,7 +2,14 @@
 // every dependency below already carries its own guard.
 import { Prisma } from "@/generated/prisma/client";
 import type { ChangeEntityType } from "@/generated/prisma/enums";
-import { prisma } from "@/server/lib/prisma";
+import { runInTransaction } from "@/server/repositories/transaction";
+import {
+  approvePendingChangeRequest,
+  createChangeRequest,
+  findChangeRequestById,
+  findChangeReviewerIds,
+  rejectPendingChangeRequest,
+} from "@/server/repositories/approvals/change-request-repository";
 import { createNotification } from "@/server/repositories/identity/notification-repository";
 import { recordAudit } from "@/server/domain/audit/record";
 import { getChangeHandler, ENTITY_LABELS } from "@/server/domain/approvals/handlers";
@@ -25,20 +32,7 @@ export type SubmitResult = { mode: "APPLIED" } | { mode: "SUBMITTED"; requestId:
 
 /** People who can approve changes: whoever holds the `change:review` permission through an active role. */
 async function reviewerUserIds(): Promise<string[]> {
-  const users = await prisma.user.findMany({
-    where: {
-      status: "ACTIVE",
-      userRoles: {
-        some: {
-          revokedAt: null,
-          role: { rolePermissions: { some: { permission: { code: "change:review" } } } },
-        },
-      },
-    },
-    select: { id: true },
-    take: 50,
-  });
-  return users.map((u) => u.id);
+  return findChangeReviewerIds(50);
 }
 
 async function notifySafely(
@@ -86,7 +80,7 @@ export async function submitChange(input: {
   );
 
   if (input.canApplyDirect) {
-    await prisma.$transaction((tx) => handler.apply(tx, input.entityId, changed));
+    await runInTransaction((tx) => handler.apply(tx, input.entityId, changed));
     await recordAudit({
       actorId: input.actorId,
       action: "CHANGE_APPLIED",
@@ -99,18 +93,15 @@ export async function submitChange(input: {
 
   let request;
   try {
-    request = await prisma.changeRequest.create({
-      data: {
-        entityType: input.entityType,
-        entityId: input.entityId,
-        entityLabel: snapshot.label,
-        pendingKey: pendingKey(input.entityType, input.entityId),
-        proposed: changed as Prisma.InputJsonValue,
-        diff: diff as unknown as Prisma.InputJsonValue,
-        requestedBy: input.actorId,
-        requestNote: input.note ?? null,
-      },
-      select: { id: true },
+    request = await createChangeRequest({
+      entityType: input.entityType,
+      entityId: input.entityId,
+      entityLabel: snapshot.label,
+      pendingKey: pendingKey(input.entityType, input.entityId),
+      proposed: changed as Prisma.InputJsonValue,
+      diff: diff as unknown as Prisma.InputJsonValue,
+      requestedBy: input.actorId,
+      requestNote: input.note ?? null,
     });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
@@ -150,7 +141,7 @@ export async function reviewChange(input: {
   decision: "APPROVE" | "REJECT";
   note?: string | undefined;
 }): Promise<void> {
-  const request = await prisma.changeRequest.findUnique({ where: { id: input.requestId } });
+  const request = await findChangeRequestById(input.requestId);
   if (!request) throw new NotFoundError("Request not found.");
   if (request.status !== "PENDING")
     throw new ConflictError("This request has already been decided.");
@@ -169,11 +160,8 @@ export async function reviewChange(input: {
   };
 
   if (input.decision === "REJECT") {
-    const flipped = await prisma.changeRequest.updateMany({
-      where: { id: request.id, status: "PENDING" },
-      data: { status: "REJECTED", ...decided },
-    });
-    if (flipped.count === 0) throw new ConflictError("This request has already been decided.");
+    const flipped = await rejectPendingChangeRequest(request.id, decided);
+    if (flipped === 0) throw new ConflictError("This request has already been decided.");
   } else {
     const snapshot = await handler.load(request.entityId);
     if (!snapshot) {
@@ -185,12 +173,9 @@ export async function reviewChange(input: {
         `${conflicts.join(", ")} changed after this request was made. Reject it and ask for a fresh one.`,
       );
     }
-    await prisma.$transaction(async (tx) => {
-      const flipped = await tx.changeRequest.updateMany({
-        where: { id: request.id, status: "PENDING" },
-        data: { status: "APPROVED", ...decided },
-      });
-      if (flipped.count === 0) throw new ConflictError("This request has already been decided.");
+    await runInTransaction(async (tx) => {
+      const flipped = await approvePendingChangeRequest(tx, request.id, decided);
+      if (flipped === 0) throw new ConflictError("This request has already been decided.");
       await handler.apply(tx, request.entityId, proposed);
     });
   }

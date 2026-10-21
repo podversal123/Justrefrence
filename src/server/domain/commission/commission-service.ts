@@ -1,7 +1,8 @@
 // No "server-only" import — orchestration layer; every dependency below
 // already carries its own "server-only" guard. Same precedent as
 // checkout-service.ts (Phase 5) and registration-service.ts (Phase 4).
-import { prisma } from "@/server/lib/prisma";
+import { runInTransaction } from "@/server/repositories/transaction";
+import { findCommissionRuleById, findMemberUserId } from "@/server/repositories/commission/commission-lookups";
 import { findActiveRules } from "@/server/repositories/commission/commission-rule-repository";
 import {
   createCommission,
@@ -109,10 +110,7 @@ export async function createPendingCommissionsForOrder(
       const existing = await findExistingCommission(tx, order.id, ancestor.memberId, rule.level);
       if (existing) continue; // already created — structural idempotency guard
 
-      const referrer = await tx.memberProfile.findUnique({
-        where: { id: ancestor.memberId },
-        select: { userId: true },
-      });
+      const referrer = await findMemberUserId(tx, ancestor.memberId);
       if (!referrer) continue;
 
       const eligibility = evaluateEligibility(
@@ -192,9 +190,9 @@ export async function promoteCommissionsForCompletedOrder(orderId: string): Prom
   const pending = commissions.filter((c) => c.status === "PENDING");
   if (pending.length === 0) return;
 
-  await prisma.$transaction(async (tx) => {
+  await runInTransaction(async (tx) => {
     for (const commission of pending) {
-      const rule = await tx.commissionRule.findUnique({ where: { id: commission.ruleId } });
+      const rule = await findCommissionRuleById(tx, commission.ruleId);
       const releaseDelayDays = rule?.releaseDelayDays ?? 0;
       const releaseAt = new Date(Date.now() + releaseDelayDays * 24 * 60 * 60 * 1000);
       await transitionAndRecord(
@@ -223,7 +221,7 @@ export async function reverseOrCancelCommissionsForOrder(
   );
   if (actionable.length === 0) return;
 
-  await prisma.$transaction(async (tx) => {
+  await runInTransaction(async (tx) => {
     for (const commission of actionable) {
       const wasAvailable = commission.status === "AVAILABLE";
       const to = commission.status === "PENDING" ? "CANCELLED" : "REVERSED";
@@ -241,10 +239,7 @@ export async function reverseOrCancelCommissionsForOrder(
       // wallet — claw it back. ELIGIBLE/PENDING commissions never touched
       // the wallet, so there's nothing to reverse there.
       if (wasAvailable) {
-        const beneficiary = await tx.memberProfile.findUnique({
-          where: { id: commission.beneficiaryMemberId },
-          select: { userId: true },
-        });
+        const beneficiary = await findMemberUserId(tx, commission.beneficiaryMemberId);
         if (!beneficiary) continue;
 
         const wallet = await getOrCreateWalletTx(tx, beneficiary.userId);
@@ -296,14 +291,11 @@ export async function releaseEligibleCommissions(now: Date = new Date()): Promis
   const due = await findCommissionsPastReleaseAt(now);
   if (due.length === 0) return 0;
 
-  await prisma.$transaction(async (tx) => {
+  await runInTransaction(async (tx) => {
     for (const commission of due) {
       await transitionAndRecord(tx, commission.id, "ELIGIBLE", "AVAILABLE", "SYSTEM", null, null);
 
-      const beneficiary = await tx.memberProfile.findUnique({
-        where: { id: commission.beneficiaryMemberId },
-        select: { userId: true },
-      });
+      const beneficiary = await findMemberUserId(tx, commission.beneficiaryMemberId);
       if (!beneficiary) continue;
 
       const wallet = await getOrCreateWalletTx(tx, beneficiary.userId);
