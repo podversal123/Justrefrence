@@ -5,7 +5,12 @@ import { revalidatePath } from "next/cache";
 import { authorize } from "@/server/auth/authorize";
 import { recordAudit } from "@/server/domain/audit/record";
 import { checkResumeUpload, cleanFileName } from "@/server/domain/careers/resume-rules";
-import { prisma } from "@/server/lib/prisma";
+import {
+  createResume,
+  deleteResume,
+  getResumeForDelete,
+  setResumeStatus,
+} from "@/server/repositories/careers/resume-repository";
 import { removeResumeFile, uploadResumeFile } from "@/server/lib/resume-storage";
 import { resumeRateLimiter } from "@/server/lib/rate-limit";
 import { NotFoundError, RateLimitedError, ValidationError } from "@/server/lib/errors";
@@ -56,18 +61,16 @@ export async function submitResumeAction(
 
     storagePath = `resumes/${randomUUID()}.${check.extension}`;
     await uploadResumeFile(storagePath, Buffer.from(bytes), check.contentType);
-    await prisma.resumeSubmission.create({
-      data: {
-        fullName: parsed.data.fullName,
-        email: parsed.data.email,
-        phone: parsed.data.phone ?? null,
-        position: parsed.data.position,
-        message: parsed.data.message ?? null,
-        fileName: cleanFileName(file.name),
-        storagePath,
-        fileSize: file.size,
-        contentType: check.contentType,
-      },
+    await createResume({
+      fullName: parsed.data.fullName,
+      email: parsed.data.email,
+      phone: parsed.data.phone ?? null,
+      position: parsed.data.position,
+      message: parsed.data.message ?? null,
+      fileName: cleanFileName(file.name),
+      storagePath,
+      fileSize: file.size,
+      contentType: check.contentType,
     });
     logger.info("resume_received", { position: parsed.data.position, kind: check.extension });
     revalidatePath("/admin/resumes");
@@ -96,14 +99,8 @@ export async function updateResumeStatusAction(
   if (!parsed.success) return validationFailure("Invalid request.", parsed.error);
 
   try {
-    const updated = await prisma.resumeSubmission.updateMany({
-      where: { id: parsed.data.id },
-      data:
-        parsed.data.status === "REVIEWED"
-          ? { status: "REVIEWED", reviewedBy: session.userId, reviewedAt: new Date() }
-          : { status: "NEW", reviewedBy: null, reviewedAt: null },
-    });
-    if (updated.count === 0) throw new NotFoundError("Résumé not found.");
+    const updated = await setResumeStatus(parsed.data.id, parsed.data.status, session.userId);
+    if (updated === 0) throw new NotFoundError("Résumé not found.");
     await recordAudit({
       actorId: session.userId,
       action: "RESUME_STATUS_CHANGED",
@@ -133,14 +130,11 @@ export async function deleteResumeAction(
   if (!parsed.success) return validationFailure("Invalid request.", parsed.error);
 
   try {
-    const row = await prisma.resumeSubmission.findUnique({
-      where: { id: parsed.data.id },
-      select: { id: true, storagePath: true, position: true },
-    });
+    const row = await getResumeForDelete(parsed.data.id);
     if (!row) throw new NotFoundError("Résumé not found.");
     // The file first: if removing it fails, the row stays so the file is never left without an owner.
     await removeResumeFile(row.storagePath);
-    await prisma.resumeSubmission.delete({ where: { id: row.id } });
+    await deleteResume(row.id);
     await recordAudit({
       actorId: session.userId,
       action: "RESUME_DELETED",

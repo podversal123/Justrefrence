@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthSession } from "@/server/auth/session";
-import { prisma } from "@/server/lib/prisma";
+import { getWelcomeLetterData } from "@/server/repositories/identity/member-repository";
 import { getSiteSettings } from "@/server/lib/site-settings";
 import { renderWelcomeLetter } from "@/server/lib/welcome-letter-pdf";
 
@@ -24,15 +24,7 @@ export async function GET(request: Request) {
   }
 
   const [member, settings] = await Promise.all([
-    prisma.memberProfile.findUnique({
-      where: { userId },
-      select: {
-        memberId: true,
-        createdAt: true,
-        asMember: { select: { referrer: { select: { memberId: true } } } },
-        user: { select: { fullName: true, email: true, phone: true } },
-      },
-    }),
+    getWelcomeLetterData(userId),
     getSiteSettings(),
   ]);
   if (!member?.memberId) {

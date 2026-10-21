@@ -2,7 +2,7 @@ import { getT } from "@/i18n/server";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getAuthSession } from "@/server/auth/session";
-import { prisma } from "@/server/lib/prisma";
+import { listRecentAuditEntries } from "@/server/repositories/audit/audit-log-repository";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
@@ -26,11 +26,7 @@ export default async function AuditLogPage() {
     redirect("/unauthorized");
   }
 
-  const entries = await prisma.auditLog.findMany({
-    orderBy: { createdAt: "desc" },
-    take: 50,
-    include: { actor: { select: { email: true } } },
-  });
+  const entries = await listRecentAuditEntries(50);
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">

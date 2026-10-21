@@ -557,3 +557,30 @@ export async function payCheckoutWithWallet(input: {
   await markCheckoutOrdersPaid(input.checkoutId);
   return { paymentId: payment.id, amount, replay: false };
 }
+
+/**
+ * What the payment screen needs to offer "Pay from wallet": the amount and the balance (as strings of paise),
+ * or null when the checkout is not this member's, is already paid, or the wallet does not cover all of it.
+ */
+export async function getWalletPayOffer(
+  checkoutId: string,
+  userId: string,
+): Promise<{ amount: string; balance: string } | null> {
+  if (!/^[0-9a-f-]{36}$/i.test(checkoutId)) return null;
+  const owns = await prisma.checkout.findFirst({
+    where: { id: checkoutId, buyerId: userId },
+    select: { id: true },
+  });
+  if (!owns) return null;
+  const paid = await prisma.payment.findFirst({
+    where: { checkoutId, status: "CAPTURED" },
+    select: { id: true },
+  });
+  if (paid) return null;
+  const [{ amount }, wallet] = await Promise.all([
+    getCheckoutPayableAmount(checkoutId).catch(() => ({ amount: 0n })),
+    prisma.wallet.findUnique({ where: { ownerUserId: userId }, select: { balance: true } }),
+  ]);
+  if (amount <= 0n || !wallet || wallet.balance < amount) return null;
+  return { amount: amount.toString(), balance: wallet.balance.toString() };
+}

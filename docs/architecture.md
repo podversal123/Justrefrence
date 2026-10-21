@@ -26,6 +26,8 @@ Repositories (Prisma)             (data access only — no business logic)
 PostgreSQL (Supabase)
 ```
 
+One boundary is enforced by an automated test, `tests/unit/layering.test.ts`: pages, components and shared helpers (`src/app`, `src/components`, `src/lib`) may not import the database client. They call a repository or a domain function. Server actions and domain services do use the database client directly in places; moving those behind repositories is not done.
+
 Rules enforced by code review / lint, not just convention:
 
 - React components and Server Actions/Route Handlers **must not** contain money math, commission logic, or wallet mutation logic. They call a service function and render/return its result.

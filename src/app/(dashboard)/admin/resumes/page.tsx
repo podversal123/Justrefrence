@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { FileUser } from "lucide-react";
 import { getAuthSession } from "@/server/auth/session";
-import { prisma } from "@/server/lib/prisma";
+import { countNewResumes, listRecentResumes } from "@/server/repositories/careers/resume-repository";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ResumeRowActions } from "./resume-row-actions";
@@ -20,25 +20,7 @@ export default async function AdminResumesPage() {
   if (!session) redirect("/login");
   if (!session.permissions.has("career:manage")) redirect("/unauthorized");
 
-  const [rows, newCount] = await Promise.all([
-    prisma.resumeSubmission.findMany({
-      orderBy: [{ createdAt: "desc" }],
-      take: 100,
-      select: {
-        id: true,
-        fullName: true,
-        email: true,
-        phone: true,
-        position: true,
-        message: true,
-        fileName: true,
-        fileSize: true,
-        status: true,
-        createdAt: true,
-      },
-    }),
-    prisma.resumeSubmission.count({ where: { status: "NEW" } }),
-  ]);
+  const [rows, newCount] = await Promise.all([listRecentResumes(100), countNewResumes()]);
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">

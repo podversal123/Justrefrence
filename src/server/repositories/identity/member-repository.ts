@@ -169,3 +169,16 @@ export async function getUserPhone(userId: string) {
   });
   return user ?? { phone: null, phoneVerifiedAt: null };
 }
+
+/** What the welcome-letter PDF prints about a member (their ids, referrer and contact details). */
+export function getWelcomeLetterData(userId: string) {
+  return prisma.memberProfile.findUnique({
+    where: { userId },
+    select: {
+      memberId: true,
+      createdAt: true,
+      asMember: { select: { referrer: { select: { memberId: true } } } },
+      user: { select: { fullName: true, email: true, phone: true } },
+    },
+  });
+}

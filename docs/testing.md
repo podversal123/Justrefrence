@@ -11,6 +11,8 @@
 
 Every important business module listed in the brief has at least unit + integration coverage before it's considered done: AUTH, RBAC, PRODUCTS, CART, CHECKOUT, PAYMENT, ORDER, REFERRAL, COMMISSION, WALLET, PAYOUT, EPIN, SUBSCRIPTION, COUPON, REWARD, TDS, INVOICE, SUPPORT, MESSAGING.
 
+**How this repository actually runs them.** The Vitest integration tests (`tests/integration/`) use fakes for the database client and repositories, so they run anywhere with no database and state exactly what must and must not be written (for example `wallet-payment.test.ts` and `bid-payment.test.ts`). Behaviour that needs a real database is checked by the scripts in `scripts/verify-*.ts`, which build their own throwaway data on the real database and remove it again. The Playwright suite covers journeys that need no account (public pages, sign-in, redirects); signed-in journeys are covered by the two kinds of test above.
+
 ## 2. Required financial edge cases (explicit test list, not left to chance)
 
 - Duplicate Razorpay webhook delivery for the same payment → only one `payment_events`/wallet-credit side effect.

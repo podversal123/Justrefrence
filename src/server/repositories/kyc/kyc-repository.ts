@@ -64,3 +64,11 @@ export async function countDocumentsByStatus() {
     Record<KycDocumentStatus, number>
   >;
 }
+
+/** Just what the file-download route needs to decide who may open a document and where it is stored. */
+export function getKycDocumentForDownload(id: string) {
+  return prisma.kycDocument.findUnique({
+    where: { id },
+    select: { id: true, ownerUserId: true, storagePath: true, type: true },
+  });
+}

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAuthSession } from "@/server/auth/session";
 import { getResumeSignedUrl } from "@/server/lib/resume-storage";
-import { prisma } from "@/server/lib/prisma";
+import { getResumeForDownload } from "@/server/repositories/careers/resume-repository";
 import { recordAudit } from "@/server/domain/audit/record";
 
 /**
@@ -19,10 +19,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   if (!/^[0-9a-f-]{36}$/i.test(id)) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
-  const row = await prisma.resumeSubmission.findUnique({
-    where: { id },
-    select: { id: true, storagePath: true, fileName: true, position: true },
-  });
+  const row = await getResumeForDownload(id);
   if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   await recordAudit({

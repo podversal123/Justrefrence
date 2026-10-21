@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAuthSession } from "@/server/auth/session";
 import { getKycSignedUrl } from "@/server/lib/kyc-storage";
-import { prisma } from "@/server/lib/prisma";
+import { getKycDocumentForDownload } from "@/server/repositories/kyc/kyc-repository";
 import { recordAudit } from "@/server/domain/audit/record";
 
 /**
@@ -19,10 +19,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   if (!/^[0-9a-f-]{36}$/i.test(id))
     return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const doc = await prisma.kycDocument.findUnique({
-    where: { id },
-    select: { id: true, ownerUserId: true, storagePath: true, type: true },
-  });
+  const doc = await getKycDocumentForDownload(id);
   if (!doc) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const isOwner = doc.ownerUserId === session.userId;
