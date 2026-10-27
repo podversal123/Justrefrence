@@ -1,11 +1,12 @@
-import { getT } from "@/i18n/server";
+import { getFormat, getLocale, getT } from "@/i18n/server";
 import type { Metadata, Route } from "next";
-import { Suspense } from "react";
+import { Suspense, cache } from "react";
 import Link from "next/link";
 import { Package } from "lucide-react";
 import { RequirementCard } from "@/components/bidding/requirement-card";
 import { ListingCard } from "@/components/catalog/listing-card";
 import { HeroStage } from "@/components/portal/hero-carousel";
+import { NewsTicker, type NewsItem } from "@/components/portal/news-ticker";
 import { categoryVisual } from "@/components/portal/category-visual";
 import { buttonVariants } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -20,7 +21,10 @@ import {
 import { SponsoredStrip } from "@/components/ads/sponsored-strip";
 import { listClosingSoon } from "@/server/repositories/bidding/bidding-repository";
 import {
-  getMarketplaceStats,
+  getPublishedPostBySlug,
+  listPublishedPosts,
+} from "@/server/repositories/content/blog-repository";
+import {
   getProductCategoriesWithCounts,
   getServiceCategoriesWithCounts,
   type CategoryWithCount,
@@ -65,7 +69,7 @@ async function HomeHero() {
   } catch (error) {
     console.error("[home] failed to load banners", error);
   }
-  return <HeroStage slides={slides} />;
+  return <HeroStage slides={slides} aside={<NewsPanel className="h-full" />} />;
 }
 
 export default async function HomePage() {
@@ -75,7 +79,7 @@ export default async function HomePage() {
       <HomeHero />
 
       <Suspense fallback={null}>
-        <StatsStrip />
+        <LeadStory />
       </Suspense>
 
       <Suspense fallback={null}>
@@ -308,42 +312,114 @@ async function FeaturedSection({
   );
 }
 
-/** Four live counts, the way a procurement portal opens: what is on offer, at a glance. */
-async function StatsStrip() {
-  const t = await getT();
-  let stats: Awaited<ReturnType<typeof getMarketplaceStats>> | null = null;
+/** The newest published posts, read once per request however many places on the page use them. */
+const loadNews = cache(async () => {
+  const { formatDate } = await getFormat();
+  const locale = await getLocale();
+  const badge = (date: Date, part: "day" | "month") =>
+    new Intl.DateTimeFormat(locale, {
+      timeZone: "Asia/Kolkata",
+      ...(part === "day" ? { day: "numeric" } : { month: "short" }),
+    }).format(date);
   try {
-    stats = await getMarketplaceStats();
+    const posts = await listPublishedPosts(10);
+    const items: NewsItem[] = posts.map((post) => ({
+      id: post.id,
+      title: post.title,
+      excerpt: post.excerpt,
+      href: `/blog/${post.slug}`,
+      date: post.publishedAt ? formatDate(post.publishedAt) : "",
+      day: post.publishedAt ? badge(post.publishedAt, "day") : "",
+      month: post.publishedAt ? badge(post.publishedAt, "month") : "",
+    }));
+    const newest = posts[0] ? await getPublishedPostBySlug(posts[0].slug) : null;
+    const lead = newest
+      ? {
+          title: newest.title,
+          slug: newest.slug,
+          date: newest.publishedAt ? formatDate(newest.publishedAt) : "",
+          // Plain text, paragraphs split on blank lines, as the blog page shows a post.
+          paragraphs: newest.body
+            .split(/\r?\n[ \t]*\r?\n/)
+            .map((p) => p.trim())
+            .filter(Boolean),
+        }
+      : null;
+    return { items, lead };
   } catch (error) {
-    console.error("[home] failed to load marketplace stats", error);
+    console.error("[home] failed to load news", error);
+    return { items: [] as NewsItem[], lead: null };
   }
-  if (!stats) return null;
-  const figures = [
-    { label: t("Approved vendors"), value: stats.vendors },
-    { label: t("Products"), value: stats.products },
-    { label: t("Services"), value: stats.services },
-    { label: t("Open bids"), value: stats.bids },
-  ];
+});
+
+/**
+ * The News & Events box: a list of the newest published posts that scrolls upward by itself. Every
+ * word comes from the posts the team writes under Admin, Blog, so nothing here is typed into the
+ * code. With no published posts there is no box.
+ */
+async function NewsPanel({ className }: { className?: string }) {
+  const t = await getT();
+  const { items } = await loadNews();
+  if (items.length === 0) return null;
+  return (
+    <aside
+      className={cn(
+        "bg-ink text-ink-foreground border-primary flex flex-col overflow-hidden border-t-4",
+        className,
+      )}
+    >
+      <div className="flex items-center justify-between gap-3 border-b border-white/15 px-5 py-3.5">
+        <h2 className="text-lg">{t("News & Events")}</h2>
+        <Link
+          href={"/blog" as Route}
+          className="text-ink-foreground/80 text-xs underline-offset-4 hover:text-white hover:underline"
+        >
+          {t("View all")}
+        </Link>
+      </div>
+      {/* The list fades out at the top and bottom edge, so items slide in and out softly. */}
+      <div className="min-h-0 flex-1 [mask-image:linear-gradient(to_bottom,transparent,black_7%,black_93%,transparent)] px-5 [-webkit-mask-image:linear-gradient(to_bottom,transparent,black_7%,black_93%,transparent)]">
+        <NewsTicker items={items} label={t("News & Events")} className="h-full min-h-72" />
+      </div>
+    </aside>
+  );
+}
+
+/**
+ * Under the banner: the newest published post in full, as the old Justreference site opened. On
+ * wide screens the News & Events box sits over the banner (beside Become a vendor); on narrower
+ * screens, where the banner has no room for it, the box sits next to the article here instead.
+ */
+async function LeadStory() {
+  const t = await getT();
+  const { items, lead } = await loadNews();
+  if (items.length === 0 || !lead) return null;
 
   return (
-    <section aria-label={t("Marketplace at a glance")} className="bg-muted border-b">
-      <dl className="mx-auto grid w-full max-w-7xl grid-cols-2 px-4 sm:grid-cols-4">
-        {figures.map((figure, index) => (
-          <div
-            key={figure.label}
-            className={cn(
-              "py-4 sm:px-6",
-              index > 0 && "sm:border-l",
-              index % 2 === 1 && "border-l",
-            )}
-          >
-            <dd className="text-ink text-2xl font-medium tabular-nums">
-              {figure.value.toLocaleString("en-IN")}
-            </dd>
-            <dt className="text-muted-foreground text-sm">{figure.label}</dt>
+    <section className="mx-auto w-full max-w-7xl px-4 pt-10">
+      <div className="grid gap-6 lg:grid-cols-[1fr_24rem] xl:grid-cols-1">
+        <article className="space-y-3">
+          <div className="border-ink border-b-2 pb-2">
+            <h2 className="text-2xl">{lead.title}</h2>
+            {lead.date ? <p className="text-muted-foreground text-xs">{lead.date}</p> : null}
           </div>
-        ))}
-      </dl>
+          <div className="space-y-3 leading-relaxed">
+            {lead.paragraphs.map((paragraph, index) => (
+              <p key={index} className="whitespace-pre-line">
+                {paragraph}
+              </p>
+            ))}
+          </div>
+          <Link
+            href={`/blog/${lead.slug}` as Route}
+            className="text-primary inline-block text-sm hover:underline"
+          >
+            {t("View details")}
+          </Link>
+        </article>
+
+        <NewsPanel className="h-96 xl:hidden" />
+      </div>
     </section>
   );
 }

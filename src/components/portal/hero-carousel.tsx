@@ -20,7 +20,14 @@ const ROTATE_MS = 7000;
  * Accessibility: no auto-advance for reduced motion; pauses while hovered or
  * focused (WCAG 2.2.2); photos are decorative.
  */
-export function HeroStage({ slides }: { slides: readonly HeroSlide[] }) {
+export function HeroStage({
+  slides,
+  aside,
+}: {
+  slides: readonly HeroSlide[];
+  /** The second part of the hero, shown beside the banner on wide screens (the News & Events panel). */
+  aside?: React.ReactNode;
+}) {
   const t = useT();
   const [index, setIndex] = useState(0);
   const [hovering, setHovering] = useState(false);
@@ -64,74 +71,90 @@ export function HeroStage({ slides }: { slides: readonly HeroSlide[] }) {
       onMouseLeave={() => setHovering(false)}
       onFocusCapture={() => setHovering(true)}
       onBlurCapture={() => setHovering(false)}
-      className="bg-ink relative isolate overflow-hidden text-white"
+      className="border-b"
     >
-      {slides.map((s, i) => (
-        <div
-          key={s.id}
-          aria-hidden="true"
-          className={cn(
-            "absolute inset-0 -z-20 transition-opacity duration-1000 motion-reduce:transition-none",
-            i === index ? "opacity-100" : "opacity-0",
-          )}
-        >
-          <Image
-            src={s.image}
-            alt=""
-            fill
-            priority={i === 0}
-            sizes="100vw"
-            className="object-cover"
-          />
-        </div>
-      ))}
-      {/* Scrim: dark enough behind the text, photo stays vivid on the right. */}
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 -z-10 bg-gradient-to-r from-black/75 via-black/40 to-black/5"
-      />
-
-      <div className="mx-auto flex min-h-[22rem] w-full max-w-7xl flex-col justify-center px-4 py-12 sm:min-h-[24rem] lg:min-h-[26rem]">
-        <div aria-live={autoplay ? "off" : "polite"} className="max-w-2xl">
-          <Heading
-            key={slide.id}
-            className="animate-in fade-in text-3xl leading-tight font-medium text-balance duration-500 motion-reduce:animate-none sm:text-4xl lg:text-5xl"
-          >
-            {t(slide.headline)}
-          </Heading>
-          {slide.subline ? (
-            <p
-              key={`${slide.id}-sub`}
-              className="animate-in fade-in mt-3 max-w-xl text-lg leading-relaxed text-white/90 duration-500 motion-reduce:animate-none"
+      {/* Two parts, edge to edge: the banner, and (on wide screens) the News & Events panel. */}
+      <div className="grid w-full xl:grid-cols-[minmax(0,1fr)_26rem]">
+        <div className="bg-ink relative isolate min-h-[22rem] overflow-hidden text-white sm:min-h-[24rem] lg:min-h-[26rem]">
+          {slides.map((s, i) => (
+            <div
+              key={s.id}
+              aria-hidden="true"
+              className={cn(
+                "absolute inset-0 -z-20 transition-opacity duration-1000 motion-reduce:transition-none",
+                i === index ? "opacity-100" : "opacity-0",
+              )}
             >
-              {t(slide.subline)}
-            </p>
-          ) : null}
-          {external ? (
-            <a href={slide.cta.href} target="_blank" rel="noopener noreferrer" className={ctaClass}>
-              {t(slide.cta.label)}
-              <ArrowRight />
-            </a>
-          ) : (
-            <Link href={slide.cta.href as Route} className={ctaClass}>
-              {t(slide.cta.label)}
-              <ArrowRight />
-            </Link>
-          )}
-        </div>
-      </div>
+              <Image
+                src={s.image}
+                alt=""
+                fill
+                priority={i === 0}
+                sizes="100vw"
+                className="object-cover"
+              />
+            </div>
+          ))}
+          {/* Scrim: dark enough behind the text, photo stays vivid on the right. */}
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 -z-10 bg-gradient-to-r from-black/75 via-black/40 to-black/5"
+          />
 
-      <div className="absolute inset-x-0 bottom-0">
-        <div className="mx-auto flex w-full max-w-7xl justify-end gap-2 px-4 pb-4">
-          <button type="button" onClick={() => go(index - 1)} className={control}>
-            <ChevronLeft className="size-5" />
-            <span className="sr-only">{t("Previous slide")}</span>
-          </button>
-          <button type="button" onClick={() => go(index + 1)} className={control}>
-            <ChevronRight className="size-5" />
-            <span className="sr-only">{t("Next slide")}</span>
-          </button>
+          {/* The text lines up with the page content (the 80rem column) however wide the screen is. */}
+          <div className="flex min-h-[inherit] flex-col justify-center px-4 py-12 xl:pl-[max(1rem,calc((100vw-80rem)/2+1rem))]">
+            <div aria-live={autoplay ? "off" : "polite"} className="max-w-xl">
+              <Heading
+                key={slide.id}
+                className="animate-in fade-in text-3xl leading-tight font-medium text-balance duration-500 motion-reduce:animate-none sm:text-4xl"
+              >
+                {t(slide.headline)}
+              </Heading>
+              {slide.subline ? (
+                <p
+                  key={`${slide.id}-sub`}
+                  className="animate-in fade-in mt-3 max-w-xl text-lg leading-relaxed text-white/90 duration-500 motion-reduce:animate-none"
+                >
+                  {t(slide.subline)}
+                </p>
+              ) : null}
+              {external ? (
+                <a
+                  href={slide.cta.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={ctaClass}
+                >
+                  {t(slide.cta.label)}
+                  <ArrowRight />
+                </a>
+              ) : (
+                <Link href={slide.cta.href as Route} className={ctaClass}>
+                  {t(slide.cta.label)}
+                  <ArrowRight />
+                </Link>
+              )}
+            </div>
+          </div>
+
+          <div className="absolute bottom-4 left-0 ml-4 flex gap-2 xl:ml-[max(1rem,calc((100vw-80rem)/2+1rem))]">
+            <button type="button" onClick={() => go(index - 1)} className={control}>
+              <ChevronLeft className="size-5" />
+              <span className="sr-only">{t("Previous slide")}</span>
+            </button>
+            <button type="button" onClick={() => go(index + 1)} className={control}>
+              <ChevronRight className="size-5" />
+              <span className="sr-only">{t("Next slide")}</span>
+            </button>
+          </div>
         </div>
+
+        {aside ? (
+          /* The panel is laid over the second column, so its height follows the banner (its list never stretches the row). */
+          <div className="relative hidden xl:block">
+            <div className="absolute inset-0">{aside}</div>
+          </div>
+        ) : null}
       </div>
     </section>
   );

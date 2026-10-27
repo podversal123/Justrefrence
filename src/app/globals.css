@@ -302,6 +302,40 @@
   background-size: 22px 22px;
 }
 
+/* News & Events box: the list slides up by exactly one copy (the list is written twice), then starts over. */
+@keyframes news-scroll {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-50%);
+  }
+}
+.news-ticker-track {
+  animation: news-scroll linear infinite;
+  will-change: transform;
+}
+/* Stops while the pointer is over the box or a headline has focus, so it can be read and clicked. */
+.news-ticker:hover .news-ticker-track,
+.news-ticker:focus-within .news-ticker-track {
+  animation-play-state: paused;
+}
+/* Each copy is at least as tall as the box, so a short list still loops cleanly. */
+.news-ticker-copy {
+  min-height: 28rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  .news-ticker {
+    overflow-y: auto;
+  }
+  .news-ticker-track {
+    animation: none;
+  }
+  .news-ticker-copy[aria-hidden="true"] {
+    display: none;
+  }
+}
+
 /* Hero banner: slow "Ken Burns" push-in on the active photo, and a progress bar that fills while a slide is showing. */
 @keyframes hero-zoom {
   from {
