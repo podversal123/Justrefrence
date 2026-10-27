@@ -34,7 +34,13 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
   );
 }
 
-export default async function AdminMemberPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function AdminMemberPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | undefined>>;
+}) {
   const t = await getT();
   const { formatDate } = await getFormat();
   const session = await getAuthSession();
@@ -42,6 +48,7 @@ export default async function AdminMemberPage({ params }: { params: Promise<{ id
   if (!session.permissions.has("member:read:any")) redirect("/unauthorized");
 
   const { id } = await params;
+  const { edit: openEdit } = await searchParams;
   const detail = await getMemberDetail(id).catch(() => null);
   if (!detail) notFound();
   const { user, directReferrals } = detail;
@@ -77,7 +84,7 @@ export default async function AdminMemberPage({ params }: { params: Promise<{ id
             {profile.memberId} · {t("Joined {date}", { date: formatDate(user.createdAt) })}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div id="actions" className="flex scroll-mt-20 flex-wrap gap-2">
           {session.permissions.has("message:send") ? (
             <Button
               variant="outline"
@@ -102,6 +109,7 @@ export default async function AdminMemberPage({ params }: { params: Promise<{ id
           />
           {session.permissions.has("member:update:any") && !isSelf ? (
             <EditMemberDialog
+              defaultOpen={openEdit === "1"}
               needsApproval={!session.permissions.has("change:apply_direct")}
               member={{
                 userId: user.id,
@@ -121,7 +129,7 @@ export default async function AdminMemberPage({ params }: { params: Promise<{ id
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Card>
+        <Card id="profile" className="scroll-mt-20">
           <CardHeader>
             <CardTitle>{t("Profile")}</CardTitle>
           </CardHeader>
@@ -152,7 +160,7 @@ export default async function AdminMemberPage({ params }: { params: Promise<{ id
         </Card>
 
         <div className="flex flex-col gap-4">
-          <Card>
+          <Card id="wallet" className="scroll-mt-20">
             <CardHeader>
               <CardTitle>{t("Wallet")}</CardTitle>
             </CardHeader>
@@ -168,7 +176,7 @@ export default async function AdminMemberPage({ params }: { params: Promise<{ id
               </dl>
             </CardContent>
           </Card>
-          <Card>
+          <Card id="bank" className="scroll-mt-20">
             <CardHeader>
               <CardTitle>{t("Bank account")}</CardTitle>
             </CardHeader>
@@ -249,7 +257,7 @@ export default async function AdminMemberPage({ params }: { params: Promise<{ id
         </CardContent>
       </Card>
 
-      <Card>
+      <Card id="referrals" className="scroll-mt-20">
         <CardHeader>
           <CardTitle>
             {t("Direct referrals ({count})", { count: directReferrals.length })}

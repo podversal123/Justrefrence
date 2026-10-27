@@ -80,7 +80,12 @@ export async function BusinessView({
         />
       </div>
 
-      <form method="get" className="flex flex-wrap items-end gap-3" role="search">
+      <form
+        id="business-search"
+        method="get"
+        className="flex scroll-mt-20 flex-wrap items-end gap-3"
+        role="search"
+      >
         <input type="hidden" name="tab" value="business" />
         <div className="space-y-1">
           <label htmlFor="biz-from" className="text-xs font-medium">

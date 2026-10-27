@@ -20,6 +20,8 @@ describe("sidebar structure", () => {
       // Admin pages have no panels tag and are never shown to a member.
       if (!item.panels && item.href.startsWith("/admin")) continue;
       if (!item.panels && item.href === "/audit-log") continue;
+      // No menu lists Profile: it is reached from the header (settings icon and account menu).
+      if (!item.panels && item.href === "/profile") continue;
       expect(placed.has(item.href), item.href).toBe(true);
     }
   });
@@ -31,14 +33,17 @@ describe("sidebar structure", () => {
       if ((item.href as string) === "/become-seller") continue;
       expect(placed.has(item.href), item.href).toBe(true);
     }
-    for (const href of ["/dashboard", "/profile", "/messages"]) {
+    for (const href of ["/dashboard", "/messages"]) {
       expect(placed.has(href), href).toBe(true);
     }
   });
 
   it("gives every page a place in the Admin panel, so nothing a staff account may open goes missing", () => {
     const placed = new Set(hrefsPlaced("ADMIN"));
-    for (const item of allItems) expect(placed.has(item.href), item.href).toBe(true);
+    for (const item of allItems) {
+      if (item.href === "/profile") continue; // reached from the header, not the menu
+      expect(placed.has(item.href), item.href).toBe(true);
+    }
   });
 
   it("places a page only once in a panel", () => {
@@ -62,7 +67,6 @@ describe("resolveSidebar", () => {
   it("keeps the order of the structure and groups related pages into a dropdown", () => {
     const visible = new Map([
       page("/dashboard"),
-      page("/profile"),
       page("/cart"),
       page("/orders"),
       page("/wallet"),
@@ -71,9 +75,9 @@ describe("resolveSidebar", () => {
     const result = resolveSidebar("CUSTOMER", visible);
     expect(result.map((e) => (e.kind === "link" ? e.item.href : e.section.key))).toEqual([
       "/dashboard",
-      "/profile",
-      "shopping",
-      "money",
+      "purchase",
+      "/account-report",
+      "/wallet",
     ]);
   });
 
@@ -90,13 +94,13 @@ describe("resolveSidebar", () => {
   it("lists only the pages that are visible inside a dropdown", () => {
     const result = resolveSidebar(
       "ADMIN",
-      new Map([page("/admin/members"), page("/admin/vendors"), page("/admin/roles")]),
+      new Map([page("/admin/members"), page("/admin/vendors"), page("/admin/kyc")]),
     );
     const people = result.find((e) => e.kind === "section");
     expect(people?.kind === "section" && people.items.map((i) => i.href)).toEqual([
       "/admin/members",
       "/admin/vendors",
-      "/admin/roles",
+      "/admin/kyc",
     ]);
   });
 });

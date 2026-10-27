@@ -39,6 +39,12 @@ vi.mock("@/server/lib/image-upload", () => ({
   deleteCatalogImage: mockDeleteCatalogImage,
 }));
 
+vi.mock("@/server/lib/project-document", () => ({
+  hasProjectDocument: () => false,
+  storeProjectDocument: vi.fn(),
+  removeProjectDocument: vi.fn(),
+}));
+
 const repoMock = {
   list: vi.fn(),
   count: vi.fn(),

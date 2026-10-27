@@ -25,15 +25,17 @@ export interface CategoryVisual {
   tile: string;
 }
 
+// One neutral tone for every category: the icon tells categories apart, colour is kept for status.
+const NEUTRAL = "bg-muted text-ink";
 const TONES = {
-  rose: "bg-rose-100 text-rose-700",
-  amber: "bg-amber-100 text-amber-800",
-  emerald: "bg-emerald-100 text-emerald-700",
-  sky: "bg-sky-100 text-sky-700",
-  violet: "bg-violet-100 text-violet-700",
-  orange: "bg-orange-100 text-orange-700",
-  teal: "bg-teal-100 text-teal-700",
-  indigo: "bg-indigo-100 text-indigo-700",
+  rose: NEUTRAL,
+  amber: NEUTRAL,
+  emerald: NEUTRAL,
+  sky: NEUTRAL,
+  violet: NEUTRAL,
+  orange: NEUTRAL,
+  teal: NEUTRAL,
+  indigo: NEUTRAL,
 } as const;
 
 /** Keyword → icon + tint. First match wins; anything unknown gets a neutral package icon. */

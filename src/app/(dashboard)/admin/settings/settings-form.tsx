@@ -22,7 +22,7 @@ export function SettingsForm({ settings, canEdit }: { settings: SiteSettings; ca
     >
       {(errors) => (
         <fieldset disabled={!canEdit} className="space-y-8">
-          <section className="space-y-4">
+          <section id="maintenance" className="scroll-mt-20 space-y-4">
             <div>
               <h2 className="text-base font-semibold">{t("Website maintenance")}</h2>
               <p className="text-muted-foreground text-sm">

@@ -21,6 +21,7 @@ import { IdleLogout } from "@/components/layout/idle-logout";
 import { MaintenanceNotice } from "@/components/portal/maintenance-notice";
 import { canBypassMaintenance, getSiteSettings } from "@/server/lib/site-settings";
 import { countUnreadInbox } from "@/server/repositories/sms/sms-repository";
+import { getMemberIdentity } from "@/server/repositories/identity/member-repository";
 import {
   countUnreadNotifications,
   listRecentNotifications,
@@ -127,6 +128,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
         }
       : null;
 
+  const memberIds =
+    panel !== "ADMIN" && session.hasMemberProfile
+      ? await getMemberIdentity(session.userId).catch(() => null)
+      : null;
+
   return (
     <SidebarProvider>
       <AppSidebar
@@ -156,6 +162,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           notifications={notifications}
           unreadCount={unreadCount}
           memberShortcuts={memberShortcuts}
+          memberIds={memberIds}
         />
         {/* SidebarInset above already renders the page's single <main> landmark. */}
         <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">{children}</div>

@@ -3,19 +3,28 @@
 import { useState, type ReactNode } from "react";
 import type { Route } from "next";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
+import { useT } from "@/i18n/provider";
 import {
   ArrowRightLeft,
+  Banknote,
+  Briefcase,
   ChevronDown,
+  CircleDollarSign,
   Gavel,
+  Gift,
   Landmark,
+  LifeBuoy,
+  LogOut,
   MessageSquare,
   Network,
   Package,
   Settings,
+  ShieldCheck,
   ShoppingBag,
   ShoppingCart,
   Store,
+  Ticket,
   User,
   Users,
   type LucideIcon,
@@ -23,6 +32,7 @@ import {
 import { Logo } from "@/components/brand/logo";
 import { cn } from "@/lib/utils";
 import type { Panel } from "@/server/auth/panel";
+import { logoutAction } from "@/server/services/auth-actions";
 import { switchPanelAction } from "@/server/services/panel-actions";
 import {
   Sidebar,
@@ -62,6 +72,13 @@ const SECTION_ICONS: Record<string, LucideIcon> = {
   bag: ShoppingBag,
   network: Network,
   store: Store,
+  shield: ShieldCheck,
+  briefcase: Briefcase,
+  gift: Gift,
+  ticket: Ticket,
+  help: LifeBuoy,
+  coins: CircleDollarSign,
+  bank: Banknote,
   gavel: Gavel,
 };
 
@@ -72,20 +89,52 @@ const PANEL_STYLES: Record<Panel, string> = {
   CUSTOMER: "bg-emerald-400/20 text-emerald-200",
 };
 
-/** A page is "current" on its own address and on anything below it (an order's page counts as Orders). */
-function isCurrent(pathname: string, href: string): boolean {
-  return pathname === href || pathname.startsWith(`${href}/`);
+/**
+ * How well a menu link matches the page being viewed, or -1 for no match. A link is current on its own
+ * address and on anything below it (an order's page counts as Orders). A link that carries a filter
+ * ("?status=BLOCKED") only matches while that filter is applied, and a link to a spot on a page
+ * ("#maintenance") is never marked, so it cannot compete with the page link itself.
+ */
+function matchScore(pathname: string, search: URLSearchParams, href: string): number {
+  const target = new URL(href, "http://local");
+  if (target.hash) return -1;
+  const onPage = pathname === target.pathname || pathname.startsWith(`${target.pathname}/`);
+  if (!onPage) return -1;
+  let filters = 0;
+  for (const [key, value] of target.searchParams) {
+    if (search.get(key) !== value) return -1;
+    filters += 1;
+  }
+  return target.pathname.length * 10 + filters;
+}
+
+/** The one link to mark as current: the closest match, so "Blocked members" wins over "Members" while its filter is on. */
+function pickActive(
+  entries: SidebarEntry[],
+  pathname: string,
+  search: URLSearchParams,
+): string | null {
+  let best: { href: string; score: number } | null = null;
+  const consider = (href: string) => {
+    const score = matchScore(pathname, search, href);
+    if (score >= 0 && (!best || score > best.score)) best = { href, score };
+  };
+  for (const entry of entries) {
+    if (entry.kind === "link") consider(entry.item.href);
+    else for (const item of entry.items) consider(item.href);
+  }
+  return best ? (best as { href: string }).href : null;
 }
 
 function SectionDropdown({
   entry,
-  pathname,
+  active,
 }: {
   entry: Extract<SidebarEntry, { kind: "section" }>;
-  pathname: string;
+  active: string | null;
 }) {
   const { state, isMobile, setOpen } = useSidebar();
-  const containsCurrent = entry.items.some((item) => isCurrent(pathname, item.href));
+  const containsCurrent = entry.items.some((item) => item.href === active);
   // Open by default when the page you are on lives in it; after that you decide.
   const [chosen, setChosen] = useState<boolean | null>(null);
   const open = chosen ?? containsCurrent;
@@ -133,7 +182,7 @@ function SectionDropdown({
             {entry.items.map((item) => (
               <SidebarMenuSubItem key={item.href}>
                 <SidebarMenuSubButton
-                  isActive={isCurrent(pathname, item.href)}
+                  isActive={item.href === active}
                   render={
                     <Link href={item.href}>
                       {item.icon}
@@ -168,20 +217,23 @@ export function AppSidebar({
   /** Set for a member who is also a seller: the panel the switch button opens. */
   switchTo?: { panel: "VENDOR" | "CUSTOMER"; label: string } | null;
 }) {
+  const t = useT();
   const pathname = usePathname();
+  const search = useSearchParams();
+  const active = pickActive(entries, pathname, search);
 
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
         <Link href="/dashboard" className="flex items-center gap-2 px-2 py-1.5">
           <Logo size={28} />
-          <span className="text-sm font-semibold tracking-tight group-data-[collapsible=icon]:hidden">
+          <span className="text-sm font-medium group-data-[collapsible=icon]:hidden">
             Justreference
           </span>
         </Link>
         <p
           className={cn(
-            "mx-2 w-fit rounded-full px-2.5 py-0.5 text-xs font-semibold group-data-[collapsible=icon]:hidden",
+            "mx-2 w-fit rounded-sm px-2 py-0.5 text-xs font-medium group-data-[collapsible=icon]:hidden",
             isSuperAdmin ? "bg-rose-400/25 text-rose-100" : PANEL_STYLES[panel],
           )}
         >
@@ -196,7 +248,7 @@ export function AppSidebar({
                 entry.kind === "link" ? (
                   <SidebarMenuItem key={entry.item.href}>
                     <SidebarMenuButton
-                      isActive={isCurrent(pathname, entry.item.href)}
+                      isActive={entry.item.href === active}
                       tooltip={entry.item.title}
                       render={
                         <Link href={entry.item.href}>
@@ -207,7 +259,7 @@ export function AppSidebar({
                     />
                   </SidebarMenuItem>
                 ) : (
-                  <SectionDropdown key={entry.key} entry={entry} pathname={pathname} />
+                  <SectionDropdown key={entry.key} entry={entry} active={active} />
                 ),
               )}
             </SidebarMenu>
@@ -227,6 +279,15 @@ export function AppSidebar({
             </button>
           </form>
         ) : null}
+        <form action={logoutAction} className="px-2 group-data-[collapsible=icon]:hidden">
+          <button
+            type="submit"
+            className="border-sidebar-border hover:bg-sidebar-accent flex w-full items-center gap-2 rounded-lg border px-3 py-2 text-left text-xs font-medium"
+          >
+            <LogOut className="size-4 shrink-0" aria-hidden="true" />
+            {t("Log out")}
+          </button>
+        </form>
         <div className="text-muted-foreground truncate px-2 py-1 text-xs group-data-[collapsible=icon]:hidden">
           <div className="text-foreground truncate font-medium">{userEmail}</div>
           <div>{roleLabel}</div>

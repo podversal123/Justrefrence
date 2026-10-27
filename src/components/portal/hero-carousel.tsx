@@ -51,10 +51,10 @@ export function HeroStage({ slides }: { slides: readonly HeroSlide[] }) {
   const external = /^https?:/i.test(slide.cta.href);
   const ctaClass = buttonVariants({
     size: "touch",
-    className: "mt-8 px-6 text-base shadow-lg shadow-black/30",
+    className: "mt-6 px-6 text-base",
   });
   const control =
-    "flex size-10 items-center justify-center rounded-full border border-white/25 bg-black/25 text-white backdrop-blur transition-colors hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:outline-none";
+    "flex size-9 items-center justify-center rounded-sm border border-white/40 bg-black/30 text-white transition-colors hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:outline-none";
 
   return (
     <section
@@ -82,36 +82,27 @@ export function HeroStage({ slides }: { slides: readonly HeroSlide[] }) {
             priority={i === 0}
             sizes="100vw"
             className="object-cover"
-            style={
-              i === index
-                ? { animation: `hero-zoom ${ROTATE_MS + 2500}ms ease-out forwards` }
-                : undefined
-            }
           />
         </div>
       ))}
-      {/* Light scrim: dark enough behind the text, photo stays vivid on the right. */}
+      {/* Scrim: dark enough behind the text, photo stays vivid on the right. */}
       <div
         aria-hidden="true"
         className="absolute inset-0 -z-10 bg-gradient-to-r from-black/75 via-black/40 to-black/5"
       />
-      <div
-        aria-hidden="true"
-        className="absolute inset-x-0 bottom-0 -z-10 h-40 bg-gradient-to-t from-black/50 to-transparent"
-      />
 
-      <div className="mx-auto flex min-h-[30rem] w-full max-w-7xl flex-col justify-center px-4 pt-16 pb-24 sm:min-h-[34rem] lg:min-h-[36rem]">
+      <div className="mx-auto flex min-h-[22rem] w-full max-w-7xl flex-col justify-center px-4 py-12 sm:min-h-[24rem] lg:min-h-[26rem]">
         <div aria-live={autoplay ? "off" : "polite"} className="max-w-2xl">
           <Heading
             key={slide.id}
-            className="font-display animate-in fade-in slide-in-from-bottom-2 text-4xl leading-[1.1] font-bold tracking-[-0.02em] text-balance duration-700 motion-reduce:animate-none sm:text-5xl lg:text-[3.5rem]"
+            className="animate-in fade-in text-3xl leading-tight font-medium text-balance duration-500 motion-reduce:animate-none sm:text-4xl lg:text-5xl"
           >
             {t(slide.headline)}
           </Heading>
           {slide.subline ? (
             <p
               key={`${slide.id}-sub`}
-              className="animate-in fade-in mt-5 max-w-xl text-lg leading-relaxed text-white/90 delay-150 duration-700 motion-reduce:animate-none sm:text-xl"
+              className="animate-in fade-in mt-3 max-w-xl text-lg leading-relaxed text-white/90 duration-500 motion-reduce:animate-none"
             >
               {t(slide.subline)}
             </p>
@@ -131,7 +122,7 @@ export function HeroStage({ slides }: { slides: readonly HeroSlide[] }) {
       </div>
 
       <div className="absolute inset-x-0 bottom-0">
-        <div className="mx-auto flex w-full max-w-7xl justify-end gap-2 px-4 pb-8">
+        <div className="mx-auto flex w-full max-w-7xl justify-end gap-2 px-4 pb-4">
           <button type="button" onClick={() => go(index - 1)} className={control}>
             <ChevronLeft className="size-5" />
             <span className="sr-only">{t("Previous slide")}</span>

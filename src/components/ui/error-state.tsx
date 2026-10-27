@@ -23,7 +23,7 @@ export function ErrorState({
   const t = useT();
   return (
     <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed py-12 text-center">
-      <div className="bg-destructive/10 text-destructive rounded-full p-3">
+      <div className="bg-destructive/10 text-destructive rounded-sm p-3">
         <AlertTriangle className="size-5" />
       </div>
       <div className="space-y-1">

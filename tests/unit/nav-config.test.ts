@@ -60,9 +60,15 @@ describe("which panel a menu link belongs to", () => {
   const items = NAV_GROUPS.flatMap((g) => g.items);
   const panelsOf = (href: string) => items.find((i) => i.href === href)?.panels;
 
-  it("keeps buying and referral links in the Member panel only", () => {
-    for (const href of ["/cart", "/orders", "/referrals", "/earnings", "/coupons", "/rewards"]) {
+  it("keeps buying links in the Member panel only", () => {
+    for (const href of ["/cart", "/orders"]) {
       expect(panelsOf(href), href).toEqual(["CUSTOMER"]);
+    }
+  });
+
+  it("shows referral, earnings, coupon and reward links in both panels, as the client document asks", () => {
+    for (const href of ["/referrals", "/earnings", "/coupons", "/rewards"]) {
+      expect(panelsOf(href), href).toEqual(["CUSTOMER", "VENDOR"]);
     }
   });
 
@@ -87,7 +93,9 @@ describe("which panel a menu link belongs to", () => {
 });
 
 describe("Become a seller menu link", () => {
-  const item = NAV_GROUPS.flatMap((g) => g.items).find((i) => (i.href as string) === "/become-seller")!;
+  const item = NAV_GROUPS.flatMap((g) => g.items).find(
+    (i) => (i.href as string) === "/become-seller",
+  )!;
   const base = { hasVendorProfile: false, hasMemberProfile: true };
   const apply = new Set<Permission>(["vendor:apply"]);
 
@@ -102,11 +110,15 @@ describe("Become a seller menu link", () => {
   });
 
   it("disappears once the member is an approved seller", () => {
-    expect(item.visible({ ...base, permissions: apply, roles: ["CUSTOMER", "VENDOR"] })).toBe(false);
+    expect(item.visible({ ...base, permissions: apply, roles: ["CUSTOMER", "VENDOR"] })).toBe(
+      false,
+    );
   });
 
   it("is hidden without the apply permission or a member profile", () => {
-    expect(item.visible({ ...base, permissions: new Set<Permission>(), roles: ["CUSTOMER"] })).toBe(false);
+    expect(item.visible({ ...base, permissions: new Set<Permission>(), roles: ["CUSTOMER"] })).toBe(
+      false,
+    );
     expect(
       item.visible({ ...base, hasMemberProfile: false, permissions: apply, roles: ["CUSTOMER"] }),
     ).toBe(false);

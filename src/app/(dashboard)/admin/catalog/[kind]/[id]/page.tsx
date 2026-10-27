@@ -17,6 +17,7 @@ import {
   ListingDangerZone,
   ListingDetailsCard,
   ListingImagesCard,
+  ProjectTermsCard,
 } from "@/components/catalog/listing-detail-sections";
 
 interface PageProps {
@@ -102,11 +103,14 @@ export default async function AdminListingDetailPage({ params }: PageProps) {
 
       <ListingImagesCard kind={kind} listing={listing} />
 
+      {kind === "PROJECT" ? <ProjectTermsCard listing={listing} /> : null}
+
       {canUpdate ? (
         <ListingDetailsCard
           kind={kind}
           listing={listing}
           categories={categories}
+          canEditProjectDetails={false}
           description={
             session.permissions.has("change:apply_direct")
               ? t("Changes are saved straight away.")

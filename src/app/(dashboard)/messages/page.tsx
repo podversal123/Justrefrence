@@ -98,7 +98,7 @@ export default async function MessagesPage({
       </div>
 
       {canSend ? (
-        <Card>
+        <Card id="compose" className="scroll-mt-20">
           <CardHeader>
             <CardTitle>{openDraft ? t("Finish your draft") : t("New message")}</CardTitle>
           </CardHeader>

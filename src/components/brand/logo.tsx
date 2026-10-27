@@ -9,10 +9,13 @@ import { cn } from "@/lib/utils";
 export function Logo({
   size = 32,
   withWordmark = false,
+  onDark = false,
   className,
 }: {
   size?: number;
   withWordmark?: boolean;
+  /** Wordmark in white, for the dark portal header. */
+  onDark?: boolean;
   className?: string;
 }) {
   return (
@@ -26,11 +29,15 @@ export function Logo({
         // wins over the width/height attributes above and distorts the
         // aspect ratio — pin both explicitly via inline style instead.
         style={{ width: size, height: size }}
-        className="rounded-lg"
+        className="rounded-sm"
         priority
       />
       {withWordmark ? (
-        <span className="text-foreground text-lg font-semibold tracking-tight">Justreference</span>
+        <span
+          className={cn("text-lg font-medium", onDark ? "text-ink-foreground" : "text-foreground")}
+        >
+          Justreference
+        </span>
       ) : null}
     </span>
   );

@@ -72,7 +72,7 @@ export default async function AboutPage() {
           className="from-ink via-ink/85 to-ink/40 absolute inset-0 -z-10 bg-gradient-to-r"
         />
         <div className="mx-auto w-full max-w-5xl px-4 py-20 sm:py-28">
-          <p className="text-marigold mb-3 text-sm font-medium">{BRAND.domain}</p>
+          <p className="mb-3 text-sm text-white/80">{BRAND.domain}</p>
           <h1 className="font-display max-w-2xl text-4xl leading-[1.08] font-bold tracking-tight text-balance sm:text-6xl">
             {t("About {name}", { name: BRAND.name })}
           </h1>

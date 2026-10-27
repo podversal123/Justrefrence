@@ -60,13 +60,16 @@ export interface EditableMember {
 export function EditMemberDialog({
   member,
   needsApproval,
+  defaultOpen = false,
 }: {
   member: EditableMember;
+  /** Opens the form as soon as the page loads (the Members menu's "Edit member profile"). */
+  defaultOpen?: boolean;
   /** True for an Admin: the change goes to a Super Admin instead of being saved straight away. */
   needsApproval: boolean;
 }) {
   const t = useT();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
   const [state, formAction] = useActionState(
     async (
       prev: ApiResult<ChangeOutcome>,

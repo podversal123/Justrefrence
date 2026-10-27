@@ -13,13 +13,18 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t("Support") };
 }
 
-export default async function SupportPage() {
+export default async function SupportPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | undefined>>;
+}) {
   const t = await getT();
   const session = await getAuthSession();
   if (!session) redirect("/login");
   if (!session.permissions.has("ticket:read")) redirect("/unauthorized");
 
   const canCreate = session.permissions.has("ticket:create");
+  const openNew = (await searchParams)["new"] === "1";
   const tickets = await listTicketsForUser(session.userId);
 
   return (
@@ -29,7 +34,7 @@ export default async function SupportPage() {
           <h1>{t("Support")}</h1>
           <p className="text-muted-foreground">{t("Your tickets and the team's replies.")}</p>
         </div>
-        {canCreate ? <NewTicketDialog /> : null}
+        {canCreate ? <NewTicketDialog defaultOpen={openNew} /> : null}
       </div>
 
       {tickets.length === 0 ? (
@@ -39,7 +44,7 @@ export default async function SupportPage() {
           description={t(
             "If something isn't working (an order, a payment, your account), open a ticket and we'll reply here.",
           )}
-          action={canCreate ? <NewTicketDialog /> : undefined}
+          action={canCreate ? <NewTicketDialog defaultOpen={openNew} /> : undefined}
         />
       ) : (
         <TicketsTable tickets={tickets} basePath="/support" showOwner={false} />

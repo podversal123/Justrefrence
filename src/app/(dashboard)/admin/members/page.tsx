@@ -1,3 +1,4 @@
+import { msg } from "@/i18n/locales";
 import { getFormat, getT } from "@/i18n/server";
 import type { Metadata, Route } from "next";
 import Link from "next/link";
@@ -31,6 +32,69 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 const STATUSES: UserStatus[] = ["ACTIVE", "PENDING_VERIFICATION", "BLOCKED"];
+
+/**
+ * The same member list, opened for one job from the Members menu. Each view changes the heading and
+ * the hint, and (where there is a next step) turns each row into a link straight to that step on the
+ * member's own page, so "pick a member, then do the thing" is one click.
+ */
+const VIEWS: Record<
+  string,
+  { title: string; hint: string; action?: string; href?: (id: string) => string }
+> = {
+  edit: {
+    title: msg("Edit member profile"),
+    hint: msg("Pick a member to edit their profile."),
+    action: msg("Edit profile"),
+    href: (id) => `/admin/members/${id}?edit=1`,
+  },
+  bank: {
+    title: msg("Member bank detail"),
+    hint: msg("Pick a member to see their bank account."),
+    action: msg("Bank detail"),
+    href: (id) => `/admin/members/${id}#bank`,
+  },
+  report: {
+    title: msg("Member report"),
+    hint: msg(
+      "Download the member list as a CSV report, or pick a member to see everything about them.",
+    ),
+    action: msg("Full report"),
+    href: (id) => `/admin/members/${id}#profile`,
+  },
+  messages: {
+    title: msg("Member messages"),
+    hint: msg("Pick a member to send them a message."),
+    action: msg("Send message"),
+    href: (id) => `/messages?to=${id}`,
+  },
+  referrals: {
+    title: msg("Direct referral view"),
+    hint: msg("Pick a member to see the people they referred directly."),
+    action: msg("View referrals"),
+    href: (id) => `/admin/members/${id}#referrals`,
+  },
+  moderate: {
+    title: msg("Blacklist / allow member"),
+    hint: msg("Pick a member to block them or let them back in."),
+    action: msg("Block or allow"),
+    href: (id) => `/admin/members/${id}#actions`,
+  },
+  security: {
+    title: msg("Members security codes"),
+    hint: msg("Pick a member to check or reset their wallet PIN."),
+    action: msg("Security code"),
+    href: (id) => `/admin/members/${id}#wallet`,
+  },
+  datewise: {
+    title: msg("Date wise member list"),
+    hint: msg("Choose a joining date range to list the members who joined in it."),
+  },
+  filter: {
+    title: msg("Filter member list"),
+    hint: msg("Narrow the list by status, joining date or a search word."),
+  },
+};
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 export default async function AdminMembersPage({
@@ -45,6 +109,8 @@ export default async function AdminMembersPage({
   if (!session.permissions.has("member:read:any")) redirect("/unauthorized");
 
   const params = await searchParams;
+  const view = params["view"] ? VIEWS[params["view"]] : undefined;
+  const viewKey = view ? params["view"] : undefined;
   const status = STATUSES.find((s) => s === params["status"]);
   const search = params["search"]?.slice(0, 100);
   const from = params["from"] && DATE_RE.test(params["from"]) ? params["from"] : undefined;
@@ -66,7 +132,8 @@ export default async function AdminMembersPage({
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1>{t("Members")}</h1>
+          <h1>{view ? t(view.title) : t("Members")}</h1>
+          {view ? <p className="text-muted-foreground">{t(view.hint)}</p> : null}
           <p className="text-muted-foreground">
             {t("{active} active · {pending} pending · {blocked} blocked", {
               active: counts.ACTIVE ?? 0,
@@ -88,12 +155,15 @@ export default async function AdminMembersPage({
               }
             />
           ) : null}
-          {session.permissions.has("user:create") ? <NewMemberDialog /> : null}
+          {session.permissions.has("user:create") ? (
+            <NewMemberDialog defaultOpen={params["register"] === "1"} />
+          ) : null}
         </div>
       </div>
 
       {/* Plain GET form: filters live in the URL, results are a server fetch. */}
       <form method="get" className="flex flex-wrap items-end gap-3" role="search">
+        {viewKey ? <input type="hidden" name="view" value={viewKey} /> : null}
         <div className="space-y-1">
           <label htmlFor="m-search" className="text-xs font-medium">
             {t("Search")}
@@ -134,7 +204,11 @@ export default async function AdminMembersPage({
           <Button
             variant="ghost"
             nativeButton={false}
-            render={<Link href={"/admin/members" as Route}>{t("Clear")}</Link>}
+            render={
+              <Link href={(viewKey ? `/admin/members?view=${viewKey}` : "/admin/members") as Route}>
+                {t("Clear")}
+              </Link>
+            }
           />
         ) : null}
       </form>
@@ -159,6 +233,7 @@ export default async function AdminMembersPage({
                 <TableHead>{t("Contact")}</TableHead>
                 <TableHead>{t("Status")}</TableHead>
                 <TableHead>{t("Joined")}</TableHead>
+                {view?.href ? <TableHead /> : null}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -167,7 +242,7 @@ export default async function AdminMembersPage({
                   <TableCell className="tabular-nums">{m.memberProfile?.memberId ?? "—"}</TableCell>
                   <TableCell>
                     <Link
-                      href={`/admin/members/${m.id}` as Route}
+                      href={(view?.href ? view.href(m.id) : `/admin/members/${m.id}`) as Route}
                       className="font-medium hover:underline"
                     >
                       {m.fullName ?? m.email}
@@ -188,6 +263,16 @@ export default async function AdminMembersPage({
                   <TableCell className="text-muted-foreground text-sm">
                     {formatDate(m.createdAt)}
                   </TableCell>
+                  {view?.href && view.action ? (
+                    <TableCell className="text-right">
+                      <Link
+                        href={view.href(m.id) as Route}
+                        className="text-primary text-sm hover:underline"
+                      >
+                        {t(view.action)}
+                      </Link>
+                    </TableCell>
+                  ) : null}
                 </TableRow>
               ))}
             </TableBody>

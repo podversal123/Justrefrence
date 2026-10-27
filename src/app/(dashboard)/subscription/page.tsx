@@ -113,7 +113,7 @@ export default async function SubscriptionPage() {
         </div>
       </section>
 
-      <section className="rounded-xl border p-4 sm:p-5">
+      <section id="redeem" className="scroll-mt-20 rounded-xl border p-4 sm:p-5">
         <h2 className="text-base font-semibold">{t("Redeem an e-pin")}</h2>
         <p className="text-muted-foreground mb-4 text-sm">
           {t("Enter the e-pin code you received to activate or renew your subscription.")}

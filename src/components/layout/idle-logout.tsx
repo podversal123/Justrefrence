@@ -62,7 +62,8 @@ export function IdleLogout({ minutes }: { minutes: number }) {
         writeLastActivity(now);
       }
     }
-    for (const name of ACTIVITY_EVENTS) window.addEventListener(name, onActivity, { passive: true });
+    for (const name of ACTIVITY_EVENTS)
+      window.addEventListener(name, onActivity, { passive: true });
 
     const tick = window.setInterval(() => {
       const shared = readLastActivity();

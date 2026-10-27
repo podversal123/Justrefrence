@@ -131,9 +131,12 @@ export function ActionFormDialog<T>({
   pendingLabel,
   successMessage,
   onSuccess,
+  defaultOpen = false,
   children,
 }: {
   trigger: React.ReactElement;
+  /** Opens as soon as the page loads (a menu link that means "start a new one"). */
+  defaultOpen?: boolean;
   title: string;
   description?: string;
   action: ServerAction<T>;
@@ -143,7 +146,7 @@ export function ActionFormDialog<T>({
   onSuccess?: (data: T) => void;
   children: React.ReactNode | ((errors: FieldErrors) => React.ReactNode);
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={trigger} />

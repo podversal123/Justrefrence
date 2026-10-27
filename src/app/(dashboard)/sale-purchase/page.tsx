@@ -2,7 +2,7 @@ import { getT } from "@/i18n/server";
 import type { Metadata, Route } from "next";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Receipt, ShoppingCart } from "lucide-react";
+import { Receipt, ShoppingCart, Store } from "lucide-react";
 import { getAuthSession } from "@/server/auth/session";
 import {
   listOrdersForBuyer,
@@ -15,6 +15,7 @@ import {
 } from "@/server/domain/commerce/order-stage";
 import { saleViewQuerySchema } from "@/lib/schemas/commerce";
 import { buttonVariants } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { CursorPagination } from "@/components/ui/pagination";
 import { OrderStageList, StageTabs, type StageOrder } from "@/components/orders/order-stage-list";
 
@@ -33,6 +34,27 @@ export default async function SalePurchasePage({ searchParams }: PageProps) {
   if (!session) redirect("/login");
 
   const query = saleViewQuerySchema.parse(await searchParams);
+  // The Sale menu is in every member's panel, so say plainly what it needs rather than showing purchases.
+  if (query.side === "sale" && !session.vendorProfileId) {
+    return (
+      <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-8">
+        <h1>{t("Sale")}</h1>
+        <EmptyState
+          icon={Store}
+          title={t("You are not selling yet")}
+          description={t(
+            "Become a seller to list products, services and projects. Your sales will show here.",
+          )}
+          action={
+            <Link href={"/become-seller" as Route} className={buttonVariants()}>
+              {t("Become a seller")}
+            </Link>
+          }
+        />
+      </div>
+    );
+  }
+
   // Only a seller has a "sale" side; anyone else sees their purchases.
   const side = query.side === "sale" && session.vendorProfileId ? "sale" : "purchase";
 

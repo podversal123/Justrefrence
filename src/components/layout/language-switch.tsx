@@ -39,7 +39,7 @@ export function LanguageSwitch({
       role="group"
       aria-label={t("Language")}
       className={cn(
-        "inline-flex items-center gap-1 rounded-full border p-0.5 text-xs",
+        "inline-flex items-center gap-1 rounded-sm border p-0.5 text-xs",
         onDark ? "border-primary-foreground/30" : "border-border",
         className,
       )}
@@ -54,7 +54,7 @@ export function LanguageSwitch({
           disabled={pending}
           onClick={() => choose(locale)}
           className={cn(
-            "rounded-full px-2.5 py-1 font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-offset-1",
+            "rounded-sm px-2.5 py-1 font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-offset-1",
             locale === current
               ? onDark
                 ? "bg-primary-foreground text-primary"

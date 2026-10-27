@@ -40,6 +40,34 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * One family for the whole product: Roboto (variable weight), the same face GeM uses, served from
+ * src/app/fonts. Both subsets are needed: "latin-ext" carries the rupee sign (U+20B9), so without it
+ * every price would silently fall back to a system font. next/font/google can't load Roboto under
+ * Turbopack (variable font with a width axis), hence the plain @font-face.
+ */
+@font-face {
+  font-family: "Roboto";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("./fonts/roboto-latin-ext.woff2") format("woff2");
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F,
+    U+A720-A7FF;
+}
+@font-face {
+  font-family: "Roboto";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("./fonts/roboto-latin.woff2") format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 @theme inline {
   --font-heading: var(--font-sans);
   --font-display: var(--font-sans);
@@ -104,13 +132,13 @@
 
 :root {
   /* Palette: deep ink navy for structure, brand red for action, marigold for highlights, warm paper for surfaces. */
-  --ink: oklch(0.21 0.05 257);
-  --ink-soft: oklch(0.28 0.055 257);
+  --ink: oklch(0.25 0.04 228);
+  --ink-soft: oklch(0.32 0.045 228);
   --ink-foreground: oklch(0.97 0.01 257);
   --marigold: oklch(0.83 0.15 82);
   --marigold-foreground: oklch(0.25 0.06 70);
-  --background: oklch(0.985 0.004 85);
-  --foreground: oklch(0.2 0.03 257);
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.32 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.17 0.005 285);
   --popover: oklch(1 0 0);
@@ -119,20 +147,20 @@
   --primary-foreground: oklch(0.99 0 0);
   --secondary: oklch(0.97 0.003 285);
   --secondary-foreground: oklch(0.21 0.005 285);
-  --muted: oklch(0.965 0.006 85);
-  --muted-foreground: oklch(0.48 0.025 257);
+  --muted: oklch(0.965 0.003 228);
+  --muted-foreground: oklch(0.5 0.01 228);
   --accent: oklch(0.96 0.02 25);
   --accent-foreground: oklch(0.35 0.14 25);
   --destructive: oklch(0.55 0.22 10);
-  --border: oklch(0.92 0.008 85);
-  --input: oklch(0.9 0.008 85);
+  --border: oklch(0.88 0.005 228);
+  --input: oklch(0.8 0.008 228);
   --ring: oklch(0.55 0.215 25 / 0.5);
   --brand: oklch(0.55 0.215 25);
   --brand-foreground: oklch(0.99 0 0);
   --success: oklch(0.52 0.15 150);
   --warning: oklch(0.58 0.17 66);
   --info: oklch(0.55 0.15 231);
-  --surface-sunken: oklch(0.97 0.008 85);
+  --surface-sunken: oklch(0.965 0.004 228);
   --size-touch: 2.75rem;
   --shadow-color: oklch(0.2 0.05 257 / 0.1);
   --text-display: 2.75rem;
@@ -145,13 +173,14 @@
   --chart-3: oklch(0.5 0.01 285);
   --chart-4: oklch(0.65 0.15 60);
   --chart-5: oklch(0.4 0.02 285);
-  --radius: 0.75rem;
+  --font-sans: "Roboto";
+  --radius: 0.375rem;
   /* Dashboards: a dark ink sidebar gives every panel a strong, consistent identity. */
-  --sidebar: oklch(0.21 0.05 257);
-  --sidebar-foreground: oklch(0.93 0.015 257);
+  --sidebar: oklch(0.25 0.04 228);
+  --sidebar-foreground: oklch(0.93 0.01 228);
   --sidebar-primary: oklch(0.6 0.21 25);
   --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.3 0.06 257);
+  --sidebar-accent: oklch(0.33 0.045 228);
   --sidebar-accent-foreground: oklch(0.99 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.7 0.15 25 / 0.5);
@@ -215,16 +244,16 @@
     @apply font-sans antialiased;
   }
   h1 {
-    @apply text-2xl font-bold tracking-tight text-balance;
+    @apply text-2xl font-medium text-balance;
   }
   h2 {
-    @apply text-xl font-bold tracking-tight;
+    @apply text-xl font-medium;
   }
   h3 {
-    @apply text-lg font-semibold tracking-tight;
+    @apply text-lg font-medium;
   }
   h4 {
-    @apply text-base font-semibold;
+    @apply text-base font-medium;
   }
 }
 
@@ -257,29 +286,13 @@
 @utility surface-card {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
-  box-shadow:
-    0 1px 2px oklch(0.2 0.05 257 / 0.05),
-    0 12px 28px -18px oklch(0.2 0.05 257 / 0.25);
+  border-radius: var(--radius-lg);
 }
 
 @utility surface-lift {
-  transition:
-    transform 180ms ease,
-    box-shadow 180ms ease,
-    border-color 180ms ease;
+  transition: border-color 120ms ease;
   &:hover {
-    transform: translateY(-2px);
-    box-shadow:
-      0 2px 4px oklch(0.2 0.05 257 / 0.06),
-      0 22px 40px -22px oklch(0.2 0.05 257 / 0.38);
-    border-color: color-mix(in oklch, var(--primary) 35%, var(--border));
-  }
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-    &:hover {
-      transform: none;
-    }
+    border-color: var(--ink);
   }
 }
 

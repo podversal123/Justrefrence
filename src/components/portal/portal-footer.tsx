@@ -98,30 +98,21 @@ export async function PortalFooter() {
   if (settings.contactHours) contact.push({ icon: Clock, text: settings.contactHours });
 
   return (
-    <footer className="bg-ink text-ink-foreground relative isolate overflow-hidden">
-      <div
-        aria-hidden="true"
-        className="bg-primary/20 absolute -bottom-40 -left-24 -z-10 size-[28rem] rounded-full blur-3xl"
-      />
-
-      <div className="mx-auto w-full max-w-7xl px-4 pt-14 pb-8">
-        <ul className="grid gap-3 border-b border-white/10 pb-8 sm:grid-cols-3">
+    <footer className="bg-ink text-ink-foreground">
+      <div className="mx-auto w-full max-w-7xl px-4 pt-8 pb-6">
+        <ul className="grid gap-3 border-b border-white/15 pb-6 sm:grid-cols-3">
           {TRUST_POINTS.map(({ icon: Icon, label }) => (
             <li key={label} className="text-ink-foreground/80 flex items-center gap-3 text-sm">
-              <span className="bg-marigold/15 text-marigold flex size-9 shrink-0 items-center justify-center rounded-full">
-                <Icon className="size-4" aria-hidden="true" />
-              </span>
+              <Icon className="size-5 shrink-0" aria-hidden="true" />
               {t(label)}
             </li>
           ))}
         </ul>
 
-        <div className="grid gap-12 py-12 lg:grid-cols-[1.2fr_2fr]">
-          <div className="space-y-6">
-            <Logo size={36} withWordmark className="[&_span]:text-ink-foreground" />
-            <p className="max-w-sm text-2xl leading-snug font-bold tracking-tight">
-              {t(BRAND.tagline)}
-            </p>
+        <div className="grid gap-10 py-8 lg:grid-cols-[1.2fr_2fr]">
+          <div className="space-y-4">
+            <Logo size={36} withWordmark onDark />
+            <p className="max-w-sm text-lg leading-snug font-medium">{t(BRAND.tagline)}</p>
             <p className="text-ink-foreground/70 max-w-sm text-sm leading-relaxed">
               {t(
                 "{name} brings buyers and approved vendors together, and rewards the people who introduce them.",
@@ -133,7 +124,7 @@ export async function PortalFooter() {
               <ul className="space-y-2.5 text-sm">
                 {contact.map(({ icon: Icon, text, href }) => (
                   <li key={text} className="text-ink-foreground/80 flex items-start gap-3">
-                    <Icon className="text-marigold mt-0.5 size-4 shrink-0" aria-hidden="true" />
+                    <Icon className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
                     {href ? (
                       <a href={href} className="hover:text-ink-foreground transition-colors">
                         {text}
@@ -147,7 +138,7 @@ export async function PortalFooter() {
             ) : (
               <Link
                 href={"/contact" as Route}
-                className="text-marigold inline-flex items-center gap-1.5 text-sm font-semibold hover:underline"
+                className="inline-flex items-center gap-1.5 text-sm underline underline-offset-4 hover:no-underline"
               >
                 {t("Talk to our team")}
               </Link>
@@ -156,8 +147,10 @@ export async function PortalFooter() {
 
           <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
             {COLUMNS.map((column) => (
-              <nav key={column.heading} aria-label={t(column.heading)} className="space-y-4">
-                <p className="text-sm font-semibold">{t(column.heading)}</p>
+              <nav key={column.heading} aria-label={t(column.heading)} className="space-y-3">
+                <p className="border-b border-white/15 pb-2 text-sm font-medium">
+                  {t(column.heading)}
+                </p>
                 <ul className="text-ink-foreground/70 space-y-2.5 text-sm">
                   {column.links.map((link) => (
                     <li key={link.label}>
@@ -175,7 +168,7 @@ export async function PortalFooter() {
           </div>
         </div>
 
-        <div className="text-ink-foreground/60 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-6 text-xs">
+        <div className="text-ink-foreground/70 flex flex-wrap items-center justify-between gap-3 border-t border-white/15 pt-4 text-xs">
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
             <p>
               {t("© {year} {name}. All rights reserved.", {

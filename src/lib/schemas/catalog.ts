@@ -65,8 +65,20 @@ const serviceFields = {
   price: priceField.optional(),
 };
 
+/** A rupee amount the seller may leave empty (advance, balance and full payment on a project). */
+const optionalPriceField = z
+  .union([priceField, z.literal("").transform(() => undefined)])
+  .optional();
+
 const projectFields = {
   price: priceField,
+  // How long the work takes, in the seller's own words ("3 months", "45 days").
+  timeline: z.string().trim().max(200).optional().or(z.literal("")),
+  advancePayment: optionalPriceField,
+  balancePayment: optionalPriceField,
+  fullPayment: optionalPriceField,
+  // Notes, special remarks and terms & conditions. Everything here is reviewed by an Admin.
+  termsNotes: z.string().trim().max(5000).optional().or(z.literal("")),
 };
 
 export const createProductSchema = z.object({ ...baseListingFields, ...productFields });

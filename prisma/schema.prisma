@@ -688,6 +688,16 @@ model Project {
   createdAt      DateTime              @default(now()) @map("created_at")
   updatedAt      DateTime              @updatedAt @map("updated_at")
   deletedAt      DateTime?             @map("deleted_at")
+  /// What the vendor fills in on the new-project form, beyond name/description/cost (all optional):
+  /// how long it takes, how the cost is paid (in paise), the terms, and one attached document
+  /// (kept in the private bucket, opened only through a checked link).
+  timeline       String?
+  advancePayment BigInt?               @map("advance_payment")
+  balancePayment BigInt?               @map("balance_payment")
+  fullPayment    BigInt?               @map("full_payment")
+  termsNotes     String?               @map("terms_notes")
+  documentPath   String?               @map("document_path")
+  documentName   String?               @map("document_name")
 
   vendor      VendorProfile       @relation(fields: [vendorId], references: [id])
   category    ProjectCategory     @relation(fields: [categoryId], references: [id])

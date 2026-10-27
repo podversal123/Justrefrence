@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { paiseToRupeesInput } from "@/lib/money";
+import { MAX_UPLOAD_LABEL } from "@/lib/upload-limits";
 import type { CatalogKind } from "@/server/domain/catalog/types";
 import type { ApiResult } from "@/lib/api-response";
 
@@ -37,6 +38,13 @@ export interface ListingFormInitialValues {
   sku?: string | null;
   stock?: number;
   pricingType?: "FIXED" | "QUOTE";
+  /** Project only: the details beyond name, description and cost. */
+  timeline?: string | null;
+  advancePayment?: string | null; // paise, as a string
+  balancePayment?: string | null;
+  fullPayment?: string | null;
+  termsNotes?: string | null;
+  documentName?: string | null;
 }
 
 type ListingActionResult =
@@ -73,6 +81,7 @@ export function ListingForm({
   initialValues,
   submitLabel,
   onSuccess,
+  projectDetails = true,
 }: {
   kind: CatalogKind;
   action: ListingAction;
@@ -83,6 +92,8 @@ export function ListingForm({
   submitLabel: string;
   /** Called once with the new/edited listing's id after a successful submit. */
   onSuccess?: (id: string) => void;
+  /** Project only: show the time, payment, document and terms fields. Off when an Admin edits a seller's project. */
+  projectDetails?: boolean;
 }) {
   const t = useT();
   const [state, formAction] = useActionState(action, nullState);
@@ -157,7 +168,11 @@ export function ListingForm({
         </FormField>
       ) : null}
 
-      <FormField htmlFor="title" label={t("Title")} error={fieldErrors["title"]}>
+      <FormField
+        htmlFor="title"
+        label={kind === "PROJECT" ? t("Project name") : t("Title")}
+        error={fieldErrors["title"]}
+      >
         <Input id="title" name="title" defaultValue={initialValues?.title} required />
       </FormField>
 
@@ -206,7 +221,10 @@ export function ListingForm({
         </FormField>
       </div>
 
-      <FormField htmlFor="description" label={t("Description")}>
+      <FormField
+        htmlFor="description"
+        label={kind === "PROJECT" ? t("Description or details") : t("Description")}
+      >
         <Textarea
           id="description"
           name="description"
@@ -237,7 +255,7 @@ export function ListingForm({
         {kind !== "SERVICE" || pricingType === "FIXED" ? (
           <FormField
             htmlFor="price"
-            label={t("Price (₹)")}
+            label={kind === "PROJECT" ? t("Project cost (₹)") : t("Price (₹)")}
             hint={t("In rupees, for example 1500 or 1499.50.")}
             error={fieldErrors["price"]}
           >
@@ -269,6 +287,90 @@ export function ListingForm({
           </>
         ) : null}
       </div>
+
+      {kind === "PROJECT" && projectDetails ? (
+        <>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <FormField
+              htmlFor="timeline"
+              label={t("Time to complete")}
+              hint={t("For example 3 months or 45 days.")}
+              error={fieldErrors["timeline"]}
+            >
+              <Input id="timeline" name="timeline" defaultValue={initialValues?.timeline ?? ""} />
+            </FormField>
+            <FormField
+              htmlFor="advancePayment"
+              label={t("Advance payment (₹)")}
+              error={fieldErrors["advancePayment"]}
+            >
+              <Input
+                id="advancePayment"
+                name="advancePayment"
+                inputMode="decimal"
+                defaultValue={paiseToRupeesInput(initialValues?.advancePayment)}
+              />
+            </FormField>
+            <FormField
+              htmlFor="balancePayment"
+              label={t("Balance payment (₹)")}
+              error={fieldErrors["balancePayment"]}
+            >
+              <Input
+                id="balancePayment"
+                name="balancePayment"
+                inputMode="decimal"
+                defaultValue={paiseToRupeesInput(initialValues?.balancePayment)}
+              />
+            </FormField>
+            <FormField
+              htmlFor="fullPayment"
+              label={t("Full payment (₹)")}
+              error={fieldErrors["fullPayment"]}
+            >
+              <Input
+                id="fullPayment"
+                name="fullPayment"
+                inputMode="decimal"
+                defaultValue={paiseToRupeesInput(initialValues?.fullPayment)}
+              />
+            </FormField>
+          </div>
+
+          <FormField
+            htmlFor="document"
+            label={t("Attach a document")}
+            hint={
+              initialValues?.documentName
+                ? t("Current file: {name}. Choose a new one to replace it.", {
+                    name: initialValues.documentName,
+                  })
+                : t("PDF, Word, Excel, PNG or JPG, up to {limit}.", { limit: MAX_UPLOAD_LABEL })
+            }
+          >
+            <Input
+              id="document"
+              name="document"
+              type="file"
+              accept=".pdf,.png,.jpg,.jpeg,.docx,.xlsx"
+            />
+          </FormField>
+
+          <FormField
+            htmlFor="termsNotes"
+            label={t("Notes, special remarks or terms and conditions")}
+            hint={t("An Admin reviews the project, including these terms, before it goes live.")}
+            error={fieldErrors["termsNotes"]}
+          >
+            <Textarea
+              id="termsNotes"
+              name="termsNotes"
+              rows={4}
+              defaultValue={initialValues?.termsNotes ?? ""}
+            />
+          </FormField>
+        </>
+      ) : null}
 
       <SubmitButton label={submitLabel} />
     </form>

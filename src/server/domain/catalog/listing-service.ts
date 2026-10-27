@@ -29,6 +29,11 @@ import {
 } from "@/lib/schemas/catalog";
 import { ConflictError, NotFoundError, ValidationError } from "@/server/lib/errors";
 import { randomUUID } from "node:crypto";
+import {
+  hasProjectDocument,
+  removeProjectDocument,
+  storeProjectDocument,
+} from "@/server/lib/project-document";
 import { submitChange } from "@/server/domain/approvals/change-service";
 
 /**
@@ -46,6 +51,19 @@ async function getOwnedListingOrThrow(kind: CatalogKind, id: string, session: Au
     throw new NotFoundError(`${CATALOG_LABELS[kind].singular} not found.`);
   }
   return listing;
+}
+
+/** The project details beyond name, description and cost, as the columns that hold them. */
+function projectTerms(data: Record<string, unknown>): Record<string, unknown> {
+  const text = (value: unknown) => (typeof value === "string" && value !== "" ? value : null);
+  const paise = (value: unknown) => (typeof value === "bigint" ? value : null);
+  return {
+    timeline: text(data["timeline"]),
+    advancePayment: paise(data["advancePayment"]),
+    balancePayment: paise(data["balancePayment"]),
+    fullPayment: paise(data["fullPayment"]),
+    termsNotes: text(data["termsNotes"]),
+  };
 }
 
 export async function createListing(kind: CatalogKind, formData: FormData) {
@@ -97,9 +115,23 @@ export async function createListing(kind: CatalogKind, formData: FormData) {
     createData["price"] = data.pricingType === "QUOTE" ? null : data.price;
   } else if (kind === "PROJECT" && "price" in data) {
     createData["price"] = data.price;
+    Object.assign(createData, projectTerms(data));
+    const document = formData.get("document");
+    if (hasProjectDocument(document)) {
+      const stored = await storeProjectDocument(vendorId, document);
+      createData["documentPath"] = stored.storagePath;
+      createData["documentName"] = stored.fileName;
+    }
   }
 
-  const created = await repo.create(createData);
+  let created;
+  try {
+    created = await repo.create(createData);
+  } catch (error) {
+    // Nothing points at the document now, so do not leave it behind in storage.
+    await removeProjectDocument(createData["documentPath"] as string | undefined);
+    throw error;
+  }
 
   await recordAudit({
     actorId: session.userId,
@@ -157,6 +189,19 @@ export async function updateListing(kind: CatalogKind, id: string, formData: For
       canApplyDirect: session.permissions.has("change:apply_direct"),
     });
     return { pendingApproval: result.mode === "SUBMITTED" };
+  }
+
+  // The extra project details are the seller's to edit (an Admin's edit goes through the approval
+  // flow above, which carries only the core fields).
+  if (kind === "PROJECT" && "price" in data) {
+    Object.assign(updateData, projectTerms(data));
+    const document = formData.get("document");
+    if (hasProjectDocument(document) && session.vendorProfileId) {
+      const stored = await storeProjectDocument(session.vendorProfileId, document);
+      await removeProjectDocument((existing as { documentPath?: string | null }).documentPath);
+      updateData["documentPath"] = stored.storagePath;
+      updateData["documentName"] = stored.fileName;
+    }
   }
 
   // A vendor editing their own approved listing sends it back for re-review — see

@@ -24,7 +24,7 @@ export default async function CareersPage() {
     <div>
       <header className="bg-ink text-ink-foreground">
         <div className="mx-auto w-full max-w-5xl px-4 py-16 sm:py-24">
-          <p className="text-marigold mb-3 text-sm font-medium">{BRAND.domain}</p>
+          <p className="mb-3 text-sm text-white/80">{BRAND.domain}</p>
           <h1 className="font-display max-w-2xl text-4xl leading-[1.08] font-bold tracking-tight text-balance sm:text-6xl">
             {t("Careers")}
           </h1>

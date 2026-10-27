@@ -12,6 +12,21 @@ import type { Panel } from "@/server/auth/panel";
 
 export type SectionKey =
   | "people"
+  | "sms"
+  | "projects"
+  | "sale"
+  | "purchase"
+  | "earnings"
+  | "bonus"
+  | "coupons"
+  | "report"
+  | "referral"
+  | "epin"
+  | "wallet"
+  | "support"
+  | "security"
+  | "accounts"
+  | "payments"
   | "catalogue"
   | "sales"
   | "money"
@@ -39,7 +54,14 @@ export interface SectionDefinition {
     | "bag"
     | "network"
     | "store"
-    | "gavel";
+    | "gavel"
+    | "shield"
+    | "coins"
+    | "bank"
+    | "briefcase"
+    | "gift"
+    | "ticket"
+    | "help";
 }
 
 export type StructureEntry =
@@ -56,146 +78,185 @@ const section = (
 const link = (href: string): StructureEntry => ({ kind: "link", href });
 
 /** Every page a member or seller can use, for a staff account that is also a member or seller. */
-const MEMBER_PAGES = [
-  "/cart",
-  "/orders",
-  "/sale-purchase",
-  "/my-projects",
-  "/invoices",
-  "/requirements",
-  "/my-auctions",
-  "/referrals",
-  "/earnings",
-  "/rewards",
-  "/coupons",
-  "/wallet",
-  "/account-report",
-  "/subscription",
-  "/sms",
-  "/support",
-  "/blog",
-  "/become-seller",
-  // A staff account that is also a seller keeps its selling pages too.
-  "/vendor/profile",
-  "/vendor/orders",
-  "/vendor/catalog/products",
-  "/vendor/catalog/services",
-  "/vendor/catalog/projects",
-  "/bids",
-  "/my-bids",
-  "/vendor/auctions",
-  "/vendor/ads",
-] as const;
+const MEMBER_PAGES: readonly string[] = memberMenu()
+  .flatMap((entry) => (entry.kind === "link" ? [entry.href] : [...entry.hrefs]))
+  // These already sit elsewhere in the admin menu (the top links, and Communication).
+  .filter((href) => !["/dashboard", "/profile", "/messages"].includes(href));
 
-export const SIDEBAR_STRUCTURE: Record<Panel, readonly StructureEntry[]> = {
-  CUSTOMER: [
+/**
+ * The member / seller menu, in the order of the client's document. The same list serves the Member
+ * and the Seller / Vendor panel: what each person actually sees is decided by their role and
+ * permissions, so entries that do not apply to them (a seller's "Sale", a member's "Products list")
+ * simply do not show.
+ */
+function memberMenu(): StructureEntry[] {
+  return [
     link("/dashboard"),
-    link("/profile"),
-    section("shopping", msg("Shopping and orders"), "bag", [
-      "/cart",
-      "/orders",
-      "/sale-purchase",
+    link("/api/welcome-letter"),
+    section("sms", msg("SMS and messages"), "message", [
+      "/sms",
+      "/messages",
+      "/messages?box=sent",
+      "/messages?box=drafts",
+      "/messages#compose",
+    ]),
+    link("/vendor/profile"),
+    section("projects", msg("Projects"), "briefcase", [
+      "/my-projects?stage=running",
+      "/my-projects?stage=complete",
+      "/my-projects?stage=cancelled",
       "/my-projects",
-      "/invoices",
+      "/vendor/catalog/projects/new",
+      "/requirements/new",
+    ]),
+    section("sale", msg("Sale"), "store", [
+      "/sale-purchase?side=sale&stage=new",
+      "/sale-purchase?side=sale&stage=old",
+      "/cart?from=sale",
+      "/vendor/orders",
+    ]),
+    section("purchase", msg("Purchase"), "bag", [
+      "/sale-purchase?side=purchase&stage=new",
+      "/sale-purchase?side=purchase&stage=old",
+      "/cart",
+      "/sale-purchase",
+      "/orders",
       "/requirements",
       "/my-auctions",
-    ]),
-    section("network", msg("Referrals and earnings"), "network", [
-      "/referrals",
-      "/earnings",
-      "/rewards",
-      "/coupons",
-    ]),
-    section("money", msg("Wallet and money"), "wallet", [
-      "/wallet",
-      "/account-report",
-      "/subscription",
-    ]),
-    section("talk", msg("Messages and help"), "message", ["/sms", "/messages", "/support"]),
-    link("/blog"),
-    link("/become-seller"),
-  ],
-
-  VENDOR: [
-    link("/dashboard"),
-    link("/profile"),
-    link("/vendor/profile"),
-    section("selling", msg("Selling"), "store", [
-      "/vendor/orders",
-      "/sale-purchase",
-      "/my-projects",
-      "/vendor/catalog/products",
-      "/vendor/catalog/services",
-      "/vendor/catalog/projects",
     ]),
     section("tenders", msg("Bids and auctions"), "gavel", [
       "/bids",
       "/my-bids",
       "/vendor/auctions",
     ]),
-    link("/vendor/ads"),
-    // The pages below show here only for a seller who has no member account to switch to.
-    section("buying", msg("Buying"), "bag", ["/cart", "/orders", "/requirements", "/my-auctions"]),
-    section("money", msg("Wallet and money"), "wallet", [
-      "/invoices",
-      "/wallet",
-      "/account-report",
-      "/subscription",
-    ]),
-    section("network", msg("Referrals and earnings"), "network", [
-      "/referrals",
+    link("/vendor/catalog/services"),
+    link("/services"),
+    link("/vendor/catalog/products"),
+    link("/products"),
+    link("/vendor/catalog/projects"),
+    link("/invoices"),
+    section("earnings", msg("Earnings"), "network", [
       "/earnings",
-      "/rewards",
-      "/coupons",
+      "/earnings?tab=business",
+      "/earnings?tab=business&view=referral",
+      "/earnings?tab=business&view=search#business-search",
+      "/earnings?tab=business&view=total",
     ]),
-    section("talk", msg("Messages and help"), "message", ["/sms", "/messages", "/support"]),
+    section("bonus", msg("Bonus and rewards"), "gift", [
+      "/rewards",
+      "/rewards?type=CASH",
+      "/rewards?type=COUPON",
+      "/rewards?type=OTHER",
+    ]),
+    section("coupons", msg("My coupons"), "gift", [
+      "/coupons",
+      "/coupons#coupons-available",
+      "/coupons#coupons-used",
+      "/coupons#coupons-unavailable",
+    ]),
+    section("report", msg("Account report"), "coins", [
+      "/account-report",
+      "/account-report?type=credit",
+      "/account-report?type=debit",
+    ]),
+    section("referral", msg("Referrals"), "users", ["/referrals", "/referrals#create"]),
+    section("epin", msg("E-pins"), "ticket", ["/subscription", "/subscription#redeem"]),
+    section("wallet", msg("Wallet"), "wallet", [
+      "/wallet",
+      "/wallet#topup",
+      "/wallet#transfer",
+      "/wallet#payout",
+      "/wallet#payout-report",
+      "/wallet#balance-transfer",
+      "/wallet#transactions",
+      "/wallet#pin",
+    ]),
+    section("support", msg("Support"), "help", ["/support?new=1", "/support"]),
+    link("/vendor/ads"),
+    link("/advertisements"),
     link("/blog"),
-  ],
+    link("/become-seller"),
+  ];
+}
+
+export const SIDEBAR_STRUCTURE: Record<Panel, readonly StructureEntry[]> = {
+  CUSTOMER: memberMenu(),
+
+  VENDOR: memberMenu(),
 
   ADMIN: [
     link("/dashboard"),
-    link("/profile"),
     link("/admin/approvals"),
-    section("people", msg("People"), "users", [
-      "/admin/members",
-      "/admin/vendors",
-      "/admin/kyc",
-      "/admin/admins",
-      "/admin/roles",
-    ]),
+    link("/admin/members?register=1"),
     section("catalogue", msg("Catalogue"), "package", [
       "/admin/catalog/products",
-      "/admin/catalog/services",
       "/admin/catalog/projects",
+      "/admin/catalog/services",
+    ]),
+    section("people", msg("Members"), "users", [
+      "/admin/members",
+      "/admin/members?view=edit",
+      "/admin/members?view=bank",
+      "/admin/members?view=report",
+      "/admin/members?view=messages",
+      "/admin/orders?view=invoices",
+      "/admin/members?view=referrals",
+      "/admin/members?view=datewise",
+      "/admin/members?view=moderate",
+      "/admin/members?status=BLOCKED",
+      "/admin/members?view=filter",
+      "/admin/vendors",
+      "/admin/kyc",
+    ]),
+    section("security", msg("Security and E-PIN"), "shield", [
+      "/admin/members?view=security",
+      "/admin/epins",
+      "/admin/epins?status=FRESH",
+      "/admin/epins?status=USED",
+      "/admin/epins?view=search",
+      "/admin/subscription-plans",
+    ]),
+    section("accounts", msg("Accounts and earnings"), "coins", [
+      "/admin/commissions?status=ELIGIBLE",
+      "/admin/commissions",
+      "/admin/wallets",
+      "/admin/subscription-plans?view=income",
+      "/admin/wallets?view=withdrawn",
+      "/admin/payouts?status=PAID",
+      "/admin/commission-rules",
+    ]),
+    section("payments", msg("Payments and transfers"), "bank", [
+      "/admin/payouts?status=REQUESTED",
+      "/admin/rewards",
+      "/admin/tds",
+      "/admin/rewards?view=list",
+      "/admin/payouts",
     ]),
     section("sales", msg("Orders and offers"), "cart", [
       "/admin/orders",
       "/admin/bids",
       "/admin/auctions",
       "/admin/coupons",
-      "/admin/rewards",
-    ]),
-    section("money", msg("Money"), "wallet", [
-      "/admin/commissions",
-      "/admin/payouts",
-      "/admin/wallets",
-      "/admin/tds",
-      "/admin/commission-rules",
-      "/admin/epins",
-      "/admin/subscription-plans",
     ]),
     section("talk", msg("Communication"), "message", [
       "/messages",
       "/admin/support",
       "/admin/sms",
-      "/admin/feedback",
       "/admin/resumes",
       "/admin/announcements",
       "/admin/banners",
       "/admin/ads",
       "/admin/blog",
     ]),
-    section("system", msg("System"), "settings", ["/admin/settings", "/admin/legal", "/audit-log"]),
+    link("/admin/feedback"),
+    section("system", msg("Settings"), "settings", [
+      "/admin/settings",
+      "/admin/settings#maintenance",
+      "/admin/admins",
+      "/admin/roles",
+      "/admin/legal",
+      "/audit-log",
+    ]),
     section("mine", msg("My own account"), "user", MEMBER_PAGES),
   ],
 };

@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/sheet";
 import { getAuthSession } from "@/server/auth/session";
 import { LanguageSwitch } from "@/components/layout/language-switch";
+import { FontSizeControl } from "@/components/layout/font-size-control";
 import { getT, type TFunction } from "@/i18n/server";
 import { countOpenCartItems } from "@/server/repositories/commerce/cart-repository";
 import {
@@ -57,7 +58,7 @@ const MENU_CATEGORY_LIMIT = 10;
 
 const mobileLinkClass = "hover:bg-muted flex h-11 items-center rounded-lg px-2 text-sm font-medium";
 const bandLinkClass =
-  "hover:bg-primary-foreground/10 focus-visible:bg-primary-foreground/10 flex h-11 items-center rounded-md px-3 text-sm font-medium outline-none";
+  "flex h-11 items-center px-3 text-sm font-medium outline-none hover:bg-white/10 focus-visible:bg-white/10";
 
 async function loadCategories(): Promise<{
   products: CategoryWithCount[];
@@ -99,12 +100,38 @@ export async function PortalHeader() {
 
   return (
     <header className="sticky top-0 z-30">
+      {/* Tier 0 — language, text size and help, the way government portals open */}
+      <div className="bg-ink text-ink-foreground hidden border-b border-white/15 text-xs lg:block">
+        <div className="mx-auto flex h-8 w-full max-w-7xl items-center gap-4 px-4">
+          <LanguageSwitch onDark className="border-0 p-0" />
+          <span className="h-4 w-px bg-white/25" aria-hidden="true" />
+          <FontSizeControl />
+          <span className="h-4 w-px bg-white/25" aria-hidden="true" />
+          <a href="#main" className="hover:underline focus-visible:underline">
+            {t("Skip to content")}
+          </a>
+          <nav aria-label={t("Help")} className="ml-auto flex items-center gap-4">
+            <Link href="/feedback" className="hover:underline focus-visible:underline">
+              {t("Feedback")}
+            </Link>
+            <Link href="/contact" className="hover:underline focus-visible:underline">
+              {t("Need help?")}
+            </Link>
+          </nav>
+        </div>
+      </div>
       {/* Tier 1 — brand, search, account */}
-      <div className="bg-background border-b shadow-[0_8px_24px_-18px_oklch(0.2_0.05_257/0.35)]">
+      <div className="bg-ink text-ink-foreground">
         <div className="mx-auto flex w-full max-w-7xl items-center gap-3 px-4 py-3 sm:gap-6">
           <Sheet>
             <SheetTrigger
-              render={<Button variant="ghost" size="icon-touch" className="lg:hidden" />}
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon-touch"
+                  className="hover:bg-white/10 hover:text-white lg:hidden"
+                />
+              }
             >
               <Menu />
               <span className="sr-only">{t("Open menu")}</span>
@@ -184,7 +211,7 @@ export async function PortalHeader() {
               <Logo size={32} />
             </span>
             <span className="hidden sm:inline-flex">
-              <Logo size={36} withWordmark />
+              <Logo size={36} withWordmark onDark />
             </span>
           </Link>
 
@@ -195,11 +222,11 @@ export async function PortalHeader() {
           />
 
           <div className="ml-auto flex items-center gap-1 sm:gap-2">
-            <LanguageSwitch className="hidden sm:inline-flex" />
+            <LanguageSwitch onDark className="hidden sm:inline-flex lg:hidden" />
             <Button
               variant="ghost"
               size="icon-touch"
-              className="relative"
+              className="relative hover:bg-white/10 hover:text-white"
               nativeButton={false}
               render={<Link href="/cart" />}
             >
@@ -218,7 +245,11 @@ export async function PortalHeader() {
             <Button
               size="touch"
               variant={session ? "default" : "outline"}
-              className="hidden sm:inline-flex"
+              className={
+                session
+                  ? "hidden sm:inline-flex"
+                  : "hidden border-white/40 bg-transparent text-white hover:bg-white/10 hover:text-white sm:inline-flex"
+              }
               nativeButton={false}
               render={
                 <Link href={accountHref}>
@@ -235,19 +266,19 @@ export async function PortalHeader() {
       </div>
 
       {/* Tier 2 — category band + mega-menu (desktop) */}
-      <div className="from-primary text-primary-foreground hidden bg-gradient-to-r to-[oklch(0.45_0.2_22)] lg:block">
+      <div className="bg-ink text-ink-foreground hidden border-t border-white/15 lg:block">
         <div className="relative mx-auto flex h-11 w-full max-w-7xl items-center gap-1 px-4">
           <div className="group">
             <button
               type="button"
               aria-haspopup="true"
-              className="hover:bg-primary-foreground/10 focus-visible:bg-primary-foreground/10 flex h-11 items-center gap-2 rounded-md px-3 text-sm font-semibold outline-none"
+              className="flex h-11 items-center gap-2 px-3 text-sm font-medium outline-none hover:bg-white/10 focus-visible:bg-white/10"
             >
               <Menu className="size-4" />
               {t("All categories")}
               <ChevronDown className="size-4" />
             </button>
-            <div className="text-foreground bg-background invisible absolute top-full left-4 z-40 w-[min(56rem,calc(100vw-2rem))] translate-y-1 rounded-b-lg border opacity-0 shadow-lg transition group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 motion-reduce:transition-none">
+            <div className="text-foreground bg-background invisible absolute top-full left-4 z-40 w-[min(56rem,calc(100vw-2rem))] translate-y-1 border opacity-0 shadow-lg transition group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 motion-reduce:transition-none">
               <div className="grid grid-cols-2 gap-8 p-6">
                 <MegaColumn
                   heading={t("Products")}
@@ -298,7 +329,7 @@ export async function PortalHeader() {
             {session ? null : (
               <Link
                 href={"/become-seller" as Route}
-                className="text-primary hover:bg-background/90 bg-background ml-2 flex h-8 items-center rounded-full px-4 text-sm font-semibold outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+                className="bg-primary text-primary-foreground hover:bg-primary/90 ml-2 flex h-8 items-center px-4 text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-white/70"
               >
                 {t("Become a vendor")}
               </Link>

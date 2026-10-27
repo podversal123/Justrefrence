@@ -39,7 +39,7 @@ export async function ListingCard({
             alt={item.title}
             fill
             priority={priority}
-            className="object-cover transition-transform duration-500 group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+            className="object-cover"
             sizes="(min-width: 1280px) 22vw, (min-width: 768px) 30vw, 50vw"
           />
         ) : (
@@ -47,19 +47,19 @@ export async function ListingCard({
             <Icon className="size-12" strokeWidth={1.25} aria-hidden="true" />
           </div>
         )}
-        <span className="bg-background/90 text-foreground absolute top-3 left-3 rounded-full px-2.5 py-1 text-[11px] font-medium shadow-sm backdrop-blur">
+        <span className="bg-background text-foreground absolute top-2 left-2 border px-2 py-0.5 text-[11px]">
           {item.categoryName}
         </span>
       </div>
 
-      <div className="flex flex-1 flex-col gap-2 p-4">
-        <h3 className="line-clamp-2 text-[15px] leading-snug font-semibold">{item.title}</h3>
+      <div className="flex flex-1 flex-col gap-2 border-t p-3">
+        <h3 className="line-clamp-2 text-[15px] leading-snug font-medium">{item.title}</h3>
         <p className="text-muted-foreground flex items-center gap-1 text-xs">
           <BadgeCheck className="text-success size-3.5 shrink-0" aria-hidden="true" />
           <span className="truncate">{item.vendorBusinessName}</span>
         </p>
         <div className="mt-auto flex items-end justify-between pt-3">
-          <p className="text-lg leading-none font-semibold tabular-nums">
+          <p className="text-lg leading-none font-medium tabular-nums">
             {item.price === null ? (
               <span className="text-muted-foreground text-sm font-medium">
                 {t("Quote on request")}
@@ -68,9 +68,7 @@ export async function ListingCard({
               formatPaise(item.price, item.currency)
             )}
           </p>
-          <span className="text-primary text-xs font-medium opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100 motion-reduce:opacity-100">
-            {t("View details")}
-          </span>
+          <span className="text-primary text-xs group-hover:underline">{t("View details")}</span>
         </div>
       </div>
     </Link>

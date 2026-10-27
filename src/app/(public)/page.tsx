@@ -1,9 +1,8 @@
 import { getT } from "@/i18n/server";
 import type { Metadata, Route } from "next";
 import { Suspense } from "react";
-import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Handshake, Package } from "lucide-react";
+import { Package } from "lucide-react";
 import { RequirementCard } from "@/components/bidding/requirement-card";
 import { ListingCard } from "@/components/catalog/listing-card";
 import { HeroStage } from "@/components/portal/hero-carousel";
@@ -21,6 +20,7 @@ import {
 import { SponsoredStrip } from "@/components/ads/sponsored-strip";
 import { listClosingSoon } from "@/server/repositories/bidding/bidding-repository";
 import {
+  getMarketplaceStats,
   getProductCategoriesWithCounts,
   getServiceCategoriesWithCounts,
   type CategoryWithCount,
@@ -73,6 +73,10 @@ export default async function HomePage() {
   return (
     <>
       <HomeHero />
+
+      <Suspense fallback={null}>
+        <StatsStrip />
+      </Suspense>
 
       <Suspense fallback={null}>
         <LiveBidsSection />
@@ -134,26 +138,21 @@ async function SectionHeading({
 }) {
   const t = await getT();
   return (
-    <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-      <div className="space-y-1.5">
-        <h2 className="font-display flex items-center gap-3 text-3xl font-bold tracking-tight sm:text-4xl">
+    <div className="border-ink mb-5 flex flex-wrap items-end justify-between gap-x-4 gap-y-1 border-b-2 pb-2">
+      <div>
+        <h2 className="flex items-center gap-3 text-2xl">
           {title}
           {live ? (
-            <span className="bg-success/10 text-success inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-sans text-xs font-medium">
-              <span className="bg-success size-1.5 animate-pulse rounded-full motion-reduce:animate-none" />
+            <span className="text-success border-success/40 border px-2 py-0.5 text-xs">
               {t("Live")}
             </span>
           ) : null}
         </h2>
-        {blurb ? <p className="text-muted-foreground max-w-xl">{blurb}</p> : null}
+        {blurb ? <p className="text-muted-foreground mt-0.5 text-sm">{blurb}</p> : null}
       </div>
       {href ? (
-        <Link
-          href={href as Route}
-          className="text-primary inline-flex items-center gap-1 text-sm font-semibold hover:underline"
-        >
+        <Link href={href as Route} className="text-primary text-sm hover:underline">
           {linkLabel ?? t("View all")}
-          <ArrowRight className="size-4" aria-hidden="true" />
         </Link>
       ) : null}
     </div>
@@ -173,7 +172,7 @@ async function LiveBidsSection() {
   const now = new Date();
 
   return (
-    <section className="mx-auto w-full max-w-7xl px-4 pt-20">
+    <section className="mx-auto w-full max-w-7xl px-4 pt-10">
       <SectionHeading
         title={t("Bids closing soon")}
         blurb={t("Open requirements from buyers. Approved vendors can bid right now.")}
@@ -221,12 +220,12 @@ async function CategoryTiles({
   if (!failed && popular.length === 0) return null;
 
   return (
-    <section className="mx-auto w-full max-w-7xl px-4 pt-20">
+    <section className="mx-auto w-full max-w-7xl px-4 pt-10">
       <SectionHeading title={heading} href={basePath} />
       {failed ? (
         <ErrorState description={t("We couldn't load categories right now.")} />
       ) : (
-        <ul className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {popular.map((category) => {
             const visual = categoryVisual(category.name);
             const Icon = visual.icon;
@@ -234,28 +233,21 @@ async function CategoryTiles({
               <li key={category.id}>
                 <Link
                   href={`${basePath}?categoryId=${category.id}` as Route}
-                  className="surface-card surface-lift group focus-visible:ring-ring/60 flex h-full flex-col gap-5 p-5 outline-none focus-visible:ring-3"
+                  className="surface-card surface-lift focus-visible:ring-ring/60 flex h-full items-center gap-3 p-3 outline-none focus-visible:ring-3"
                 >
                   <span
-                    className={cn(
-                      "flex size-12 items-center justify-center rounded-xl",
-                      visual.tile,
-                    )}
+                    className={cn("flex size-11 shrink-0 items-center justify-center", visual.tile)}
                   >
-                    <Icon className="size-6" aria-hidden="true" />
+                    <Icon className="size-5" aria-hidden="true" />
                   </span>
-                  <span>
-                    <span className="block text-[15px] leading-snug font-semibold">
+                  <span className="min-w-0">
+                    <span className="block text-[15px] leading-snug font-medium">
                       {category.name}
                     </span>
-                    <span className="text-muted-foreground mt-0.5 flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground block text-xs">
                       {category.itemCount === 1
                         ? t("1 listing")
                         : t("{count} listings", { count: category.itemCount })}
-                      <ArrowRight
-                        className="group-hover:text-primary size-4 transition-transform group-hover:translate-x-0.5"
-                        aria-hidden="true"
-                      />
                     </span>
                   </span>
                 </Link>
@@ -293,7 +285,7 @@ async function FeaturedSection({
   }
 
   return (
-    <section className="mx-auto w-full max-w-7xl px-4 pt-14">
+    <section className="mx-auto w-full max-w-7xl px-4 pt-10">
       <SectionHeading title={heading} blurb={blurb} href={`/${segment}`} />
       {failed ? (
         <ErrorState description={t("We couldn't load this section right now.")} />
@@ -304,7 +296,7 @@ async function FeaturedSection({
           description={t("Check back soon as vendors add their catalog.")}
         />
       ) : (
-        <ul className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <ul className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {items.map((item) => (
             <li key={item.id}>
               <ListingCard item={item} href={`/${segment}/${item.slug}`} />
@@ -316,32 +308,54 @@ async function FeaturedSection({
   );
 }
 
+/** Four live counts, the way a procurement portal opens: what is on offer, at a glance. */
+async function StatsStrip() {
+  const t = await getT();
+  let stats: Awaited<ReturnType<typeof getMarketplaceStats>> | null = null;
+  try {
+    stats = await getMarketplaceStats();
+  } catch (error) {
+    console.error("[home] failed to load marketplace stats", error);
+  }
+  if (!stats) return null;
+  const figures = [
+    { label: t("Approved vendors"), value: stats.vendors },
+    { label: t("Products"), value: stats.products },
+    { label: t("Services"), value: stats.services },
+    { label: t("Open bids"), value: stats.bids },
+  ];
+
+  return (
+    <section aria-label={t("Marketplace at a glance")} className="bg-muted border-b">
+      <dl className="mx-auto grid w-full max-w-7xl grid-cols-2 px-4 sm:grid-cols-4">
+        {figures.map((figure, index) => (
+          <div
+            key={figure.label}
+            className={cn(
+              "py-4 sm:px-6",
+              index > 0 && "sm:border-l",
+              index % 2 === 1 && "border-l",
+            )}
+          >
+            <dd className="text-ink text-2xl font-medium tabular-nums">
+              {figure.value.toLocaleString("en-IN")}
+            </dd>
+            <dt className="text-muted-foreground text-sm">{figure.label}</dt>
+          </div>
+        ))}
+      </dl>
+    </section>
+  );
+}
+
 async function GetStartedBand() {
   const t = await getT();
   return (
-    <section className="mx-auto w-full max-w-7xl px-4 py-24">
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className="relative isolate overflow-hidden rounded-3xl p-8 text-white sm:p-10">
-          <Image
-            src="/images/hero/slide-5.jpg"
-            alt=""
-            fill
-            sizes="(min-width: 1024px) 50vw, 100vw"
-            className="-z-20 object-cover"
-          />
-          <div
-            aria-hidden="true"
-            className="from-primary/95 absolute inset-0 -z-10 bg-gradient-to-br via-[oklch(0.5_0.2_22/0.9)] to-[oklch(0.35_0.18_20/0.85)]"
-          />
-          <div
-            aria-hidden="true"
-            className="bg-marigold/30 absolute -right-10 -bottom-16 size-56 rounded-full blur-3xl"
-          />
-          <p className="text-marigold text-sm font-medium">{t("For vendors")}</p>
-          <h2 className="font-display mt-2 max-w-md text-3xl font-bold tracking-tight sm:text-4xl">
-            {t("Start your own business here.")}
-          </h2>
-          <p className="mt-3 max-w-md text-white/85">
+    <section className="mx-auto w-full max-w-7xl px-4 py-12">
+      <div className="grid gap-3 lg:grid-cols-2">
+        <div className="bg-primary text-primary-foreground p-6 sm:p-8">
+          <h2 className="max-w-md text-2xl">{t("Start your own business here.")}</h2>
+          <p className="mt-2 max-w-md text-white/90">
             {t(
               "List products, services and projects, and bid on what buyers post. Get approved once, sell to everyone.",
             )}
@@ -351,43 +365,27 @@ async function GetStartedBand() {
             className={buttonVariants({
               size: "touch",
               variant: "secondary",
-              className: "mt-6 px-5",
+              className: "mt-5 px-5",
             })}
           >
             {t("Become a vendor")}
-            <ArrowRight />
           </Link>
         </div>
-        <div className="bg-ink text-ink-foreground relative isolate overflow-hidden rounded-3xl p-8 sm:p-10">
-          <Image
-            src="/images/hero/slide-2.jpg"
-            alt=""
-            fill
-            sizes="(min-width: 1024px) 50vw, 100vw"
-            className="-z-20 object-cover"
-          />
-          <div
-            aria-hidden="true"
-            className="from-ink/95 via-ink/85 to-ink/70 absolute inset-0 -z-10 bg-gradient-to-br"
-          />
-          <div
-            aria-hidden="true"
-            className="bg-primary/30 absolute -top-16 -right-10 size-56 rounded-full blur-3xl"
-          />
-          <p className="text-marigold text-sm font-medium">{t("Refer and earn")}</p>
-          <h2 className="font-display mt-2 max-w-md text-3xl font-bold tracking-tight sm:text-4xl">
-            {t("Earn by introducing buyers and vendors.")}
-          </h2>
-          <p className="text-ink-foreground/80 mt-3 max-w-md">
+        <div className="bg-ink text-ink-foreground p-6 sm:p-8">
+          <h2 className="max-w-md text-2xl">{t("Earn by introducing buyers and vendors.")}</h2>
+          <p className="text-ink-foreground/80 mt-2 max-w-md">
             {t(
               "Introduce a buyer or a vendor. When their orders complete, a commission is recorded for you.",
             )}
           </p>
           <Link
             href={"/referrals" as Route}
-            className={buttonVariants({ size: "touch", className: "mt-6 px-5" })}
+            className={buttonVariants({
+              size: "touch",
+              variant: "secondary",
+              className: "mt-5 px-5",
+            })}
           >
-            <Handshake />
             {t("Start referring")}
           </Link>
         </div>
@@ -400,11 +398,11 @@ async function GetStartedBand() {
 
 function CategoriesSkeleton() {
   return (
-    <section className="mx-auto w-full max-w-7xl px-4 pt-20">
-      <Skeleton className="mb-8 h-9 w-60" />
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+    <section className="mx-auto w-full max-w-7xl px-4 pt-10">
+      <Skeleton className="mb-5 h-8 w-60" />
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {Array.from({ length: 8 }).map((_, i) => (
-          <Skeleton key={i} className="h-32 rounded-xl" />
+          <Skeleton key={i} className="h-[4.5rem]" />
         ))}
       </div>
     </section>
@@ -413,11 +411,11 @@ function CategoriesSkeleton() {
 
 function FeaturedGridSkeleton({ count }: { count: number }) {
   return (
-    <section className="mx-auto w-full max-w-7xl px-4 pt-14">
-      <Skeleton className="mb-8 h-9 w-60" />
+    <section className="mx-auto w-full max-w-7xl px-4 pt-10">
+      <Skeleton className="mb-5 h-8 w-60" />
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {Array.from({ length: count }).map((_, i) => (
-          <Skeleton key={i} className="aspect-[4/5] rounded-xl" />
+          <Skeleton key={i} className="aspect-[4/5]" />
         ))}
       </div>
     </section>

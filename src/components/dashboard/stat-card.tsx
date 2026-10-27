@@ -10,12 +10,13 @@ const TONE_TEXT: Record<string, string> = {
   muted: "text-muted-foreground",
 };
 
+// The icon carries the tone; no tinted tile behind it.
 const TONE_TILE: Record<string, string> = {
-  default: "bg-primary/10 text-primary",
-  warning: "bg-warning/10 text-warning",
-  success: "bg-success/10 text-success",
-  info: "bg-info/10 text-info",
-  muted: "bg-muted text-muted-foreground",
+  default: "text-ink",
+  warning: "text-warning",
+  success: "text-success",
+  info: "text-info",
+  muted: "text-muted-foreground",
 };
 
 export function StatCard({
@@ -36,16 +37,11 @@ export function StatCard({
       <CardContent className="flex items-start justify-between gap-3 p-4">
         <div className="flex flex-col gap-1">
           <p className="text-muted-foreground text-xs font-medium">{label}</p>
-          <p className={cn("text-2xl font-semibold tracking-tight", TONE_TEXT[tone])}>{value}</p>
+          <p className={cn("text-2xl font-medium", TONE_TEXT[tone])}>{value}</p>
           {sublabel ? <p className="text-muted-foreground text-xs">{sublabel}</p> : null}
         </div>
-        <div
-          className={cn(
-            "flex size-8 shrink-0 items-center justify-center rounded-lg",
-            TONE_TILE[tone],
-          )}
-        >
-          <Icon className="size-4" />
+        <div className={cn("flex size-8 shrink-0 items-center justify-center", TONE_TILE[tone])}>
+          <Icon className="size-5" />
         </div>
       </CardContent>
     </Card>

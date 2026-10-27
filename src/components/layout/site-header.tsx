@@ -42,6 +42,7 @@ export async function SiteHeader({
   notifications,
   unreadCount,
   memberShortcuts = null,
+  memberIds = null,
 }: {
   userEmail: string;
   /** E.g. "Admin panel" and "Super Admin", shown so it is always clear who is signed in. */
@@ -54,6 +55,8 @@ export async function SiteHeader({
   unreadCount: number;
   /** For a member: shortcuts to SMS (with its unread count) and profile settings, next to the bell. */
   memberShortcuts?: { smsUnread: number | null } | null;
+  /** For a member: their own Member ID and, if someone referred them, that person's Member ID. */
+  memberIds?: { memberId: string; referralId: string | null } | null;
 }) {
   const initial = userEmail.charAt(0).toUpperCase();
   const t = await getT();
@@ -85,6 +88,20 @@ export async function SiteHeader({
       ) : (
         <AutoBreadcrumbs />
       )}
+      {memberIds ? (
+        <dl className="ml-4 hidden items-baseline gap-x-5 text-sm md:flex">
+          <div className="flex items-baseline gap-1.5">
+            <dt className="text-muted-foreground">{t("Member ID")}</dt>
+            <dd className="font-mono font-medium">{memberIds.memberId}</dd>
+          </div>
+          {memberIds.referralId ? (
+            <div className="flex items-baseline gap-1.5">
+              <dt className="text-muted-foreground">{t("Referral ID")}</dt>
+              <dd className="font-mono font-medium">{memberIds.referralId}</dd>
+            </div>
+          ) : null}
+        </dl>
+      ) : null}
       <div className="ml-auto flex items-center gap-1">
         <LanguageSwitch />
         {memberShortcuts ? (

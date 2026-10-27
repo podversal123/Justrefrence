@@ -13,11 +13,12 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { createTicketAction } from "@/server/services/support-actions";
 import { TICKET_CATEGORIES } from "@/lib/schemas/support";
 
-export function NewTicketDialog() {
+export function NewTicketDialog({ defaultOpen = false }: { defaultOpen?: boolean }) {
   const t = useT();
   const router = useRouter();
   return (
     <ActionFormDialog
+      defaultOpen={defaultOpen}
       trigger={
         <Button>
           <LifeBuoy />

@@ -53,7 +53,7 @@ export default async function ReferralsPage() {
             {t("Share this link. Anyone who registers through it becomes your direct referral.")}
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent id="create" className="scroll-mt-20 space-y-3">
           <CopyLinkButton link={dashboard.referralLink} />
           <ShareLinks link={dashboard.referralLink} />
         </CardContent>

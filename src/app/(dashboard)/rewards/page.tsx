@@ -29,7 +29,13 @@ const SECTIONS: { key: RewardStatus; title: string; empty: string }[] = [
   { key: "EXPIRED", title: msg("Expired"), empty: msg("Nothing has expired.") },
 ];
 
-export default async function MyRewardsPage() {
+const TYPES = ["CASH", "COUPON", "OTHER"] as const;
+
+export default async function MyRewardsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | undefined>>;
+}) {
   const t = await getT();
   const { formatDate } = await getFormat();
   const session = await getAuthSession();
@@ -50,7 +56,11 @@ export default async function MyRewardsPage() {
     );
   }
 
-  const rewards = await listRewardsForMember(member.id);
+  const typeParam = (await searchParams)["type"];
+  const onlyType = TYPES.find((type) => type === typeParam);
+  const rewards = (await listRewardsForMember(member.id)).filter(
+    (reward) => !onlyType || reward.type === onlyType,
+  );
   const now = new Date();
   const grouped: Record<RewardStatus, { reward: (typeof rewards)[number] }[]> = {
     UNUSED: [],

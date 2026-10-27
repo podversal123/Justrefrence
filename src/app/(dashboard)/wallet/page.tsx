@@ -107,7 +107,7 @@ export default async function WalletPage() {
         />
       </div>
 
-      <section className="rounded-xl border p-4 sm:p-5">
+      <section id="pin" className="scroll-mt-20 rounded-xl border p-4 sm:p-5">
         <h2 className="text-base font-semibold">{t("Wallet PIN")}</h2>
         <p className="text-muted-foreground text-sm">
           {t("Optional. Adds a confirmation step when you request a payout.")}
@@ -127,7 +127,7 @@ export default async function WalletPage() {
         </div>
       </section>
 
-      <section className="rounded-xl border p-4 sm:p-5">
+      <section id="payout" className="scroll-mt-20 rounded-xl border p-4 sm:p-5">
         <h2 className="text-base font-semibold">{t("Request a payout")}</h2>
         <p className="text-muted-foreground mb-4 text-sm">
           {t(
@@ -141,7 +141,7 @@ export default async function WalletPage() {
         )}
       </section>
 
-      <section className="flex flex-col gap-3">
+      <section id="transactions" className="flex scroll-mt-20 flex-col gap-3">
         <h2 className="text-base font-semibold">{t("Recent transactions")}</h2>
         {transactionsError ? (
           <ErrorState title={t("Couldn't load your transactions")} />
@@ -195,7 +195,7 @@ export default async function WalletPage() {
         )}
       </section>
 
-      <section className="flex flex-col gap-3">
+      <section id="payout-report" className="flex scroll-mt-20 flex-col gap-3">
         <h2 className="text-base font-semibold">{t("Recent payout requests")}</h2>
         {payoutsError ? (
           <ErrorState title={t("Couldn't load your payout requests")} />

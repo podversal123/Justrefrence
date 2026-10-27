@@ -49,9 +49,9 @@ function fieldErrors(state: ApiResult<RegisteredMemberResult>): FieldErrors {
 }
 
 /** Admin Panel, "New Registration": creates an active member and shows a one-time temporary password. */
-export function NewMemberDialog() {
+export function NewMemberDialog({ defaultOpen = false }: { defaultOpen?: boolean }) {
   const t = useT();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
   const [state, formAction] = useActionState(createMemberByAdminAction, initialState);
   const created = state !== initialState && state.success ? state.data : null;
   const errors = state !== initialState ? fieldErrors(state) : {};
