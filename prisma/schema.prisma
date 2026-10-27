@@ -309,10 +309,16 @@ enum AddressType {
 /// (never plaintext at rest); `accountNoMasked` is the only form returned by
 /// any list/read API. See docs/security.md §6-7 and
 /// src/server/domain/identity/encryption.ts.
+enum BankAccountType {
+  SAVINGS
+  CURRENT
+}
+
 model BankAccount {
   id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId             String    @map("user_id") @db.Uuid
   accountHolderName  String    @map("account_holder_name")
+  accountType        BankAccountType @default(SAVINGS) @map("account_type")
   accountNoEncrypted Bytes     @map("account_no_encrypted")
   accountNoMasked    String    @map("account_no_masked")
   ifsc               String
@@ -2025,6 +2031,7 @@ model SmsDraft {
 enum KycDocumentType {
   PAN_CARD
   GST_CERTIFICATE
+  INCORPORATION_CERTIFICATE
 }
 
 enum KycDocumentStatus {

@@ -117,6 +117,7 @@ export const addressSchema = z.object({
 export type AddressInput = z.infer<typeof addressSchema>;
 
 export const bankAccountSchema = z.object({
+  accountType: z.enum(["SAVINGS", "CURRENT"], { message: "Choose the account type." }),
   accountHolderName: z.string().trim().min(2, "Enter the account holder's name.").max(200),
   accountNumber: z
     .string()

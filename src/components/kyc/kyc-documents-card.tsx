@@ -8,7 +8,12 @@ import { DOCUMENT_LABELS, allowedDocumentTypes } from "@/server/domain/kyc/rules
 
 const HINTS = {
   PAN_CARD: msg("A clear photo or scan of the card. The name and number must be readable."),
-  GST_CERTIFICATE: msg("Your GST registration certificate, if you are registered."),
+  INCORPORATION_CERTIFICATE: msg(
+    "Your company's certificate of incorporation. The company name must be readable.",
+  ),
+  GST_CERTIFICATE: msg(
+    "Your GST registration certificate. Optional: skip it if you are not registered.",
+  ),
 } as const;
 
 /** The person's own KYC documents: one row per document they can submit, with its status. */
@@ -49,7 +54,11 @@ export async function KycDocumentsCard({
             <KycDocumentRow
               key={type}
               type={type}
-              label={t(DOCUMENT_LABELS[type])}
+              label={
+                type === "GST_CERTIFICATE"
+                  ? `${t(DOCUMENT_LABELS[type])} (${t("Optional")})`
+                  : t(DOCUMENT_LABELS[type])
+              }
               hint={t(HINTS[type])}
               document={view}
             />

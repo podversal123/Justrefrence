@@ -66,9 +66,13 @@ describe("checkUpload", () => {
 });
 
 describe("document rules", () => {
-  it("lets everyone submit a PAN card, and only vendors a GST certificate", () => {
+  it("lets everyone submit a PAN card, and corporate (vendor) accounts also an incorporation and an optional GST certificate", () => {
     expect(allowedDocumentTypes({ isVendor: false })).toEqual(["PAN_CARD"]);
-    expect(allowedDocumentTypes({ isVendor: true })).toEqual(["PAN_CARD", "GST_CERTIFICATE"]);
+    expect(allowedDocumentTypes({ isVendor: true })).toEqual([
+      "PAN_CARD",
+      "INCORPORATION_CERTIFICATE",
+      "GST_CERTIFICATE",
+    ]);
   });
 
   it("derives the member's KYC status from the PAN card alone", () => {

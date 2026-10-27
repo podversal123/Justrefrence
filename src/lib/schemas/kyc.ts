@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const kycDocumentTypeSchema = z.enum(["PAN_CARD", "GST_CERTIFICATE"]);
+export const kycDocumentTypeSchema = z.enum(["PAN_CARD", "GST_CERTIFICATE", "INCORPORATION_CERTIFICATE"]);
 
 export const reviewKycSchema = z
   .object({

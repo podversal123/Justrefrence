@@ -136,6 +136,7 @@ describe("bankAccountSchema", () => {
   it("validates the IFSC format", () => {
     expect(
       bankAccountSchema.safeParse({
+        accountType: "SAVINGS",
         accountHolderName: "Jane Doe",
         accountNumber: "001234567890",
         ifsc: "HDFC0001234",
@@ -144,6 +145,7 @@ describe("bankAccountSchema", () => {
 
     expect(
       bankAccountSchema.safeParse({
+        accountType: "SAVINGS",
         accountHolderName: "Jane Doe",
         accountNumber: "001234567890",
         ifsc: "NOTVALID",

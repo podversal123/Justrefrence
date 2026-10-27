@@ -61,9 +61,10 @@ vi.mock("@/server/repositories/identity/address-repository", () => ({
   upsertAddress: mockUpsertAddress,
 }));
 
-const mockUpsertBankAccount = vi.fn();
+const mockAddBankAccount = vi.fn();
 vi.mock("@/server/repositories/identity/bank-repository", () => ({
-  upsertBankAccount: mockUpsertBankAccount,
+  addBankAccount: mockAddBankAccount,
+  removeBankAccount: vi.fn(),
 }));
 
 const mockGetFieldEncryptionKey = vi.fn(() => Buffer.alloc(32, 1));
@@ -287,12 +288,14 @@ describe("self-service profile actions — always scoped to the caller's own ses
     );
   });
 
-  it("upsertBankAccountAction encrypts the account number and only stores the masked form", async () => {
+  it("upsertBankAccountAction adds an account, encrypting the account number and only stores the masked form", async () => {
     mockGetUser.mockResolvedValue({ data: { user: { id: USER_ID } } });
+    mockAddBankAccount.mockResolvedValue(true);
 
     const result = await upsertBankAccountAction(
       undefined,
       formData({
+        accountType: "CURRENT",
         accountHolderName: "Jane Doe",
         accountNumber: "001234567890",
         ifsc: "HDFC0001234",
@@ -300,15 +303,16 @@ describe("self-service profile actions — always scoped to the caller's own ses
     );
 
     expect(result.success).toBe(true);
-    expect(mockUpsertBankAccount).toHaveBeenCalledWith(
+    expect(mockAddBankAccount).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: USER_ID,
+        accountType: "CURRENT",
         accountNoMasked: "********7890",
         accountNoEncrypted: expect.any(Buffer),
       }),
     );
     // The raw account number must never be passed through as the masked value.
-    const call = mockUpsertBankAccount.mock.calls[0]?.[0];
+    const call = mockAddBankAccount.mock.calls[0]?.[0];
     expect(call.accountNoEncrypted.toString("utf8")).not.toContain("001234567890");
   });
 });

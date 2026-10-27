@@ -59,11 +59,17 @@ export function checkUpload(input: {
 export const DOCUMENT_LABELS: Record<KycDocumentType, string> = {
   PAN_CARD: msg("PAN card"),
   GST_CERTIFICATE: msg("GST certificate"),
+  INCORPORATION_CERTIFICATE: msg("Incorporation certificate"),
 };
 
-/** Everyone can submit a PAN card; the GST certificate is for vendors. */
+/**
+ * Everyone submits a PAN card. A corporate (vendor) account also submits its incorporation
+ * certificate, and may add a GST certificate, which stays optional.
+ */
 export function allowedDocumentTypes(owner: { isVendor: boolean }): KycDocumentType[] {
-  return owner.isVendor ? ["PAN_CARD", "GST_CERTIFICATE"] : ["PAN_CARD"];
+  return owner.isVendor
+    ? ["PAN_CARD", "INCORPORATION_CERTIFICATE", "GST_CERTIFICATE"]
+    : ["PAN_CARD"];
 }
 
 export type MemberKycStatus = "PENDING" | "VERIFIED" | "REJECTED";

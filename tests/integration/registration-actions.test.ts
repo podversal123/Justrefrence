@@ -104,7 +104,7 @@ vi.mock("@/server/repositories/identity/notification-repository", () => ({
 // clients above.
 vi.mock("@/server/lib/field-encryption", () => ({ getFieldEncryptionKey: vi.fn() }));
 vi.mock("@/server/repositories/identity/address-repository", () => ({ upsertAddress: vi.fn() }));
-vi.mock("@/server/repositories/identity/bank-repository", () => ({ upsertBankAccount: vi.fn() }));
+vi.mock("@/server/repositories/identity/bank-repository", () => ({ addBankAccount: vi.fn(), removeBankAccount: vi.fn() }));
 
 const { requestRegistrationAction, confirmRegistrationAction, resendRegistrationOtpAction } =
   await import("@/server/services/member-actions");

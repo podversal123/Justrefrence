@@ -13,7 +13,8 @@ import {
   getUserPhone,
 } from "@/server/repositories/identity/member-repository";
 import { listAddresses } from "@/server/repositories/identity/address-repository";
-import { getBankAccount } from "@/server/repositories/identity/bank-repository";
+import { listBankAccounts } from "@/server/repositories/identity/bank-repository";
+import { getVendorProfileByUserId } from "@/server/repositories/vendor-repository";
 import { ProfileForm } from "./profile-form";
 import { ChangePasswordForm } from "./change-password-form";
 import { MemberDetailsForm } from "./member-details-form";
@@ -49,11 +50,16 @@ export default async function ProfilePage({
   const memberProfile = await getMemberProfileByUserId(session.userId);
   const memberIdentity = memberProfile ? await getMemberIdentity(session.userId) : null;
 
-  const [addresses, bankAccount, contact] = await Promise.all([
+  const [addresses, bankAccounts, contact, vendorProfile] = await Promise.all([
     memberProfile ? listAddresses(session.userId) : Promise.resolve([]),
-    memberProfile ? getBankAccount(session.userId) : Promise.resolve(null),
+    memberProfile ? listBankAccounts(session.userId) : Promise.resolve([]),
     getUserPhone(session.userId),
+    session.hasVendorProfile ? getVendorProfileByUserId(session.userId) : Promise.resolve(null),
   ]);
+
+  // A corporate (vendor) account banks in the company's name; a personal one in the member's own.
+  const isCorporate = vendorProfile !== null;
+  const bankHolderName = vendorProfile?.businessName ?? session.fullName ?? "";
 
   const residence = addresses.find((a) => a.type === "RESIDENCE") ?? null;
   const office = addresses.find((a) => a.type === "OFFICE") ?? null;
@@ -215,7 +221,11 @@ export default async function ProfilePage({
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <BankAccountForm bankAccount={bankAccount} />
+                <BankAccountForm
+                  bankAccounts={bankAccounts}
+                  defaultHolderName={bankHolderName}
+                  isCorporate={isCorporate}
+                />
               </CardContent>
             </Card>
           </TabsContent>

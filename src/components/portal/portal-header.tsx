@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { Route } from "next";
 import { ChevronDown, Menu, ShoppingCart, UserRound } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
+import { OUR_SERVICES } from "@/components/portal/our-services";
 import { PortalSearch } from "@/components/portal/portal-search";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -31,7 +32,7 @@ import {
  * many categories, one search, lots of returning buyers):
  *   1. brand + search — the primary task, always one click away
  *   2. category band  — mega-menu of real categories, main sections, and a
- *      "More" menu for the secondary pages (About, Contact, News, Feedback)
+ *      "More" menu for the secondary pages (What we do, News, Feedback)
  * Session, cart count and categories are all server-fetched; the category
  * query is cached (marketplace-stats.ts) and failure-tolerant so a
  * database hiccup degrades the menu, never the page.
@@ -48,10 +49,31 @@ const NAV_LINKS: { href: Route; label: string }[] = [
 
 /** Secondary pages: one dropdown on desktop, plain links in the mobile sheet. */
 const MORE_LINKS: { href: Route; label: string }[] = [
-  { href: "/about" as Route, label: msg("About us") },
-  { href: "/contact" as Route, label: "Contact us" },
+  { href: "/what-we-do" as Route, label: msg("What we do") },
   { href: "/blog", label: "News and updates" },
   { href: "/feedback", label: msg("Feedback") },
+];
+
+const SERVICE_LINKS: { href: Route; label: string }[] = OUR_SERVICES.map((service) => ({
+  href: `/our-services/${service.slug}` as Route,
+  label: service.label,
+}));
+
+/** Company bar under the category band: plain links; Our Services and Career are dropdowns. */
+const COMPANY_LINKS = {
+  aboutUs: { href: "/about" as Route, label: msg("About Us") },
+  whatYouDo: { href: "/what-you-do" as Route, label: msg("What You Do") },
+  mediaRelation: { href: "/media-relation" as Route, label: msg("Media Relation") },
+  wayToWork: { href: "/way-to-work" as Route, label: msg("Way to Work") },
+  contact: { href: "/contact" as Route, label: msg("Contact Us") },
+  support: { href: "/support" as Route, label: msg("Support") },
+} as const;
+
+/** Career dropdown: why join, the open roles, and how to apply. */
+const CAREER_LINKS: { href: Route; label: string }[] = [
+  { href: "/careers/why-justreference" as Route, label: msg("Why Justreference?") },
+  { href: "/careers" as Route, label: msg("Current Openings") },
+  { href: "/careers/applying" as Route, label: msg("Applying with Justreference") },
 ];
 
 const MENU_CATEGORY_LIMIT = 10;
@@ -161,7 +183,17 @@ export async function PortalHeader() {
                 >
                   {t("Refer and earn")}
                 </SheetClose>
-                {MORE_LINKS.map((link) => (
+                {[
+                  COMPANY_LINKS.aboutUs,
+                  COMPANY_LINKS.whatYouDo,
+                  ...SERVICE_LINKS,
+                  COMPANY_LINKS.mediaRelation,
+                  ...CAREER_LINKS,
+                  COMPANY_LINKS.wayToWork,
+                  COMPANY_LINKS.contact,
+                  COMPANY_LINKS.support,
+                  ...MORE_LINKS,
+                ].map((link) => (
                   <SheetClose
                     key={link.href}
                     nativeButton={false}
@@ -336,6 +368,69 @@ export async function PortalHeader() {
             )}
           </div>
         </div>
+      </div>
+      {/* Tier 3 — company pages (desktop) */}
+      <div className="bg-primary text-primary-foreground hidden border-t border-white/15 lg:block">
+        <nav
+          aria-label={t("Company")}
+          className="mx-auto flex h-11 w-full max-w-7xl items-center gap-1 px-4"
+        >
+          <Link href={COMPANY_LINKS.aboutUs.href} className={bandLinkClass}>
+            {t(COMPANY_LINKS.aboutUs.label)}
+          </Link>
+          <Link href={COMPANY_LINKS.whatYouDo.href} className={bandLinkClass}>
+            {t(COMPANY_LINKS.whatYouDo.label)}
+          </Link>
+          <div className="group relative">
+            <button type="button" aria-haspopup="true" className={`${bandLinkClass} gap-1.5`}>
+              {t("Our Services")}
+              <ChevronDown className="size-4" />
+            </button>
+            <ul className="text-foreground bg-background invisible absolute top-full left-0 z-40 w-64 translate-y-1 rounded-b-lg border p-1.5 opacity-0 shadow-lg transition group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 motion-reduce:transition-none">
+              {SERVICE_LINKS.map((link) => (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    className="hover:bg-muted flex h-10 items-center rounded-md px-3 text-sm"
+                  >
+                    {t(link.label)}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <Link href={COMPANY_LINKS.mediaRelation.href} className={bandLinkClass}>
+            {t(COMPANY_LINKS.mediaRelation.label)}
+          </Link>
+          <div className="group relative">
+            <button type="button" aria-haspopup="true" className={`${bandLinkClass} gap-1.5`}>
+              {t("Career")}
+              <ChevronDown className="size-4" />
+            </button>
+            <ul className="text-foreground bg-background invisible absolute top-full left-0 z-40 w-64 translate-y-1 rounded-b-lg border p-1.5 opacity-0 shadow-lg transition group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 motion-reduce:transition-none">
+              {CAREER_LINKS.map((link) => (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    className="hover:bg-muted flex h-10 items-center rounded-md px-3 text-sm"
+                  >
+                    {t(link.label)}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <Link href={COMPANY_LINKS.wayToWork.href} className={bandLinkClass}>
+            {t(COMPANY_LINKS.wayToWork.label)}
+          </Link>
+          <Link href={COMPANY_LINKS.contact.href} className={bandLinkClass}>
+            {t(COMPANY_LINKS.contact.label)}
+          </Link>
+          <Link href={COMPANY_LINKS.support.href} className={bandLinkClass}>
+            {t(COMPANY_LINKS.support.label)}
+          </Link>
+        </nav>
       </div>
     </header>
   );

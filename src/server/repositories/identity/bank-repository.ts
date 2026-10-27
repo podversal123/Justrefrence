@@ -8,19 +8,41 @@ import { prisma } from "@/server/lib/prisma";
  * without this, those leak into the Server→Client Component RSC payload for
  * any page that passes this result as a prop (see security audit finding).
  */
+const DISPLAY_SELECT = {
+  id: true,
+  accountHolderName: true,
+  accountType: true,
+  accountNoMasked: true,
+  ifsc: true,
+  branchAddress: true,
+  verifiedAt: true,
+} as const;
+
+/** The newest saved account: the one payouts and the wallet use. */
 export async function getBankAccount(userId: string) {
   return prisma.bankAccount.findFirst({
     where: { userId, deletedAt: null },
     orderBy: { createdAt: "desc" },
-    select: {
-      id: true,
-      accountHolderName: true,
-      accountNoMasked: true,
-      ifsc: true,
-      branchAddress: true,
-      verifiedAt: true,
-    },
+    select: DISPLAY_SELECT,
   });
+}
+
+/** Every saved account, newest first, for the Profile → Bank list. */
+export async function listBankAccounts(userId: string) {
+  return prisma.bankAccount.findMany({
+    where: { userId, deletedAt: null },
+    orderBy: { createdAt: "desc" },
+    select: DISPLAY_SELECT,
+  });
+}
+
+/** Soft-deletes one of the caller's own accounts (bank details are audited, never hard-deleted). */
+export async function removeBankAccount(userId: string, bankAccountId: string) {
+  const result = await prisma.bankAccount.updateMany({
+    where: { id: bankAccountId, userId, deletedAt: null },
+    data: { deletedAt: new Date() },
+  });
+  return result.count > 0;
 }
 
 /** Admin-only KYC check — marks the member's current bank account verified. */
@@ -31,8 +53,9 @@ export async function verifyBankAccount(bankAccountId: string, verifiedBy: strin
   });
 }
 
-export interface UpsertBankAccountInput {
+export interface AddBankAccountInput {
   userId: string;
+  accountType: "SAVINGS" | "CURRENT";
   accountHolderName: string;
   accountNoEncrypted: Buffer;
   accountNoMasked: string;
@@ -41,29 +64,35 @@ export interface UpsertBankAccountInput {
 }
 
 /**
- * Replacing a bank account resets verification (a changed account number
- * must be re-checked by admin, per docs/database-tables.md's
- * `verified_at`/`verified_by` fields) — soft-deletes the old row rather than
- * editing it in place, since bank details are audited on every add/remove
- * (docs/security.md §7).
+ * Adds an account alongside the ones already saved. Returns false when this account number is
+ * already on file. The row is unique per user and masked number, so a previously removed one is
+ * brought back, unverified (a re-added account must be re-checked by admin, per
+ * docs/database-tables.md's `verified_at`/`verified_by` fields).
  */
-export async function upsertBankAccount(input: UpsertBankAccountInput) {
+export async function addBankAccount(input: AddBankAccountInput) {
+  const data = {
+    accountType: input.accountType,
+    accountHolderName: input.accountHolderName,
+    accountNoEncrypted: new Uint8Array(input.accountNoEncrypted),
+    accountNoMasked: input.accountNoMasked,
+    ifsc: input.ifsc,
+    branchAddress: input.branchAddress,
+  };
   return prisma.$transaction(async (tx) => {
-    const existing = await tx.bankAccount.findFirst({
-      where: { userId: input.userId, deletedAt: null },
-    });
-    if (existing) {
-      await tx.bankAccount.update({ where: { id: existing.id }, data: { deletedAt: new Date() } });
-    }
-    return tx.bankAccount.create({
-      data: {
-        userId: input.userId,
-        accountHolderName: input.accountHolderName,
-        accountNoEncrypted: new Uint8Array(input.accountNoEncrypted),
-        accountNoMasked: input.accountNoMasked,
-        ifsc: input.ifsc,
-        branchAddress: input.branchAddress,
+    const same = await tx.bankAccount.findUnique({
+      where: {
+        userId_accountNoMasked: { userId: input.userId, accountNoMasked: input.accountNoMasked },
       },
     });
+    if (same && same.deletedAt === null) return false;
+    if (same) {
+      await tx.bankAccount.update({
+        where: { id: same.id },
+        data: { ...data, deletedAt: null, verifiedAt: null, verifiedBy: null, createdAt: new Date() },
+      });
+    } else {
+      await tx.bankAccount.create({ data: { userId: input.userId, ...data } });
+    }
+    return true;
   });
 }

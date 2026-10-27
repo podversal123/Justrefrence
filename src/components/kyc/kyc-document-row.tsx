@@ -51,7 +51,7 @@ export function KycDocumentRow({
   hint,
   document,
 }: {
-  type: "PAN_CARD" | "GST_CERTIFICATE";
+  type: "PAN_CARD" | "GST_CERTIFICATE" | "INCORPORATION_CERTIFICATE";
   label: string;
   hint: string;
   document: KycDocumentView | null;

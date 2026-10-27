@@ -26,7 +26,7 @@ import {
 } from "@/server/domain/identity/mobile-login-service";
 import { updateMemberDetails } from "@/server/repositories/identity/member-repository";
 import { upsertAddress } from "@/server/repositories/identity/address-repository";
-import { upsertBankAccount } from "@/server/repositories/identity/bank-repository";
+import { addBankAccount, removeBankAccount } from "@/server/repositories/identity/bank-repository";
 import { encryptField } from "@/server/domain/identity/encryption";
 import { maskBankAccountNumber } from "@/server/domain/identity/masking";
 import { getFieldEncryptionKey } from "@/server/lib/field-encryption";
@@ -384,6 +384,7 @@ export async function upsertBankAccountAction(
   }
 
   const parsed = bankAccountSchema.safeParse({
+    accountType: formData.get("accountType"),
     accountHolderName: formData.get("accountHolderName"),
     accountNumber: formData.get("accountNumber"),
     ifsc: formData.get("ifsc"),
@@ -403,14 +404,22 @@ export async function upsertBankAccountAction(
   }
 
   const key = getFieldEncryptionKey();
-  await upsertBankAccount({
+  const added = await addBankAccount({
     userId,
+    accountType: parsed.data.accountType,
     accountHolderName: parsed.data.accountHolderName,
     accountNoEncrypted: encryptField(parsed.data.accountNumber, key),
     accountNoMasked: maskBankAccountNumber(parsed.data.accountNumber),
     ifsc: parsed.data.ifsc,
     branchAddress: parsed.data.branchAddress ?? null,
   });
+  if (!added) {
+    return {
+      success: false,
+      error: { code: "CONFLICT", message: "That account number is already saved." },
+      meta: { requestId: requestId() },
+    };
+  }
 
   await recordAudit({
     actorId: userId,
@@ -421,6 +430,42 @@ export async function upsertBankAccountAction(
       accountNoMasked: maskBankAccountNumber(parsed.data.accountNumber),
       ifsc: parsed.data.ifsc,
     },
+  });
+
+  revalidatePath("/profile");
+  return { success: true, data: null, meta: { requestId: requestId() } };
+}
+
+export async function removeBankAccountAction(
+  _prevState: unknown,
+  formData: FormData,
+): Promise<ApiResult<null>> {
+  const userId = await requireUserId();
+  if (!userId) {
+    return {
+      success: false,
+      error: { code: "UNAUTHENTICATED", message: "Please sign in again." },
+      meta: { requestId: requestId() },
+    };
+  }
+
+  const bankAccountId = String(formData.get("bankAccountId") ?? "");
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+    bankAccountId,
+  );
+  if (!isUuid || !(await removeBankAccount(userId, bankAccountId))) {
+    return {
+      success: false,
+      error: { code: "NOT_FOUND", message: "That bank account was not found." },
+      meta: { requestId: requestId() },
+    };
+  }
+
+  await recordAudit({
+    actorId: userId,
+    action: "BANK_ACCOUNT_REMOVED",
+    entityType: "bank_accounts",
+    entityId: bankAccountId,
   });
 
   revalidatePath("/profile");
