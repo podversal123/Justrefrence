@@ -2661,6 +2661,7 @@ export const HI_MESSAGES: Messages = {
   "Current account": "चालू खाता",
   "Savings account": "बचत खाता",
   "Account type": "खाते का प्रकार",
+  Supports: "सहायता",
   "About Us": "हमारे बारे में",
   "Our Services": "हमारी सेवाएँ",
   "Media Relation": "मीडिया संबंध",

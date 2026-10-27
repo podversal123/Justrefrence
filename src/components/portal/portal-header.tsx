@@ -1,7 +1,7 @@
 import { msg } from "@/i18n/locales";
 import Link from "next/link";
 import type { Route } from "next";
-import { ChevronDown, Menu, ShoppingCart, UserRound } from "lucide-react";
+import { ChevronDown, House, Menu, ShoppingCart, UserRound } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { OUR_SERVICES } from "@/components/portal/our-services";
 import { PortalSearch } from "@/components/portal/portal-search";
@@ -61,12 +61,13 @@ const SERVICE_LINKS: { href: Route; label: string }[] = OUR_SERVICES.map((servic
 
 /** Company bar under the category band: plain links; Our Services and Career are dropdowns. */
 const COMPANY_LINKS = {
+  home: { href: "/" as Route, label: msg("Home") },
   aboutUs: { href: "/about" as Route, label: msg("About Us") },
   whatYouDo: { href: "/what-you-do" as Route, label: msg("What You Do") },
   mediaRelation: { href: "/media-relation" as Route, label: msg("Media Relation") },
   wayToWork: { href: "/way-to-work" as Route, label: msg("Way to Work") },
   contact: { href: "/contact" as Route, label: msg("Contact Us") },
-  support: { href: "/support" as Route, label: msg("Support") },
+  support: { href: "/support" as Route, label: msg("Supports") },
 } as const;
 
 /** Career dropdown: why join, the open roles, and how to apply. */
@@ -136,9 +137,6 @@ export async function PortalHeader() {
             <Link href="/feedback" className="hover:underline focus-visible:underline">
               {t("Feedback")}
             </Link>
-            <Link href="/contact" className="hover:underline focus-visible:underline">
-              {t("Need help?")}
-            </Link>
           </nav>
         </div>
       </div>
@@ -184,6 +182,7 @@ export async function PortalHeader() {
                   {t("Refer and earn")}
                 </SheetClose>
                 {[
+                  COMPANY_LINKS.home,
                   COMPANY_LINKS.aboutUs,
                   COMPANY_LINKS.whatYouDo,
                   ...SERVICE_LINKS,
@@ -375,6 +374,13 @@ export async function PortalHeader() {
           aria-label={t("Company")}
           className="mx-auto flex h-11 w-full max-w-7xl items-center gap-1 px-4"
         >
+          <Link
+            href={COMPANY_LINKS.home.href}
+            aria-label={t(COMPANY_LINKS.home.label)}
+            className={bandLinkClass}
+          >
+            <House className="size-4" aria-hidden="true" />
+          </Link>
           <Link href={COMPANY_LINKS.aboutUs.href} className={bandLinkClass}>
             {t(COMPANY_LINKS.aboutUs.label)}
           </Link>
